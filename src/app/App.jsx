@@ -4,13 +4,17 @@ import {
   getOperacionesLocal,
 } from "../offline/operacionesRepo";
 import { dbLocal } from "../offline/db";
+import { useAutoSync } from "../hooks/useAutoSync";
 
 function App() {
   const [operaciones, setOperaciones] = useState([]);
 
+  // 🔁 Sync automático (online / intervalo)
+  useAutoSync();
+
   useEffect(() => {
     async function init() {
-      // operación de ejemplo
+      // 🧪 Operación de ejemplo (solo para esta etapa)
       const operacionEjemplo = {
         id: "op_2025_07_001",
         proveedor: "GIVA",
@@ -47,33 +51,38 @@ function App() {
         observaciones: "Se envió el SWIFT al proveedor",
       };
 
-      // guardamos local
+      // 👉 upsert local (genera outbox si corresponde)
       await upsertOperacionLocal(operacionEjemplo);
 
-      // leemos todo
+      // 👉 leer operaciones locales
       const ops = await getOperacionesLocal();
       setOperaciones(ops);
+
+      // 🧪 debug outbox (temporal)
+      const outbox = await dbLocal.outbox.toArray();
+      console.log("OUTBOX:", outbox);
     }
 
-    init();
+    init().catch(console.error);
   }, []);
 
-  useEffect(() => {
-  async function debugOutbox() {
-    const jobs = await dbLocal.outbox.toArray();
-    console.log("OUTBOX:", jobs);
-  }
-
-  debugOutbox();
-}, []);
-
   return (
-    <div style={{ padding: 24 }}>
+    <div style={{ padding: 24, fontFamily: "sans-serif" }}>
       <h1>Sistema de Importaciones</h1>
 
       <h2>Operaciones locales</h2>
 
-      <pre>{JSON.stringify(operaciones, null, 2)}</pre>
+      <pre
+        style={{
+          background: "#f4f4f4",
+          padding: 16,
+          borderRadius: 6,
+          maxWidth: 900,
+          overflowX: "auto",
+        }}
+      >
+        {JSON.stringify(operaciones, null, 2)}
+      </pre>
     </div>
   );
 }
