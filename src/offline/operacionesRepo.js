@@ -1,37 +1,46 @@
 import { dbLocal } from "./db";
 
 /**
- * Guarda o actualiza una operación en IndexedDB
+ * Crear o actualizar una operación en IndexedDB
+ * y registrar el cambio en la outbox para sync.
  */
 export async function upsertOperacionLocal(operacion) {
   const now = Date.now();
 
   const data = {
-    ...operacion,
-
-    // flags locales
-    deleted: false,  // soft delete (por si más adelante lo usás) 
+    // flags locales (SIEMPRE presentes)
+    deleted: false,
+    dirty: true,
     updatedAtLocal: now,
-    dirty: true,        // tiene cambios pendientes de sync
-      
+
+    // datos reales de la operación
+    ...operacion,
   };
 
+  // 1️⃣ Guardar operación local
   await dbLocal.operaciones.put(data);
+
+  // 2️⃣ Registrar cambio en outbox
+  await dbLocal.outbox.add({
+    entityType: "operacion",
+    entityId: data.id,
+    op: "upsert",
+    createdAt: now,
+  });
 
   return data;
 }
 
 /**
- * Obtiene todas las operaciones locales (no borradas)
+ * Obtener todas las operaciones locales activas
  */
 export async function getOperacionesLocal() {
   const all = await dbLocal.operaciones.toArray();
   return all.filter(op => op.deleted !== true);
 }
 
-
 /**
- * Obtiene una operación por ID
+ * Obtener una operación por ID
  */
 export async function getOperacionByIdLocal(id) {
   return dbLocal.operaciones.get(id);

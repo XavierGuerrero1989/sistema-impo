@@ -3,6 +3,7 @@ import {
   upsertOperacionLocal,
   getOperacionesLocal,
 } from "../offline/operacionesRepo";
+import { dbLocal } from "../offline/db";
 
 function App() {
   const [operaciones, setOperaciones] = useState([]);
@@ -56,6 +57,15 @@ function App() {
 
     init();
   }, []);
+
+  useEffect(() => {
+  async function debugOutbox() {
+    const jobs = await dbLocal.outbox.toArray();
+    console.log("OUTBOX:", jobs);
+  }
+
+  debugOutbox();
+}, []);
 
   return (
     <div style={{ padding: 24 }}>
