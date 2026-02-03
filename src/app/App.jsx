@@ -3,9 +3,9 @@ import Navbar from "../ui/Navbar";
 import OperacionesApp from "../operacionesApp";
 import OperacionesListado from "../ui/operacionesListado";
 import OperacionDetalle from "../ui/operacionesDetalle";
-import Finanzas from "../ui/Finanzas";
-import Documentos from "../ui/Documentos";
-import Logistica from "../ui/Logistica";
+import Finanzas from "../ui/finanzas";
+import Documentos from "../ui/documentos";
+import Logistica from "../ui/logistica";
 import CrearOperacion from "../ui/CrearOperacion";
 import { useAutoSync } from "../hooks/useAutoSync";
 
