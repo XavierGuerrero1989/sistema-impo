@@ -1,8 +1,17 @@
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /operaciones/{id} {
+
+    // Operaciones
+    match /operaciones/{operacionId} {
       allow read, write: if request.auth != null;
     }
+
+    // Documentos (si ya los usás)
+    match /documentos/{docId} {
+      allow read, write: if request.auth != null;
+    }
+
   }
 }
