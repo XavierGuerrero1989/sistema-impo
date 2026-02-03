@@ -5,7 +5,7 @@ import {
 } from "./offline/operacionesRepo";
 import { useAutoSync } from "./hooks/useAutoSync";
 import "./operacionesApp.css";
-import KPIs from "./ui/KPIs";
+import KPIs from "./ui/KPIS";
 
 
 function OperacionesApp() {
