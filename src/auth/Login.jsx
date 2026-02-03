@@ -1,70 +1,62 @@
 import { useState } from "react";
 import { useAuth } from "./AuthContext";
 import { signInWithEmailAndPassword } from "firebase/auth";
+import Loader from "../ui/Loader";
+import "./Login.css";
 
 export default function Login() {
-  const { auth } = useAuth(); // ← ESTE es el auth bueno
+  const { auth } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   async function handleLogin(e) {
     e.preventDefault();
     setError("");
+    setLoading(true);
 
     try {
       await signInWithEmailAndPassword(auth, email, password);
+      // al loguear OK, App.jsx va a redirigir
     } catch (err) {
       console.error("LOGIN ERROR:", err.code, err.message);
-      setError(err.code);
+      setError("Usuario o contraseña incorrectos");
+      setLoading(false);
     }
   }
 
   return (
-    <div style={styles.container}>
-      <form onSubmit={handleLogin} style={styles.box}>
-        <h2>Ingreso al sistema</h2>
+    <>
+      {loading && <Loader text="Ingresando al sistema..." />}
 
-        <input
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-        />
+      <div className="login-page">
+        <form className="login-box" onSubmit={handleLogin}>
+          <h2>Ingreso al sistema</h2>
 
-        <input
-          type="password"
-          placeholder="Contraseña"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-        />
+          <input
+            type="email"
+            placeholder="Email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
 
-        {error && <p style={{ color: "red" }}>{error}</p>}
+          <input
+            type="password"
+            placeholder="Contraseña"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
 
-        <button type="submit">Ingresar</button>
-      </form>
-    </div>
+          {error && <div className="login-error">{error}</div>}
+
+          <button type="submit" disabled={loading}>
+            Ingresar
+          </button>
+        </form>
+      </div>
+    </>
   );
 }
-
-
-const styles = {
-  container: {
-    height: "100vh",
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    background: "#f5f5f5",
-  },
-  box: {
-    background: "white",
-    padding: 32,
-    borderRadius: 8,
-    display: "flex",
-    flexDirection: "column",
-    gap: 12,
-    minWidth: 280,
-  },
-};

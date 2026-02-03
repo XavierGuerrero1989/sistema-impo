@@ -1,0 +1,140 @@
+.operaciones-listado-page {
+  padding: 24px;
+}
+
+.listado-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.btn-primary {
+  background: #2563eb;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.btn-primary:hover {
+  background: #1d4ed8;
+}
+
+
+/* Filtros */
+.filtros-bar {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.filtros-bar input,
+.filtros-bar select {
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid #e5e7eb;
+  font-size: 0.9rem;
+}
+
+/* Tabla */
+.tabla-wrapper {
+  background: #fff;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.operaciones-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.operaciones-table th,
+.operaciones-table td {
+  padding: 12px;
+  border-bottom: 1px solid #f1f5f9;
+  text-align: left;
+  font-size: 0.9rem;
+}
+
+.operaciones-table th {
+  background: #f8fafc;
+  font-weight: 600;
+}
+
+.operaciones-table tr:hover {
+  background: #f9fafb;
+}
+
+.mono {
+  font-family: monospace;
+}
+
+/* Estados */
+.estado-badge {
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.estado-badge.en_transito {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.estado-badge.en_chile {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.estado-badge.docs_pendientes,
+.estado-badge.pagos_pendientes {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.estado-badge.finalizada {
+  background: #dcfce7;
+  color: #166534;
+}
+
+/* Pago adelanto */
+.pago-badge {
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.pago-badge.ok {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.pago-badge.pendiente {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+/* Acciones */
+.btn-ver {
+  padding: 6px 10px;
+  font-size: 0.8rem;
+  border-radius: 6px;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  cursor: pointer;
+}
+
+.btn-ver:hover {
+  background: #f1f5f9;
+}
+
+.empty {
+  text-align: center;
+  color: #94a3b8;
+  padding: 24px;
+}

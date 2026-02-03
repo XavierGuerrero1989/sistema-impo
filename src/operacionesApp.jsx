@@ -2,89 +2,71 @@ import { useEffect, useState } from "react";
 import {
   upsertOperacionLocal,
   getOperacionesLocal,
-} from "../src/offline/operacionesRepo";
-import { dbLocal } from "../src/offline/db";
-import { useAutoSync } from "../src/hooks/useAutoSync";
+} from "./offline/operacionesRepo";
+import { useAutoSync } from "./hooks/useAutoSync";
+import "./OperacionesApp.css";
+import KPIs from "../src/ui/KPIs";
 
-function operacionesApp() {
+
+function OperacionesApp() {
   const [operaciones, setOperaciones] = useState([]);
 
-  // 🔁 Sync automático (online / intervalo)
+  // 🔁 Sync automático
   useAutoSync();
 
   useEffect(() => {
     async function init() {
-      // 🧪 Operación de ejemplo (solo para esta etapa)
       const operacionEjemplo = {
         id: "op_2025_07_001",
         proveedor: "GIVA",
         activo: "3 theremas + sillón",
         estado: "EN_CHILE",
-
-        finanzas: {
-          moneda: "USD",
-          adelanto: 18376,
-          saldo: 5513,
-          totalTransferido: 12863,
-          swiftEnviado: true,
-          fechaSwift: "2025-07-30",
-        },
-
-        logistica: {
-          fechaPedido: "2025-07-15",
-          fechaSalidaOrigen: "2025-07-22",
-          fechaLlegadaChile: "2025-08-05",
-          fechaEntregaCliente: null,
-        },
-
-        documentos: {
-          invoice: { recibido: true },
-          packingList: { recibido: true },
-          certificadoOrigen: { recibido: false },
-          bl: { recibido: true },
-        },
-
-        despachante: {
-          despachoLiberado: false,
-        },
-
         observaciones: "Se envió el SWIFT al proveedor",
       };
 
-      // 👉 upsert local (genera outbox si corresponde)
       await upsertOperacionLocal(operacionEjemplo);
-
-      // 👉 leer operaciones locales
       const ops = await getOperacionesLocal();
       setOperaciones(ops);
-
-      // 🧪 debug outbox (temporal)
-      const outbox = await dbLocal.outbox.toArray();
-      console.log("OUTBOX:", outbox);
     }
 
     init().catch(console.error);
   }, []);
 
   return (
-    <div style={{ padding: 24, fontFamily: "sans-serif" }}>
-      <h1>Sistema de Importaciones</h1>
+    <section className="operaciones-page">
+      <header className="operaciones-header">
+        <h1>Operaciones</h1>
+        <p>Seguimiento integral de importaciones activas</p>
+      </header>
 
-      <h2>Operaciones locales</h2>
+      <KPIs operaciones={operaciones} />
 
-      <pre
-        style={{
-          background: "#f4f4f4",
-          padding: 16,
-          borderRadius: 6,
-          maxWidth: 900,
-          overflowX: "auto",
-        }}
-      >
-        {JSON.stringify(operaciones, null, 2)}
-      </pre>
-    </div>
+      <section className="operaciones-list-header">
+  <h2>Operaciones activas</h2>
+  <p>Operaciones en curso o con acciones pendientes</p>
+</section>
+
+
+
+      <div className="operaciones-grid">
+        {operaciones.map((op) => (
+          <div key={op.id} className="operacion-card">
+            <div className="card-header">
+              <strong>{op.proveedor}</strong>
+              <span className={`estado ${op.estado.toLowerCase()}`}>
+                {op.estado.replace("_", " ")}
+              </span>
+            </div>
+
+            <div className="card-body">
+              <p className="activo">{op.activo}</p>
+              <p className="id">ID: {op.id}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
   );
 }
 
-export default operacionesApp;
+export default OperacionesApp;

@@ -1,0 +1,111 @@
+.documentos-page {
+  padding: 24px;
+}
+
+.documentos-header h1 {
+  font-size: 1.6rem;
+  margin-bottom: 4px;
+}
+
+.documentos-header p {
+  color: #64748b;
+  margin-bottom: 20px;
+}
+
+/* =========================
+   FILTROS
+========================= */
+.documentos-filtros {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.documentos-filtros select {
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  font-size: 0.85rem;
+}
+
+/* =========================
+   TABLA
+========================= */
+.documentos-table-wrapper {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.documentos-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.documentos-table th,
+.documentos-table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid #f1f5f9;
+  font-size: 0.85rem;
+  text-align: left;
+}
+
+.documentos-table th {
+  background: #f8fafc;
+  font-weight: 600;
+  color: #334155;
+}
+
+.documentos-table tr:hover {
+  background: #f9fafb;
+}
+
+/* =========================
+   ESTADOS
+========================= */
+.doc-status {
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+.doc-status.pendiente {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.doc-status.ok {
+  background: #dcfce7;
+  color: #166534;
+}
+
+/* =========================
+   BOTÓN LINK
+========================= */
+.btn-link {
+  background: none;
+  border: none;
+  color: #2563eb;
+  cursor: pointer;
+  font-size: 0.8rem;
+}
+
+.btn-link:hover {
+  text-decoration: underline;
+}
+
+/* =========================
+   UTILIDADES
+========================= */
+.mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.8rem;
+}
+
+.empty {
+  text-align: center;
+  color: #94a3b8;
+  padding: 24px;
+}

@@ -1,0 +1,147 @@
+.navbar {
+  height: 64px;
+  width: 100%;
+  background: linear-gradient(90deg, #0f172a, #020617);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 32px;
+  color: white;
+  box-sizing: border-box;
+}
+
+.navbar-left {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+}
+
+.navbar-brand {
+  font-size: 18px;
+  font-weight: 700;
+  color: white;
+}
+
+/* NAV LINKS */
+.nav-link {
+  position: relative;
+  color: rgba(255, 255, 255, 0.75);
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 500;
+  padding: 6px 4px;
+  margin-right: 20px;
+  transition: color 0.2s ease;
+}
+
+.nav-link:hover {
+  color: #ffffff;
+}
+
+/* ACTIVE STATE */
+.nav-link.active {
+  color: #ffffff;
+}
+
+/* underline animado */
+.nav-link::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -6px;
+  width: 0%;
+  height: 2px;
+  background: #8b5cf6; /* violeta moderno */
+  transition: width 0.25s ease;
+  border-radius: 2px;
+}
+
+.nav-link:hover::after {
+  width: 100%;
+}
+
+.nav-link.active::after {
+  width: 100%;
+}
+
+.navbar-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.navbar-user {
+  font-size: 13px;
+  color: #cbd5f5;
+}
+
+.logout-btn {
+  background: transparent;
+  border: 1px solid #334155;
+  color: white;
+  padding: 6px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.logout-btn:hover {
+  background: #1e293b;
+}
+
+/* BRAND LINK */
+.navbar-brand {
+  font-weight: 600;
+  font-size: 1.1rem;
+  color: #ffffff;
+  margin-right: 24px;
+  text-decoration: none;
+}
+
+.navbar-brand:hover {
+  opacity: 0.9;
+}
+
+/* SYNC STATUS */
+.sync-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  padding: 4px 10px;
+  border-radius: 999px;
+  margin-right: 12px;
+}
+
+.sync-status .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+/* STATES */
+.sync-status.online {
+  background: #e6f7ed;
+  color: #15803d;
+}
+
+.sync-status.online .dot {
+  background: #22c55e;
+}
+
+.sync-status.syncing {
+  background: #fff7ed;
+  color: #b45309;
+}
+
+.sync-status.syncing .dot {
+  background: #f59e0b;
+}
+
+.sync-status.offline {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.sync-status.offline .dot {
+  background: #ef4444;
+}

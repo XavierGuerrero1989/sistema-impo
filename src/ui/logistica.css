@@ -1,0 +1,113 @@
+.logistica-page {
+  padding: 24px;
+}
+
+.logistica-header h1 {
+  font-size: 1.6rem;
+  margin-bottom: 4px;
+}
+
+.logistica-header p {
+  color: #64748b;
+  margin-bottom: 24px;
+}
+
+/* =========================
+   TABLA
+========================= */
+.logistica-table-wrapper {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: 32px;
+}
+
+.logistica-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.logistica-table th,
+.logistica-table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid #f1f5f9;
+  font-size: 0.85rem;
+  text-align: left;
+}
+
+.logistica-table th {
+  background: #f8fafc;
+  font-weight: 600;
+  color: #334155;
+}
+
+.logistica-table tr:hover {
+  background: #f9fafb;
+}
+
+.logistica-table select {
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: 1px solid #e5e7eb;
+  font-size: 0.8rem;
+}
+
+/* =========================
+   PIPELINE
+========================= */
+.pipeline-section h3 {
+  margin-bottom: 12px;
+}
+
+.pipeline {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 12px;
+}
+
+.pipeline-col {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 14px;
+  text-align: center;
+}
+
+.pipeline-title {
+  display: block;
+  font-size: 0.75rem;
+  color: #64748b;
+  margin-bottom: 6px;
+}
+
+.pipeline-count {
+  font-size: 1.4rem;
+  font-weight: 600;
+}
+
+/* =========================
+   UTILIDADES
+========================= */
+.mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.8rem;
+}
+
+.btn-link {
+  background: none;
+  border: none;
+  color: #2563eb;
+  cursor: pointer;
+  font-size: 0.8rem;
+}
+
+.btn-link:hover {
+  text-decoration: underline;
+}
+
+.empty {
+  text-align: center;
+  color: #94a3b8;
+  padding: 24px;
+}

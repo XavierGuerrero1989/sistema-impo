@@ -1,0 +1,264 @@
+.operacion-detalle-page {
+  padding: 24px;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.detalle-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.btn-back {
+  background: none;
+  border: none;
+  color: #2563eb;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.op-id {
+  color: #64748b;
+  font-size: 0.85rem;
+}
+
+.detalle-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.detalle-card h3 {
+  margin-bottom: 10px;
+}
+
+/* ===== Finanzas ===== */
+.pago-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.pago-item {
+  background: #f8fafc;
+  border: 1px solid #eef2f7;
+  border-radius: 10px;
+  padding: 12px;
+}
+
+.pago-item .label {
+  display: block;
+  color: #64748b;
+  font-size: 0.8rem;
+  margin-bottom: 6px;
+}
+
+.pago-item .value {
+  font-weight: 700;
+  font-size: 1rem;
+  color: #0f172a;
+}
+
+.value.ok {
+  color: #166534;
+}
+
+.value.pendiente {
+  color: #991b1b;
+}
+
+/* Barra progreso */
+.progress-wrapper {
+  margin-bottom: 14px;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 10px;
+  background: #e5e7eb;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #2563eb, #22c55e);
+  transition: width 0.3s ease;
+}
+
+.progress-text {
+  font-size: 0.75rem;
+  color: #64748b;
+  margin-top: 6px;
+}
+
+/* Adelanto */
+.pago-actions {
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+
+.pago-input {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 220px;
+}
+
+.pago-input label {
+  font-size: 0.8rem;
+  color: #64748b;
+}
+
+.pago-input input {
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  font-size: 0.9rem;
+}
+
+.pago-ok-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+/* Estados */
+.estado-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.estado-actions select {
+  padding: 8px;
+}
+
+/* Botones */
+.btn-primary {
+  background: #2563eb;
+  color: #fff;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.btn-secondary {
+  background: #f1f5f9;
+  border: 1px solid #e5e7eb;
+  padding: 8px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.btn-danger {
+  background: #dc2626;
+  color: #fff;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.badge {
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.badge.ok {
+  background: #dcfce7;
+  color: #166534;
+}
+
+/* Timeline */
+.timeline {
+  list-style: none;
+  padding: 0;
+}
+
+.timeline li {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 0;
+}
+
+.time {
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+.empty {
+  color: #94a3b8;
+  font-size: 0.85rem;
+}
+
+.detalle-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 24px;
+}
+
+.loading {
+  padding: 24px;
+}
+
+/* ===== Documentos ===== */
+.docs-list {
+  list-style: none;
+  padding: 0;
+  margin-bottom: 12px;
+}
+
+.doc-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.doc-meta {
+  display: block;
+  font-size: 0.75rem;
+  color: #64748b;
+  margin-top: 2px;
+}
+
+.doc-status {
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+.doc-status.pendiente {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.doc-status.ok {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.doc-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.doc-actions input,
+.doc-actions select {
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  font-size: 0.85rem;
+}

@@ -1,0 +1,40 @@
+.app-header {
+  height: 60px;
+  background: #1f2937;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  font-family: system-ui, sans-serif;
+}
+
+.header-left {
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.user-email {
+  font-size: 13px;
+  color: #d1d5db;
+}
+
+.header-right button {
+  background: transparent;
+  border: 1px solid #374151;
+  color: white;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.header-right button:hover {
+  background: #374151;
+}
