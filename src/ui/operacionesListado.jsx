@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { getOperacionesLocal } from "../offline/operacionesRepo";
-import "./OperacionesListado.css";
+import "./operacionesListado.css";
 import { useNavigate } from "react-router-dom";
 
 

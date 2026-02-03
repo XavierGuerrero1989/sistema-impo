@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { getOperacionesLocal, upsertOperacionLocal } from "../offline/operacionesRepo";
 import { useNavigate } from "react-router-dom";
-import "./Logistica.css";
+import "./logistica.css";
 
 const ETAPAS = [
   "ORIGEN",

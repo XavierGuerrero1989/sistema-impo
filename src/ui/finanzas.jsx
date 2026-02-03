@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { getOperacionesLocal } from "../offline/operacionesRepo";
-import "./Finanzas.css";
+import "./finanzas.css";
 
 export default function Finanzas() {
   const [operaciones, setOperaciones] = useState([]);

@@ -4,7 +4,7 @@ import {
   getOperacionesLocal,
   upsertOperacionLocal,
 } from "../offline/operacionesRepo";
-import "./OperacionesDetalle.css";
+import "./operacionesDetalle.css";
 
 const ESTADOS = [
   "CREADA",

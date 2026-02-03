@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { getOperacionesLocal } from "../offline/operacionesRepo";
 import { useNavigate } from "react-router-dom";
-import "./Documentos.css";
+import "./documentos.css";
 
 export default function Documentos() {
   const [operaciones, setOperaciones] = useState([]);
