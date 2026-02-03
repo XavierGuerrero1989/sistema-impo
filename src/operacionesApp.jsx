@@ -4,7 +4,7 @@ import {
   getOperacionesLocal,
 } from "./offline/operacionesRepo";
 import { useAutoSync } from "./hooks/useAutoSync";
-import "./OperacionesApp.css";
+import "./operacionesApp.css";
 import KPIs from "../src/ui/KPIs";
 
 
