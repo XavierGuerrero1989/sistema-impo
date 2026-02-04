@@ -11,24 +11,30 @@ export default function Documentos() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    getOperacionesLocal().then(setOperaciones).catch(console.error);
+    getOperacionesLocal()
+      .then(setOperaciones)
+      .catch(console.error);
   }, []);
 
   /* =========================
-     NORMALIZAR DOCUMENTOS
+     NORMALIZAR DOCUMENTOS (ROBUSTO)
   ========================== */
   const documentos = useMemo(() => {
-    return operaciones.flatMap((op) =>
-      (op.documentos || []).map((doc, index) => ({
+    return operaciones.flatMap((op) => {
+      const docs = Array.isArray(op.documentos)
+        ? op.documentos
+        : [];
+
+      return docs.map((doc, index) => ({
         id: `${op.id}_${index}`,
         operacionId: op.id,
         proveedor: op.proveedor,
-        nombre: doc.nombre,
-        tipo: doc.tipo,
-        estado: doc.estado,
-        fecha: doc.fecha,
-      }))
-    );
+        nombre: doc.nombre || "Sin nombre",
+        tipo: doc.tipo || "OTRO",
+        estado: doc.estado || "PENDIENTE",
+        fecha: doc.fecha || null,
+      }));
+    });
   }, [operaciones]);
 
   /* =========================
