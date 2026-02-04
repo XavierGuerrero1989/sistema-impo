@@ -5,7 +5,13 @@ import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 /**
  * Sincroniza la outbox con Firestore
  */
-export async function syncOutbox() {
+export async function syncOutbox(user) {
+  // 🔐 BLOQUEO DURO
+  if (!user) {
+    console.warn("SYNC: abortado, usuario no autenticado");
+    return;
+  }
+
   if (!navigator.onLine) {
     console.log("SYNC: offline, abort");
     return;
@@ -19,14 +25,12 @@ export async function syncOutbox() {
 
   console.log("SYNC: procesando outbox", jobs.length);
 
-  // 1️⃣ Deduplicar por entidad (último gana)
   const byEntity = new Map();
   for (const job of jobs) {
     const key = `${job.entityType}:${job.entityId}`;
     byEntity.set(key, job);
   }
 
-  // 2️⃣ Ejecutar sync por entidad
   for (const job of byEntity.values()) {
     if (job.entityType !== "operacion") continue;
 
@@ -44,14 +48,11 @@ export async function syncOutbox() {
       { merge: true }
     );
 
-    // 3️⃣ Marcar como synced
     await dbLocal.operaciones.update(op.id, {
       dirty: false,
     });
   }
 
-  // 4️⃣ Limpiar outbox
   await dbLocal.outbox.clear();
-
   console.log("SYNC: completo");
 }

@@ -17,7 +17,11 @@ const operacionesRef = collection(db, "operaciones");
 /* =========================
    GUARDAR / UPDATE
 ========================= */
-export async function saveOperacionFirestore(operacion) {
+export async function saveOperacionFirestore(user, operacion) {
+  if (!user) {
+    throw new Error("Usuario no autenticado");
+  }
+
   if (!operacion?.id) {
     throw new Error("La operación debe tener un ID");
   }
@@ -40,7 +44,12 @@ export async function saveOperacionFirestore(operacion) {
 /* =========================
    OBTENER TODAS
 ========================= */
-export async function getOperacionesFirestore() {
+export async function getOperacionesFirestore(user) {
+  if (!user) {
+    console.warn("Firestore read bloqueado: sin usuario");
+    return [];
+  }
+
   const snap = await getDocs(operacionesRef);
 
   return snap.docs.map((d) => ({
@@ -52,7 +61,9 @@ export async function getOperacionesFirestore() {
 /* =========================
    OBTENER UNA
 ========================= */
-export async function getOperacionFirestore(id) {
+export async function getOperacionFirestore(user, id) {
+  if (!user) return null;
+
   const ref = doc(db, "operaciones", id);
   const snap = await getDoc(ref);
 
@@ -64,7 +75,11 @@ export async function getOperacionFirestore(id) {
 /* =========================
    ELIMINAR
 ========================= */
-export async function deleteOperacionFirestore(id) {
+export async function deleteOperacionFirestore(user, id) {
+  if (!user) {
+    throw new Error("Usuario no autenticado");
+  }
+
   const ref = doc(db, "operaciones", id);
   await deleteDoc(ref);
 }

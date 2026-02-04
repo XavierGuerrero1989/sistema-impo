@@ -1,9 +1,12 @@
 import { useEffect } from "react";
+import { useAuth } from "../auth/AuthContext";
+
 import { dbLocal } from "../offline/db";
 import {
   getOperacionByIdLocal,
   markOperacionAsSynced,
 } from "../offline/operacionesRepo";
+
 import {
   saveOperacionFirestore,
   deleteOperacionFirestore,
@@ -11,15 +14,26 @@ import {
 } from "../services/operacionesServices.js";
 
 export function useAutoSync() {
+  const { user } = useAuth();
+
   useEffect(() => {
+    // 🔐 BLOQUEO TOTAL SI NO HAY USUARIO
+    if (!user) {
+      console.log("SYNC detenido: usuario no autenticado");
+      return;
+    }
+
     let syncing = false;
+    let cancelled = false;
 
-    console.log("SYNC corriendo...");
-
+    console.log("SYNC corriendo para user:", user.uid);
 
     async function sync() {
-      if (syncing) return;
+      if (syncing || cancelled) return;
       syncing = true;
+
+      // 🔔 avisar inicio sync (Navbar)
+      window.dispatchEvent(new Event("sync:start"));
 
       try {
         /* =====================================
@@ -38,12 +52,12 @@ export function useAutoSync() {
             const localOp = await getOperacionByIdLocal(entityId);
             if (!localOp) continue;
 
-            await saveOperacionFirestore(localOp);
+            await saveOperacionFirestore(user, localOp);
             await markOperacionAsSynced(entityId);
           }
 
           if (op === "delete") {
-            await deleteOperacionFirestore(entityId);
+            await deleteOperacionFirestore(user, entityId);
           }
 
           // 👉 solo se borra si salió bien
@@ -53,7 +67,7 @@ export function useAutoSync() {
         /* =====================================
            2️⃣ BAJAR CAMBIOS DESDE FIRESTORE
         ====================================== */
-        const remotas = await getOperacionesFirestore();
+        const remotas = await getOperacionesFirestore(user);
 
         for (const remoto of remotas) {
           const local = await getOperacionByIdLocal(remoto.id);
@@ -77,15 +91,21 @@ export function useAutoSync() {
         console.error("SYNC ERROR:", err);
       } finally {
         syncing = false;
+
+        // 🔔 avisar fin sync
+        window.dispatchEvent(new Event("sync:end"));
       }
     }
 
-    // correr al montar
+    // ▶️ correr al autenticarse
     sync();
 
-    // repetir cada 15s
+    // 🔁 repetir cada 15s
     const interval = setInterval(sync, 15000);
 
-    return () => clearInterval(interval);
-  }, []);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, [user]); // 👈 CLAVE
 }
