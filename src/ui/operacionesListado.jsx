@@ -3,7 +3,6 @@ import { getOperacionesLocal } from "../offline/operacionesRepo";
 import "./operacionesListado.css";
 import { useNavigate } from "react-router-dom";
 
-
 const ESTADOS = [
   "CREADA",
   "EN_TRANSITO",
@@ -18,7 +17,6 @@ export default function OperacionesListado() {
   const [estadoFiltro, setEstadoFiltro] = useState("ALL");
   const [search, setSearch] = useState("");
   const navigate = useNavigate();
-
 
   useEffect(() => {
     getOperacionesLocal().then(setOperaciones).catch(console.error);
@@ -39,22 +37,28 @@ export default function OperacionesListado() {
     });
   }, [operaciones, estadoFiltro, search]);
 
+  const money = (n, moneda = "USD") =>
+    new Intl.NumberFormat("es-AR", {
+      style: "currency",
+      currency: moneda,
+      maximumFractionDigits: 0,
+    }).format(Number(n || 0));
+
   return (
     <section className="operaciones-listado-page">
       <header className="listado-header">
-  <div>
-    <h1>Operaciones</h1>
-    <p>Listado completo y gestión de operaciones de importación</p>
-  </div>
+        <div>
+          <h1>Operaciones</h1>
+          <p>Listado completo y gestión de operaciones de importación</p>
+        </div>
 
-  <button
-    className="btn-primary"
-    onClick={() => navigate("/operaciones/nueva")}
-  >
-    + Nueva operación
-  </button>
-</header>
-
+        <button
+          className="btn-primary"
+          onClick={() => navigate("/operaciones/nueva")}
+        >
+          + Nueva operación
+        </button>
+      </header>
 
       {/* Filtros */}
       <div className="filtros-bar">
@@ -87,7 +91,7 @@ export default function OperacionesListado() {
               <th>Proveedor</th>
               <th>Activo</th>
               <th>Estado</th>
-              <th>Pago adelanto</th>
+              <th>Finanzas</th>
               <th>Acciones</th>
             </tr>
           </thead>
@@ -101,39 +105,72 @@ export default function OperacionesListado() {
               </tr>
             )}
 
-            {operacionesFiltradas.map((op) => (
-              <tr key={op.id}>
-                <td className="mono">{op.id}</td>
-                <td>{op.proveedor}</td>
-                <td>{op.activo}</td>
+            {operacionesFiltradas.map((op) => {
+              const adelantos = (op.adelantos || []).filter(
+                (a) => a.estado === "ACTIVO"
+              );
+              const pagos = (op.pagos || []).filter(
+                (p) => p.estado === "ACTIVO"
+              );
 
-                <td>
-                  <span className={`estado-badge ${op.estado.toLowerCase()}`}>
-                    {op.estado.replace("_", " ")}
-                  </span>
-                </td>
+              const totalPagado = [...adelantos, ...pagos].reduce(
+                (acc, m) => acc + Number(m.monto || 0),
+                0
+              );
 
-                <td>
-                  <span
-                    className={`pago-badge ${
-                      op.pagoAdelanto ? "ok" : "pendiente"
-                    }`}
-                  >
-                    {op.pagoAdelanto ? "Confirmado" : "Pendiente"}
-                  </span>
-                </td>
+              const total = Number(op.totalOperacion || 0);
+              const saldo = Math.max(0, total - totalPagado);
+              const moneda = op.moneda || "USD";
 
-                <td>
-                  <button
-                    className="btn-ver"
-                    onClick={() => navigate(`/operaciones/${op.id}`)}
+              const estadoPago =
+                totalPagado === 0
+                  ? "pendiente"
+                  : saldo === 0
+                  ? "ok"
+                  : "parcial";
+
+              return (
+                <tr key={op.id}>
+                  <td className="mono">{op.id}</td>
+                  <td>{op.proveedor}</td>
+                  <td>{op.activo}</td>
+
+                  <td>
+                    <span className={`estado-badge ${op.estado.toLowerCase()}`}>
+                      {op.estado.replace("_", " ")}
+                    </span>
+                  </td>
+
+                  <td>
+                    <div className="finanzas-mini">
+                      <span className={`pago-badge ${estadoPago}`}>
+                        {adelantos.length > 0
+                          ? "Adelanto OK"
+                          : "Sin adelanto"}
+                      </span>
+                      <small>
+                        {money(totalPagado, moneda)} /{" "}
+                        {money(total, moneda)}
+                      </small>
+                      <small className="saldo">
+                        Saldo: {money(saldo, moneda)}
+                      </small>
+                    </div>
+                  </td>
+
+                  <td>
+                    <button
+                      className="btn-ver"
+                      onClick={() =>
+                        navigate(`/operaciones/${op.id}`)
+                      }
                     >
-                    Ver
+                      Ver
                     </button>
-
-                </td>
-              </tr>
-            ))}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>

@@ -9,6 +9,7 @@ export default function CrearOperacion() {
   const [form, setForm] = useState({
     id: "",
     proveedor: "",
+    clienteId: "",
     activo: "",
     moneda: "USD",
     totalOperacion: "",
@@ -28,18 +29,26 @@ export default function CrearOperacion() {
     const nuevaOperacion = {
       id: form.id,
       proveedor: form.proveedor,
+      clienteId: form.clienteId || null,
       activo: form.activo,
       moneda: form.moneda,
       totalOperacion: Number(form.totalOperacion || 0),
+
       estado: "CREADA",
-      adelantoMonto: 0,
+
+      // Finanzas (modelo nuevo)
+      adelantos: [],
+      pagos: [],
+
       documentos: [],
+
       historial: [
         {
           fecha: new Date().toISOString(),
           evento: "Operación creada",
         },
       ],
+
       observaciones: form.observaciones,
       createdAt: new Date().toISOString(),
     };
@@ -72,6 +81,16 @@ export default function CrearOperacion() {
             name="proveedor"
             placeholder="GIVA"
             value={form.proveedor}
+            onChange={onChange}
+          />
+        </div>
+
+        <div className="form-group">
+          <label>Cliente ID</label>
+          <input
+            name="clienteId"
+            placeholder="cliente_001"
+            value={form.clienteId}
             onChange={onChange}
           />
         </div>

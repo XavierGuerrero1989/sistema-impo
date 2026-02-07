@@ -1,14 +1,21 @@
+/* ===============================
+   Layout general
+================================ */
 .operacion-detalle-page {
   padding: 24px;
   max-width: 1100px;
   margin: 0 auto;
 }
 
+/* ===============================
+   Header
+================================ */
 .detalle-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 24px;
+  gap: 16px;
 }
 
 .btn-back {
@@ -17,63 +24,76 @@
   color: #2563eb;
   cursor: pointer;
   font-size: 0.9rem;
+  padding: 0;
 }
 
 .op-id {
   color: #64748b;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
 }
 
+/* Badge estado operación */
+.estado-badge {
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  background: #f1f5f9;
+  color: #334155;
+  white-space: nowrap;
+}
+
+/* ===============================
+   Cards
+================================ */
 .detalle-card {
-  background: #fff;
-  border-radius: 12px;
-  padding: 16px;
-  margin-bottom: 16px;
+  background: #ffffff;
+  border-radius: 14px;
+  padding: 18px;
+  margin-bottom: 18px;
+  border: 1px solid #eef2f7;
 }
 
 .detalle-card h3 {
-  margin-bottom: 10px;
-}
-
-/* ===== Finanzas ===== */
-.pago-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
   margin-bottom: 14px;
-}
-
-.pago-item {
-  background: #f8fafc;
-  border: 1px solid #eef2f7;
-  border-radius: 10px;
-  padding: 12px;
-}
-
-.pago-item .label {
-  display: block;
-  color: #64748b;
-  font-size: 0.8rem;
-  margin-bottom: 6px;
-}
-
-.pago-item .value {
-  font-weight: 700;
   font-size: 1rem;
   color: #0f172a;
 }
 
-.value.ok {
-  color: #166534;
+/* ===============================
+   Finanzas
+================================ */
+.pago-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 16px;
 }
 
-.value.pendiente {
-  color: #991b1b;
+.pago-grid > div {
+  background: #f8fafc;
+  border: 1px solid #eef2f7;
+  border-radius: 12px;
+  padding: 14px;
 }
 
-/* Barra progreso */
+.pago-grid span {
+  display: block;
+  font-size: 0.75rem;
+  color: #64748b;
+  margin-bottom: 6px;
+}
+
+.pago-grid strong {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+/* Progreso */
 .progress-wrapper {
-  margin-bottom: 14px;
+  margin-bottom: 16px;
 }
 
 .progress-bar {
@@ -90,95 +110,165 @@
   transition: width 0.3s ease;
 }
 
-.progress-text {
+.progress-wrapper span {
+  display: block;
   font-size: 0.75rem;
   color: #64748b;
   margin-top: 6px;
 }
 
-/* Adelanto */
+/* Acciones de pago */
 .pago-actions {
   display: flex;
-  gap: 12px;
-  align-items: flex-end;
+  gap: 10px;
   flex-wrap: wrap;
+  margin-bottom: 12px;
 }
 
-.pago-input {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  min-width: 220px;
-}
-
-.pago-input label {
-  font-size: 0.8rem;
-  color: #64748b;
-}
-
-.pago-input input {
+.pago-actions select,
+.pago-actions input {
   padding: 8px 10px;
   border-radius: 8px;
   border: 1px solid #e5e7eb;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
+  background: #fff;
 }
 
-.pago-ok-row {
+.pago-actions input[type="number"],
+.pago-actions input[type="date"] {
+  max-width: 160px;
+}
+
+.pago-line {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  font-size: 0.85rem;
+  border-bottom: 1px dashed #e5e7eb;
+}
+
+.pago-line button {
+  background: none;
+  border: none;
+  color: #dc2626;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+/* ===============================
+   Estado operación
+================================ */
+.estado-actions {
   display: flex;
   gap: 12px;
   align-items: center;
 }
 
-/* Estados */
-.estado-actions {
-  display: flex;
-  gap: 12px;
-}
-
 .estado-actions select {
-  padding: 8px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  font-size: 0.85rem;
 }
 
-/* Botones */
+/* ===============================
+   Botones
+================================ */
 .btn-primary {
   background: #2563eb;
-  color: #fff;
+  color: #ffffff;
   border: none;
-  padding: 8px 14px;
-  border-radius: 6px;
+  padding: 8px 16px;
+  border-radius: 8px;
   cursor: pointer;
+  font-size: 0.85rem;
 }
 
 .btn-secondary {
   background: #f1f5f9;
   border: 1px solid #e5e7eb;
-  padding: 8px 14px;
-  border-radius: 6px;
+  padding: 8px 16px;
+  border-radius: 8px;
   cursor: pointer;
+  font-size: 0.85rem;
 }
 
 .btn-danger {
   background: #dc2626;
-  color: #fff;
+  color: #ffffff;
   border: none;
-  padding: 10px 16px;
+  padding: 8px 14px;
   border-radius: 8px;
   cursor: pointer;
+  font-size: 0.8rem;
 }
 
-.badge {
-  padding: 6px 10px;
-  border-radius: 999px;
+/* Botón link (descargar / eliminar) */
+.btn-link {
+  background: none;
+  border: none;
+  padding: 0;
   font-size: 0.75rem;
-  font-weight: 600;
+  cursor: pointer;
+  color: #2563eb;
+  text-decoration: underline;
 }
 
-.badge.ok {
-  background: #dcfce7;
-  color: #166534;
+.btn-link.danger {
+  color: #dc2626;
 }
 
-/* Timeline */
+/* ===============================
+   Documentos
+================================ */
+.docs-list {
+  list-style: none;
+  padding: 0;
+  margin-bottom: 12px;
+}
+
+.docs-list li {
+  padding: 10px 0;
+  border-bottom: 1px solid #f1f5f9;
+  font-size: 0.85rem;
+}
+
+/* Fila documento con acciones */
+.doc-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.doc-left {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+}
+
+.doc-right {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+/* Inputs documentos */
+.detalle-card input,
+.detalle-card select {
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  font-size: 0.85rem;
+  margin-right: 6px;
+  margin-bottom: 6px;
+}
+
+/* ===============================
+   Timeline / Historial
+================================ */
 .timeline {
   list-style: none;
   padding: 0;
@@ -187,78 +277,26 @@
 .timeline li {
   display: flex;
   justify-content: space-between;
+  gap: 12px;
   padding: 6px 0;
+  font-size: 0.8rem;
 }
 
 .time {
-  font-size: 0.75rem;
   color: #64748b;
+  white-space: nowrap;
 }
 
+/* ===============================
+   Estados generales
+================================ */
 .empty {
   color: #94a3b8;
   font-size: 0.85rem;
 }
 
-.detalle-actions {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 24px;
-}
-
 .loading {
   padding: 24px;
-}
-
-/* ===== Documentos ===== */
-.docs-list {
-  list-style: none;
-  padding: 0;
-  margin-bottom: 12px;
-}
-
-.doc-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 8px 0;
-  border-bottom: 1px solid #f1f5f9;
-}
-
-.doc-meta {
-  display: block;
-  font-size: 0.75rem;
+  text-align: center;
   color: #64748b;
-  margin-top: 2px;
-}
-
-.doc-status {
-  padding: 4px 8px;
-  border-radius: 999px;
-  font-size: 0.7rem;
-  font-weight: 600;
-}
-
-.doc-status.pendiente {
-  background: #fee2e2;
-  color: #991b1b;
-}
-
-.doc-status.ok {
-  background: #dcfce7;
-  color: #166534;
-}
-
-.doc-actions {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.doc-actions input,
-.doc-actions select {
-  padding: 8px;
-  border-radius: 8px;
-  border: 1px solid #e5e7eb;
-  font-size: 0.85rem;
 }
