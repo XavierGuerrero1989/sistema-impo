@@ -3,24 +3,24 @@ import { useParams, useNavigate } from "react-router-dom";
 import {
   getOperacionesLocal,
   upsertOperacionLocal,
+  deleteOperacionLocal,
 } from "../offline/operacionesRepo";
 import { storage } from "../firebase/firebase";
-import {
-  ref,
-  uploadBytes,
-  getDownloadURL,
-  deleteObject,
-} from "firebase/storage";
+import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import "./operacionesDetalle.css";
 
 const ESTADOS = [
-  "CREADA",
+  "PLANIFICADA",
+  "CARGADA",
   "EN_TRANSITO",
-  "EN_CHILE",
-  "DOCS_PENDIENTES",
-  "PAGOS_PENDIENTES",
-  "FINALIZADA",
+  "ARRIBADA",
+  "EN_DESPACHO",
+  "ENTREGADA",
+  "BLOQUEADA",
 ];
+
+// “Ruta” / medio de transporte (alineado con Logística)
+const MEDIOS = ["MARÍTIMO", "TERRESTRE", "AÉREO"];
 
 export default function OperacionDetalle() {
   const { id } = useParams();
@@ -28,6 +28,16 @@ export default function OperacionDetalle() {
 
   const [operacion, setOperacion] = useState(null);
   const [nuevoEstado, setNuevoEstado] = useState("");
+
+  /* ===== LOGÍSTICA (para el bloque de Estado) ===== */
+  const [origen, setOrigen] = useState("");
+  const [destino, setDestino] = useState("");
+  const [medio, setMedio] = useState("MARÍTIMO"); // “ruta”
+  const [fechaSalida, setFechaSalida] = useState("");
+  const [eta, setEta] = useState("");
+  const [fechaArribo, setFechaArribo] = useState("");
+  const [deposito, setDeposito] = useState("");
+  const [etaLiberacion, setEtaLiberacion] = useState("");
 
   /* ===== Finanzas ===== */
   const [montoInput, setMontoInput] = useState("");
@@ -51,6 +61,19 @@ export default function OperacionDetalle() {
       const op = ops.find((o) => o.id === id);
       setOperacion(op || null);
       setNuevoEstado(op?.estado || "");
+
+      // hidratar logística (si existe)
+      const l = op?.logistica || {};
+      setOrigen(l.origen || "");
+      setDestino(l.destino || "");
+      setMedio(l.medio || "MARÍTIMO");
+      setFechaSalida(l.fechaSalida ? String(l.fechaSalida).slice(0, 10) : "");
+      setEta(l.eta ? String(l.eta).slice(0, 10) : "");
+      setFechaArribo(l.fechaArribo ? String(l.fechaArribo).slice(0, 10) : "");
+      setDeposito(l.deposito || "");
+      setEtaLiberacion(
+        l.etaLiberacion ? String(l.etaLiberacion).slice(0, 10) : ""
+      );
     }
     load().catch(console.error);
   }, [id]);
@@ -235,11 +258,27 @@ export default function OperacionDetalle() {
     }
   };
 
-  /* ===== Estado ===== */
+  /* ===== Estado =====
+     (MISMA FUNCIÓN "cambiarEstado" para no “perder funciones”)
+     + ahora también guarda logística / ruta según estado
+  ===== */
   const cambiarEstado = async () => {
+    const logistica = {
+      ...(operacion.logistica || {}),
+      origen: origen || null,
+      destino: destino || null,
+      medio: medio || "MARÍTIMO",
+      fechaSalida: fechaSalida || null,
+      eta: eta || null,
+      fechaArribo: fechaArribo || null,
+      deposito: deposito || null,
+      etaLiberacion: etaLiberacion || null,
+    };
+
     const updated = {
       ...operacion,
       estado: nuevoEstado,
+      logistica,
       historial: [
         ...(operacion.historial || []),
         {
@@ -251,6 +290,23 @@ export default function OperacionDetalle() {
 
     await upsertOperacionLocal(updated);
     setOperacion(updated);
+  };
+
+  /* ===== NUEVO: ELIMINAR OPERACIÓN ===== */
+  const eliminarOperacion = async () => {
+    const ok = window.confirm(
+      `⚠️ Vas a eliminar la operación "${operacion.id}".\n` +
+        `Esto la borra del sistema local.\n\n¿Confirmás?`
+    );
+    if (!ok) return;
+
+    try {
+      await deleteOperacionLocal(operacion.id);
+      navigate("/operaciones"); // ajustá la ruta si tu listado principal es otra
+    } catch (e) {
+      console.error(e);
+      alert("Error eliminando la operación");
+    }
   };
 
   /* ===== Render ===== */
@@ -362,7 +418,7 @@ export default function OperacionDetalle() {
         ))}
       </section>
 
-      {/* Estado */}
+      {/* ===== ESTADO DE LA OPERACIÓN ===== */}
       <section className="detalle-card">
         <h3>Estado de la operación</h3>
 
@@ -378,10 +434,83 @@ export default function OperacionDetalle() {
             ))}
           </select>
 
+          <div className="inline-group">
+            <span className="mini-label">Ruta / Medio de transporte</span>
+            <select value={medio} onChange={(e) => setMedio(e.target.value)}>
+              {MEDIOS.map((m) => (
+                <option key={m} value={m}>
+                  {m}
+                </option>
+              ))}
+            </select>
+          </div>
+
           <button className="btn-secondary" onClick={cambiarEstado}>
             Actualizar estado
           </button>
         </div>
+
+        <div className="estado-actions" style={{ marginTop: 12 }}>
+          <input
+            type="text"
+            placeholder="Origen"
+            value={origen}
+            onChange={(e) => setOrigen(e.target.value)}
+          />
+        </div>
+
+        {nuevoEstado === "EN_TRANSITO" && (
+          <div className="estado-actions" style={{ marginTop: 12 }}>
+            <div className="inline-group">
+              <span className="mini-label">Fecha de salida</span>
+              <input
+                type="date"
+                value={fechaSalida}
+                onChange={(e) => setFechaSalida(e.target.value)}
+              />
+            </div>
+
+            <div className="inline-group">
+              <span className="mini-label">
+                ETA (fecha estimada de arribo)
+              </span>
+              <input
+                type="date"
+                value={eta}
+                onChange={(e) => setEta(e.target.value)}
+              />
+            </div>
+          </div>
+        )}
+
+        {nuevoEstado === "ARRIBADA" && (
+          <div className="estado-actions" style={{ marginTop: 12 }}>
+            <div className="inline-group">
+              <span className="mini-label">Fecha de arribo</span>
+              <input
+                type="date"
+                value={fechaArribo}
+                onChange={(e) => setFechaArribo(e.target.value)}
+              />
+            </div>
+
+            <input
+              type="text"
+              placeholder="Depósito"
+              value={deposito}
+              onChange={(e) => setDeposito(e.target.value)}
+            />
+
+            <div className="inline-group">
+              <span className="mini-label">ETA liberación</span>
+              <input
+                type="date"
+                value={etaLiberacion}
+                onChange={(e) => setEtaLiberacion(e.target.value)}
+              />
+            </div>
+          </div>
+        )}
       </section>
 
       {/* Documentos */}
@@ -462,6 +591,18 @@ export default function OperacionDetalle() {
           disabled={subiendoDoc}
         >
           {subiendoDoc ? "Subiendo..." : "Agregar documento"}
+        </button>
+      </section>
+
+      {/* ===== NUEVO: ZONA PELIGROSA (ELIMINAR OPERACIÓN) ===== */}
+      <section className="detalle-card danger-zone">
+
+        <h3 style={{ color: "#dc2626" }}>Zona peligrosa</h3>
+        <p className="op-id" style={{ marginTop: 0 }}>
+          Esto elimina la operación del almacenamiento local del sistema.
+        </p>
+        <button className="btn-danger" onClick={eliminarOperacion}>
+          🗑 Eliminar operación
         </button>
       </section>
 

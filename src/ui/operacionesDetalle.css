@@ -157,19 +157,37 @@
 }
 
 /* ===============================
-   Estado operación
+   Estado operación / Logística
 ================================ */
 .estado-actions {
   display: flex;
   gap: 12px;
   align-items: center;
+  flex-wrap: wrap;
 }
 
-.estado-actions select {
+.estado-actions select,
+.estado-actions input {
   padding: 8px 10px;
   border-radius: 8px;
   border: 1px solid #e5e7eb;
   font-size: 0.85rem;
+  background: #fff;
+}
+
+/* Grupo vertical */
+.inline-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* Mini label */
+.mini-label {
+  font-size: 0.7rem;
+  color: #64748b;
+  font-weight: 500;
+  line-height: 1;
 }
 
 /* ===============================
@@ -198,13 +216,18 @@
   background: #dc2626;
   color: #ffffff;
   border: none;
-  padding: 8px 14px;
-  border-radius: 8px;
+  padding: 9px 16px;
+  border-radius: 10px;
   cursor: pointer;
-  font-size: 0.8rem;
+  font-size: 0.85rem;
+  font-weight: 600;
 }
 
-/* Botón link (descargar / eliminar) */
+.btn-danger:hover {
+  background: #b91c1c;
+}
+
+/* Botón link */
 .btn-link {
   background: none;
   border: none;
@@ -234,7 +257,6 @@
   font-size: 0.85rem;
 }
 
-/* Fila documento con acciones */
 .doc-row {
   display: flex;
   justify-content: space-between;
@@ -255,15 +277,22 @@
   align-items: center;
 }
 
-/* Inputs documentos */
-.detalle-card input,
-.detalle-card select {
-  padding: 8px 10px;
-  border-radius: 8px;
-  border: 1px solid #e5e7eb;
-  font-size: 0.85rem;
-  margin-right: 6px;
+/* ===============================
+   ZONA PELIGROSA – Eliminar operación
+================================ */
+.detalle-card.danger-zone {
+  border: 1px dashed #fecaca;
+  background: #fff5f5;
+}
+
+.detalle-card.danger-zone h3 {
+  color: #b91c1c;
   margin-bottom: 6px;
+}
+
+.detalle-card.danger-zone .op-id {
+  color: #7f1d1d;
+  margin-bottom: 12px;
 }
 
 /* ===============================

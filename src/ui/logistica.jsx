@@ -3,17 +3,24 @@ import { getOperacionesLocal, upsertOperacionLocal } from "../offline/operacione
 import { useNavigate } from "react-router-dom";
 import "./logistica.css";
 
+/* =========================
+   ETAPAS NORMALIZADAS
+========================== */
 const ETAPAS = [
-  "ORIGEN",
-  "EMBARCADO",
+  "PLANIFICADA",
+  "CARGADA",
   "EN_TRANSITO",
-  "ARRIBO_PUERTO",
-  "EN_DEPOSITO",
-  "LIBERADO",
+  "ARRIBADA",
+  "EN_DESPACHO",
+  "ENTREGADA",
+  "BLOQUEADA",
 ];
+
+const ETAPA_LABEL = (e) => e.replace("_", " ");
 
 export default function Logistica() {
   const [operaciones, setOperaciones] = useState([]);
+  const [filtroEtapa, setFiltroEtapa] = useState("TODAS");
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -21,20 +28,76 @@ export default function Logistica() {
   }, []);
 
   /* =========================
-     NORMALIZAR LOGÍSTICA
+     NORMALIZAR ITEMS
   ========================== */
   const items = useMemo(() => {
-    return operaciones.map((op) => ({
-      id: op.id,
-      proveedor: op.proveedor,
-      activo: op.activo,
-      etapa: op.logistica?.etapa || "ORIGEN",
-      eta: op.logistica?.eta || null,
-      origen: op.logistica?.origen || "-",
-      destino: op.logistica?.destino || "-",
-      medio: op.logistica?.medio || "MARÍTIMO",
-    }));
+    return operaciones.map((op) => {
+      const etapa = op.logistica?.etapa || "PLANIFICADA";
+
+      // ✅ ETA CORRECTA: fecha estimada de arribo
+      const eta = op.logistica?.eta
+        ? new Date(`${op.logistica.eta}T00:00:00`)
+        : null;
+
+      const hoy = new Date();
+      hoy.setHours(0, 0, 0, 0);
+
+      let alerta = null;
+
+      if (etapa === "BLOQUEADA") {
+        alerta = "BLOQUEADA";
+      } else if (etapa === "EN_TRANSITO" && !eta) {
+        alerta = "SIN_ETA";
+      } else if (
+        etapa === "EN_TRANSITO" &&
+        eta &&
+        eta < hoy
+      ) {
+        alerta = "ETA_VENCIDA";
+      }
+
+      return {
+        id: op.id,
+        proveedor: op.proveedor,
+        activo: op.activo,
+        origen: op.logistica?.origen || "-",
+        destino: op.logistica?.destino || "-",
+        medio: op.logistica?.medio || "MARÍTIMO",
+        etapa,
+        eta,
+        alerta,
+      };
+    });
   }, [operaciones]);
+
+  /* =========================
+     KPIs
+  ========================== */
+  const kpis = useMemo(() => {
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+
+    return {
+      enTransito: items.filter((i) => i.etapa === "EN_TRANSITO").length,
+      conAlertas: items.filter((i) => i.alerta).length,
+      proximos: items.filter(
+        (i) =>
+          i.etapa === "EN_TRANSITO" &&
+          i.eta &&
+          (i.eta - hoy) / (1000 * 60 * 60 * 24) <= 7 &&
+          i.eta >= hoy
+      ).length,
+      bloqueadas: items.filter((i) => i.etapa === "BLOQUEADA").length,
+    };
+  }, [items]);
+
+  /* =========================
+     FILTRADO
+  ========================== */
+  const visibles = useMemo(() => {
+    if (filtroEtapa === "TODAS") return items;
+    return items.filter((i) => i.etapa === filtroEtapa);
+  }, [items, filtroEtapa]);
 
   /* =========================
      CAMBIAR ETAPA
@@ -53,7 +116,7 @@ export default function Logistica() {
         ...(op.historial || []),
         {
           fecha: new Date().toISOString(),
-          evento: `Logística: etapa cambiada a ${nuevaEtapa.replace("_", " ")}`,
+          evento: `Logística: etapa cambiada a ${ETAPA_LABEL(nuevaEtapa)}`,
         },
       ],
     };
@@ -65,72 +128,117 @@ export default function Logistica() {
   };
 
   return (
-    <section className="logistica-page">
+    <section className="log-page">
       {/* Header */}
-      <header className="logistica-header">
-        <h1>Logística</h1>
-        <p>Seguimiento físico de las operaciones</p>
+      <header className="log-header">
+        <div>
+          <h1>Logística</h1>
+          <p>Seguimiento físico y operativo de las operaciones</p>
+        </div>
       </header>
 
-      {/* Tabla logística */}
-      <div className="logistica-table-wrapper">
-        <table className="logistica-table">
+      {/* KPIs */}
+      <div className="log-kpis">
+        <div className="log-kpi" onClick={() => setFiltroEtapa("EN_TRANSITO")}>
+          <span>En tránsito</span>
+          <strong>{kpis.enTransito}</strong>
+        </div>
+
+        <div className="log-kpi warn" onClick={() => setFiltroEtapa("TODAS")}>
+          <span>Con alertas</span>
+          <strong>{kpis.conAlertas}</strong>
+        </div>
+
+        <div className="log-kpi ok" onClick={() => setFiltroEtapa("TODAS")}>
+          <span>Próximos arribos (7 días)</span>
+          <strong>{kpis.proximos}</strong>
+        </div>
+
+        <div className="log-kpi alert" onClick={() => setFiltroEtapa("BLOQUEADA")}>
+          <span>Bloqueadas</span>
+          <strong>{kpis.bloqueadas}</strong>
+        </div>
+      </div>
+
+      {/* Pipeline */}
+      <section className="log-pipeline">
+        {ETAPAS.map((e) => (
+          <button
+            key={e}
+            className={`log-pipe ${filtroEtapa === e ? "active" : ""}`}
+            onClick={() => setFiltroEtapa(e)}
+          >
+            <span>{ETAPA_LABEL(e)}</span>
+            <strong>{items.filter((i) => i.etapa === e).length}</strong>
+          </button>
+        ))}
+      </section>
+
+      {/* Tabla */}
+      <div className="log-table-wrap">
+        <table className="log-table">
           <thead>
             <tr>
               <th>Operación</th>
               <th>Proveedor</th>
-              <th>Activo</th>
-              <th>Origen</th>
-              <th>Destino</th>
-              <th>Medio</th>
-              <th>Etapa</th>
+              <th>Ruta</th>
+              <th>Estado</th>
               <th>ETA</th>
+              <th>Alerta</th>
               <th></th>
             </tr>
           </thead>
 
           <tbody>
-            {items.length === 0 && (
+            {visibles.length === 0 && (
               <tr>
-                <td colSpan="9" className="empty">
+                <td colSpan="7" className="log-empty">
                   No hay operaciones logísticas
                 </td>
               </tr>
             )}
 
-            {items.map((item) => (
-              <tr key={item.id}>
-                <td className="mono">{item.id}</td>
-                <td>{item.proveedor}</td>
-                <td>{item.activo}</td>
-                <td>{item.origen}</td>
-                <td>{item.destino}</td>
-                <td>{item.medio}</td>
+            {visibles.map((i) => (
+              <tr key={i.id}>
+                <td className="mono">{i.id}</td>
+                <td>{i.proveedor}</td>
+                <td>
+                  {i.origen} → {i.destino}
+                </td>
                 <td>
                   <select
-                    value={item.etapa}
-                    onChange={(e) =>
-                      cambiarEtapa(item.id, e.target.value)
-                    }
+                    value={i.etapa}
+                    onChange={(e) => cambiarEtapa(i.id, e.target.value)}
                   >
                     {ETAPAS.map((e) => (
                       <option key={e} value={e}>
-                        {e.replace("_", " ")}
+                        {ETAPA_LABEL(e)}
                       </option>
                     ))}
                   </select>
                 </td>
                 <td>
-                  {item.eta
-                    ? new Date(item.eta).toLocaleDateString()
-                    : "-"}
+                  {i.eta ? (
+                    i.eta.toLocaleDateString()
+                  ) : (
+                    <span className="muted">–</span>
+                  )}
+                </td>
+                <td>
+                  {i.alerta ? (
+                    <span className={`log-alert ${i.alerta.toLowerCase()}`}>
+                      {i.alerta.replace("_", " ")}
+                    </span>
+                  ) : (
+                    <span className="muted">OK</span>
+                  )}
                 </td>
                 <td>
                   <button
-                    className="btn-link"
-                    onClick={() => navigate(`/operaciones/${item.id}`)}
+                    className="log-link"
+                    onClick={() => navigate(`/operaciones/${i.id}`)}
                   >
-                    Ver operación
+                    Ver
                   </button>
                 </td>
               </tr>
@@ -138,27 +246,6 @@ export default function Logistica() {
           </tbody>
         </table>
       </div>
-
-      {/* Pipeline visual */}
-      <section className="pipeline-section">
-        <h3>Pipeline logístico</h3>
-
-        <div className="pipeline">
-          {ETAPAS.map((etapa) => (
-            <div key={etapa} className="pipeline-col">
-              <span className="pipeline-title">
-                {etapa.replace("_", " ")}
-              </span>
-
-              <span className="pipeline-count">
-                {
-                  items.filter((i) => i.etapa === etapa).length
-                }
-              </span>
-            </div>
-          ))}
-        </div>
-      </section>
     </section>
   );
 }

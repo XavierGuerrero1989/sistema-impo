@@ -1,82 +1,175 @@
+/* =========================
+   PAGE
+========================= */
 .operaciones-page {
-  min-height: calc(100vh - 64px);
-  background: #f3f4f6;
-  padding: 32px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
-.operaciones-header {
-  margin-bottom: 32px;
-}
-
+/* =========================
+   HEADER
+========================= */
 .operaciones-header h1 {
-  font-size: 32px;
-  margin-bottom: 6px;
-  color: #0f172a;
+  font-size: 22px;
+  margin: 0;
 }
 
 .operaciones-header p {
-  color: #6b7280;
+  margin-top: 6px;
+  font-size: 13px;
+  opacity: 0.7;
 }
 
+/* =========================
+   FILTERS
+========================= */
+.op-filters {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.op-filter {
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(255,255,255,0.04);
+  cursor: pointer;
+  font-size: 12px;
+  transition: all .15s ease;
+}
+
+.op-filter:hover {
+  background: rgba(255,255,255,0.08);
+}
+
+.op-filter.active {
+  background: rgba(120,160,255,0.25);
+  border-color: rgba(120,160,255,0.4);
+}
+
+/* =========================
+   GRID
+========================= */
 .operaciones-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 24px;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 14px;
 }
 
+/* =========================
+   CARD
+========================= */
 .operacion-card {
-  background: white;
-  border-radius: 12px;
-  padding: 20px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.04);
-  transition: transform 0.15s ease;
+  border-radius: 18px;
+  padding: 14px;
+  cursor: pointer;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: linear-gradient(
+    180deg,
+    rgba(255,255,255,0.06),
+    rgba(255,255,255,0.02)
+  );
+  transition: transform .15s ease, background .15s ease;
+  position: relative;
 }
 
 .operacion-card:hover {
   transform: translateY(-2px);
+  background: rgba(255,255,255,0.08);
 }
 
 .card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
 }
 
-.estado {
-  font-size: 12px;
-  padding: 4px 10px;
-  border-radius: 999px;
-  font-weight: 500;
+.card-body {
+  margin-top: 10px;
 }
 
-.estado.en_chile {
-  background: #dbeafe;
-  color: #1d4ed8;
-}
-
-.card-body .activo {
-  font-weight: 500;
+.activo {
+  font-size: 13px;
   margin-bottom: 6px;
 }
 
-.card-body .id {
-  font-size: 12px;
-  color: #6b7280;
+.id {
+  font-size: 11px;
+  opacity: 0.6;
 }
 
-.operaciones-list-header {
-  margin: 32px 0 16px;
+/* =========================
+   ESTADOS
+========================= */
+.estado-badge {
+  font-size: 10px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-weight: 700;
 }
 
-.operaciones-list-header h2 {
-  font-size: 1.2rem;
-  font-weight: 600;
-  color: #0f172a;
+.estado-badge.en_transito {
+  background: rgba(100,180,255,0.25);
+  color: #b6dcff;
 }
 
-.operaciones-list-header p {
-  font-size: 0.9rem;
-  color: #64748b;
-  margin-top: 4px;
+.estado-badge.arribada {
+  background: rgba(255,200,120,0.25);
+  color: #ffe2b0;
+}
+
+.estado-badge.en_despacho {
+  background: rgba(255,160,120,0.25);
+  color: #ffd0b0;
+}
+
+.estado-badge.bloqueada {
+  background: rgba(255,100,100,0.3);
+  color: #ffb4b4;
+}
+
+.estado-badge.entregada {
+  background: rgba(120,255,180,0.25);
+  color: #c8ffe4;
+}
+
+/* =========================
+   ALERTAS
+========================= */
+.alerta {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 6px 10px;
+  border-radius: 999px;
+}
+
+.alerta.sin_eta {
+  background: rgba(255,200,80,0.25);
+  color: #ffe08a;
+}
+
+.alerta.eta_vencida {
+  background: rgba(255,120,160,0.3);
+  color: #ffb0cc;
+}
+
+.alerta.bloqueada {
+  background: rgba(255,80,80,0.35);
+  color: #ffbaba;
+}
+
+/* =========================
+   EMPTY
+========================= */
+.op-empty {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 40px;
+  opacity: 0.6;
 }
