@@ -263,34 +263,41 @@ export default function OperacionDetalle() {
      + ahora también guarda logística / ruta según estado
   ===== */
   const cambiarEstado = async () => {
-    const logistica = {
-      ...(operacion.logistica || {}),
-      origen: origen || null,
-      destino: destino || null,
-      medio: medio || "MARÍTIMO",
-      fechaSalida: fechaSalida || null,
-      eta: eta || null,
-      fechaArribo: fechaArribo || null,
-      deposito: deposito || null,
-      etaLiberacion: etaLiberacion || null,
-    };
 
-    const updated = {
-      ...operacion,
-      estado: nuevoEstado,
-      logistica,
-      historial: [
-        ...(operacion.historial || []),
-        {
-          fecha: new Date().toISOString(),
-          evento: `Estado cambiado a ${nuevoEstado}`,
-        },
-      ],
-    };
+  if (nuevoEstado === operacion.estado) {
+    alert("El estado ya es ese.");
+    return;
+  }
 
-    await upsertOperacionLocal(updated);
-    setOperacion(updated);
+  const logistica = {
+    ...(operacion.logistica || {}),
+    origen: origen || null,
+    destino: destino || null,
+    medio: medio || "MARÍTIMO",
+    fechaSalida: fechaSalida || null,
+    eta: eta || null,
+    fechaArribo: fechaArribo || null,
+    deposito: deposito || null,
+    etaLiberacion: etaLiberacion || null,
   };
+
+  const updated = {
+    ...operacion,
+    estado: nuevoEstado,
+    logistica,
+    historial: [
+      ...(operacion.historial || []),
+      {
+        fecha: new Date().toISOString(),
+        evento: `Estado cambiado a ${nuevoEstado}`,
+      },
+    ],
+  };
+
+  await upsertOperacionLocal(updated);
+  setOperacion(updated);
+  setNuevoEstado(nuevoEstado); // mantener sincronizado
+};
 
   /* ===== NUEVO: ELIMINAR OPERACIÓN ===== */
   const eliminarOperacion = async () => {
@@ -324,10 +331,33 @@ export default function OperacionDetalle() {
           <p className="op-id">Cliente ID: {operacion.clienteId || "-"}</p>
         </div>
 
+        <div className="inline-group">
+  <span className="mini-label">Moneda</span>
+  <select
+    value={operacion.moneda || "USD"}
+    onChange={async (e) => {
+      const updated = {
+        ...operacion,
+        moneda: e.target.value,
+      };
+
+      await upsertOperacionLocal(updated);
+      setOperacion(updated);
+    }}
+  >
+    <option value="USD">USD</option>
+    <option value="EUR">EUR</option>
+  </select>
+</div>
+
         <span className={`estado-badge ${operacion.estado.toLowerCase()}`}>
           {operacion.estado.replace("_", " ")}
         </span>
+
+        
       </div>
+
+
 
       {/* Finanzas */}
       <section className="detalle-card">
@@ -421,6 +451,12 @@ export default function OperacionDetalle() {
       {/* ===== ESTADO DE LA OPERACIÓN ===== */}
       <section className="detalle-card">
         <h3>Estado de la operación</h3>
+
+        <div className="estado-actual">
+          <div><strong>Estado:</strong> {operacion.estado?.replace("_"," ")}</div>
+          <div><strong>Vía:</strong> {operacion.logistica?.medio || "-"}</div>
+          <div><strong>Origen:</strong> {operacion.logistica?.origen || "-"}</div>
+        </div>
 
         <div className="estado-actions">
           <select
@@ -554,44 +590,57 @@ export default function OperacionDetalle() {
           ))}
         </ul>
 
-        <input
-          placeholder="Nombre"
-          value={docNombre}
-          onChange={(e) => setDocNombre(e.target.value)}
-        />
+        <div className="doc-form">
 
-        <select value={docTipo} onChange={(e) => setDocTipo(e.target.value)}>
-          <option value="FACTURA">Factura</option>
-          <option value="BL">B/L</option>
-          <option value="PACKING_LIST">Packing List</option>
-          <option value="OTRO">Otro</option>
-        </select>
+  <input
+    placeholder="Nombre"
+    value={docNombre}
+    onChange={(e) => setDocNombre(e.target.value)}
+  />
 
-        <input
-          placeholder={
-            docTipo === "FACTURA"
-              ? "Número de factura"
-              : docTipo === "BL"
-              ? "Número BL"
-              : "Referencia"
-          }
-          value={docRef}
-          onChange={(e) => setDocRef(e.target.value)}
-        />
+  <select value={docTipo} onChange={(e) => setDocTipo(e.target.value)}>
+    <option value="FACTURA">Factura comercial</option>
+    <option value="PROFORMA">Factura proforma</option>
+    <option value="BL">B/L</option>
+    <option value="PACKING_LIST">Packing List</option>
+    <option value="SWIFT">Swift</option>
+    <option value="TRANSFERENCIA">Comprobante transferencia</option>
+    <option value="DECLARACION_IMPORTACION">Declaración de importación</option>
+    <option value="OTRO">Otro</option>
+  </select>
 
-        <input
-          type="file"
-          accept="application/pdf"
-          onChange={(e) => setDocFile(e.target.files[0] || null)}
-        />
+  <input
+    placeholder={
+  docTipo === "FACTURA" || docTipo === "PROFORMA"
+    ? "Número de factura"
+    : docTipo === "BL"
+    ? "Número BL"
+    : docTipo === "SWIFT"
+    ? "Código SWIFT"
+    : docTipo === "TRANSFERENCIA"
+    ? "N° transferencia"
+    : "Referencia"
+}
+    value={docRef}
+    onChange={(e) => setDocRef(e.target.value)}
+  />
 
-        <button
-          className="btn-secondary"
-          onClick={agregarDocumento}
-          disabled={subiendoDoc}
-        >
-          {subiendoDoc ? "Subiendo..." : "Agregar documento"}
-        </button>
+  <input
+    className="file-input"
+    type="file"
+    accept="application/pdf"
+    onChange={(e) => setDocFile(e.target.files[0] || null)}
+  />
+
+  <button
+    className="btn-secondary"
+    onClick={agregarDocumento}
+    disabled={subiendoDoc}
+  >
+    {subiendoDoc ? "Subiendo..." : "Agregar documento"}
+  </button>
+
+</div>
       </section>
 
       {/* ===== NUEVO: ZONA PELIGROSA (ELIMINAR OPERACIÓN) ===== */}

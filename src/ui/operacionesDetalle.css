@@ -329,3 +329,44 @@
   text-align: center;
   color: #64748b;
 }
+
+
+.estado-actual{
+  display:flex;
+  gap:24px;
+  margin-bottom:12px;
+  font-size:14px;
+  color:#334155;
+}
+
+.estado-actual strong{
+  color:#0f172a;
+}
+
+.doc-form{
+  display:flex;
+  gap:12px;
+  align-items:center;
+  margin-top:12px;
+  flex-wrap:wrap;
+}
+
+.doc-form input,
+.doc-form select{
+  padding:8px 10px;
+  border:1px solid #cbd5e1;
+  border-radius:6px;
+  font-size:14px;
+}
+
+.doc-form input{
+  min-width:160px;
+}
+
+.doc-form select{
+  min-width:140px;
+}
+
+.file-input{
+  max-width:220px;
+}

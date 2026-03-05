@@ -8,8 +8,8 @@ export default function Finanzas() {
   // UI
   const [q, setQ] = useState("");
   const [estadoSaldo, setEstadoSaldo] = useState("TODAS"); // TODAS | PENDIENTE | OK
-  const [moneda, setMoneda] = useState("TODAS");
-  const [banco, setBanco] = useState("TODOS");
+  const [moneda, setMoneda] = useState("TODAS"); // TODAS | USD | EUR | ...
+  const [banco, setBanco] = useState("TODOS"); // TODOS | bancoX
   const [orden, setOrden] = useState("SALDO_DESC"); // SALDO_DESC | TOTAL_DESC | PROVEEDOR_ASC | PROGRESO_ASC
 
   useEffect(() => {
@@ -73,8 +73,8 @@ export default function Finanzas() {
       const total = Number(op.totalOperacion || 0);
       const movs = getMovimientosFromOp(op);
 
-      let pagadoActivo = 0;       // adelantos + pagos ACTIVO
-      let adelantosActivos = 0;   // solo adelantos ACTIVO
+      let pagadoActivo = 0; // adelantos + pagos ACTIVO
+      let adelantosActivos = 0; // solo adelantos ACTIVO
 
       movs.forEach((m) => {
         const monto = Number(m.monto || 0);
@@ -138,7 +138,8 @@ export default function Finanzas() {
   }, [rows]);
 
   /* =========================
-     MÉTRICAS GLOBALES (coherentes)
+     MÉTRICAS GLOBALES (REFERENCIALES)
+     (no mezclamos monedas en "conversión", solo suma)
   ========================== */
   const resumen = useMemo(() => {
     let total = 0;
@@ -150,7 +151,7 @@ export default function Finanzas() {
     rows.forEach((r) => {
       total += r._total;
       adelantos += r._adelantos; // ✅ adelantos ACTIVO
-      pagado += r._pagado;       // ✅ pagado ACTIVO (adelantos + pagos)
+      pagado += r._pagado; // ✅ pagado ACTIVO (adelantos + pagos)
       pendiente += r._saldo;
       if (r._saldo > 0) conPendiente++;
     });
@@ -160,16 +161,18 @@ export default function Finanzas() {
 
   /* =========================
      RESUMEN POR MONEDA (operaciones)
+     -> esto es lo que te diferencia USD vs EUR sin eliminar nada
   ========================== */
   const porMoneda = useMemo(() => {
     const acc = new Map();
 
     rows.forEach((r) => {
       const key = r._moneda || "USD";
-      const prev = acc.get(key) || { total: 0, pagado: 0, pendiente: 0 };
+      const prev = acc.get(key) || { total: 0, pagado: 0, pendiente: 0, ops: 0 };
       prev.total += r._total;
       prev.pagado += r._pagado;
       prev.pendiente += r._saldo;
+      prev.ops += 1;
       acc.set(key, prev);
     });
 
@@ -335,7 +338,43 @@ export default function Finanzas() {
         </div>
       </header>
 
-      {/* KPIs financieros */}
+      {/* =========================
+          NUEVO: Totales por moneda (SIN BORRAR lo viejo)
+      ========================== */}
+      {porMoneda.length > 0 && (
+        <div className="fin-multi-currency">
+          <div className="fin-section-title">
+            <span className="fin-warn-ico">⚠</span>
+            <h3>Totales en múltiples monedas</h3>
+          </div>
+
+          {porMoneda.map((m) => (
+            <div key={m.moneda} className="fin-kpis">
+              <div className="fin-kpi">
+                <span>Total operaciones ({m.moneda})</span>
+                <strong>{money(m.total, m.moneda)}</strong>
+                <small>{m.ops} operación(es)</small>
+              </div>
+
+              <div className="fin-kpi ok">
+                <span>Pagado ({m.moneda})</span>
+                <strong>{money(m.pagado, m.moneda)}</strong>
+                <small>Adelantos + pagos (ACTIVO)</small>
+              </div>
+
+              <div className="fin-kpi warn">
+                <span>Pendiente ({m.moneda})</span>
+                <strong>{money(m.pendiente, m.moneda)}</strong>
+                <small>Total - pagado activo</small>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* =========================
+          KPIs financieros (LOS DE ANTES - referenciales)
+      ========================== */}
       <div className="fin-kpis">
         <div className="fin-kpi">
           <span>Total de operaciones</span>
@@ -362,7 +401,9 @@ export default function Finanzas() {
         </div>
       </div>
 
-      {/* KPIs bancos */}
+      {/* =========================
+          KPIs bancos (LOS DE ANTES)
+      ========================== */}
       <div className="fin-kpis">
         <div className="fin-kpi">
           <span>Bancos utilizados</span>
@@ -374,7 +415,9 @@ export default function Finanzas() {
           <span>Banco principal</span>
           <strong>{bankStats.topBanco?.banco || "-"}</strong>
           <small>
-            {bankStats.topBanco ? `${money(bankStats.topBanco.totalActivo, "USD")} (volumen)` : "—"}
+            {bankStats.topBanco
+              ? `${money(bankStats.topBanco.totalActivo, "USD")} (volumen)`
+              : "—"}
           </small>
         </div>
 
@@ -391,7 +434,9 @@ export default function Finanzas() {
         </div>
       </div>
 
-      {/* Resumen por moneda */}
+      {/* =========================
+          Resumen por moneda (strip de antes)
+      ========================== */}
       {porMoneda.length > 0 && (
         <div className="fin-currency-strip">
           {porMoneda.map((m) => (
@@ -410,7 +455,9 @@ export default function Finanzas() {
         </div>
       )}
 
-      {/* Panel bancos (ranking clickable) */}
+      {/* =========================
+          Panel bancos (ranking clickable) (EL DE ANTES)
+      ========================== */}
       <div className="fin-bank-panel">
         <div className="fin-bank-head">
           <div>
@@ -458,7 +505,9 @@ export default function Finanzas() {
         </div>
       </div>
 
-      {/* Toolbar */}
+      {/* =========================
+          Toolbar (la de antes: búsqueda + filtros)
+      ========================== */}
       <div className="fin-toolbar">
         <div className="fin-search">
           <span className="fin-search-ico">⌕</span>
@@ -501,7 +550,9 @@ export default function Finanzas() {
         </div>
       </div>
 
-      {/* Tabla financiera (operaciones) */}
+      {/* =========================
+          Tabla financiera (la de antes)
+      ========================== */}
       <div className="fin-table-wrap">
         <table className="fin-table">
           <thead>

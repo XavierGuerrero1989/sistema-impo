@@ -34,7 +34,7 @@ export default function CrearOperacion() {
       moneda: form.moneda,
       totalOperacion: Number(form.totalOperacion || 0),
 
-      estado: "CREADA",
+      estado: "PLANIFICADA",
 
       // Finanzas (modelo nuevo)
       adelantos: [],
