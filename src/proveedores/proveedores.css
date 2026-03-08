@@ -1,0 +1,117 @@
+/* ===============================
+   Layout general
+================================ */
+.proveedores-page {
+  padding: 24px;
+}
+
+/* ===============================
+   Header
+================================ */
+.proveedores-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.proveedores-header h1 {
+  font-size: 1.6rem;
+  color: #0f172a;
+}
+
+.proveedores-header p {
+  color: #64748b;
+  font-size: 0.9rem;
+}
+
+/* ===============================
+   Botón nuevo proveedor
+================================ */
+.btn-nuevo {
+  background: #2563eb;
+  color: white;
+  border: none;
+  padding: 10px 16px;
+  font-size: 0.85rem;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.btn-nuevo:hover {
+  background: #1d4ed8;
+}
+
+/* ===============================
+   Tabla card
+================================ */
+.proveedores-table-card {
+  background: white;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  overflow: hidden;
+}
+
+/* ===============================
+   Tabla
+================================ */
+.proveedores-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.proveedores-table thead {
+  background: #f8fafc;
+}
+
+.proveedores-table th {
+  text-align: left;
+  font-size: 0.8rem;
+  color: #475569;
+  font-weight: 600;
+  padding: 12px 14px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.proveedores-table td {
+  padding: 12px 14px;
+  font-size: 0.9rem;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+/* ===============================
+   Hover filas
+================================ */
+.proveedores-row {
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.proveedores-row:hover {
+  background: #f8fafc;
+}
+
+/* ===============================
+   ID proveedor badge
+================================ */
+.proveedor-id {
+  font-weight: 600;
+  color: #2563eb;
+}
+
+/* ===============================
+   País
+================================ */
+.proveedor-pais {
+  color: #64748b;
+  font-size: 0.85rem;
+}
+
+/* ===============================
+   Sin resultados
+================================ */
+.no-data {
+  text-align: center;
+  padding: 40px;
+  color: #64748b;
+}

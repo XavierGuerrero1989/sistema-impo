@@ -8,6 +8,7 @@ import {
 import { storage } from "../firebase/firebase";
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import "./operacionesDetalle.css";
+import { auditEvent } from "../auth/audit";
 
 const ESTADOS = [
   "PLANIFICADA",
@@ -40,6 +41,8 @@ export default function OperacionDetalle() {
   const [etaLiberacion, setEtaLiberacion] = useState("");
 
   /* ===== Finanzas ===== */
+  const [editandoTotal, setEditandoTotal] = useState(false);
+
   const [montoInput, setMontoInput] = useState("");
   const [instrumentoInput, setInstrumentoInput] = useState("TRANSFERENCIA");
   const [bancoInput, setBancoInput] = useState("");
@@ -55,12 +58,16 @@ export default function OperacionDetalle() {
   const [docFile, setDocFile] = useState(null);
   const [subiendoDoc, setSubiendoDoc] = useState(false);
 
+  const [totalOperacionInput, setTotalOperacionInput] = useState("");
+
   useEffect(() => {
     async function load() {
       const ops = await getOperacionesLocal();
       const op = ops.find((o) => o.id === id);
+
       setOperacion(op || null);
       setNuevoEstado(op?.estado || "");
+      setTotalOperacionInput(op?.totalOperacion || "");
 
       // hidratar logística (si existe)
       const l = op?.logistica || {};
@@ -75,6 +82,7 @@ export default function OperacionDetalle() {
         l.etaLiberacion ? String(l.etaLiberacion).slice(0, 10) : ""
       );
     }
+
     load().catch(console.error);
   }, [id]);
 
@@ -109,6 +117,11 @@ export default function OperacionDetalle() {
 
   /* ===== Finanzas acciones ===== */
   const registrarMovimiento = async () => {
+    if (operacion.estado === "FINALIZADA") {
+      alert("La operación está finalizada. No se pueden registrar movimientos.");
+      return;
+    }
+
     const monto = Number(String(montoInput).replace(",", "."));
     if (!monto || monto <= 0) return alert("Monto inválido");
     if (monto > saldo) return alert("Supera el saldo pendiente");
@@ -130,12 +143,12 @@ export default function OperacionDetalle() {
       [campo]: [...(operacion[campo] || []), nuevo],
       historial: [
         ...(operacion.historial || []),
-        {
-          fecha: new Date().toISOString(),
-          evento: `${tipoPago} registrado: ${money(
-            monto
-          )} · ${instrumentoInput} · ${bancoInput}`,
-        },
+        auditEvent(`${tipoPago} registrado`, {
+          monto,
+          moneda,
+          instrumento: instrumentoInput,
+          banco: bancoInput,
+        }),
       ],
     };
 
@@ -146,6 +159,11 @@ export default function OperacionDetalle() {
   };
 
   const cancelarMovimiento = async (tipo, index) => {
+    if (operacion.estado === "FINALIZADA") {
+      alert("La operación está finalizada. No se pueden cancelar movimientos.");
+      return;
+    }
+
     const updated = {
       ...operacion,
       [tipo]: (operacion[tipo] || []).map((m, i) =>
@@ -153,10 +171,7 @@ export default function OperacionDetalle() {
       ),
       historial: [
         ...(operacion.historial || []),
-        {
-          fecha: new Date().toISOString(),
-          evento: `${tipo === "adelantos" ? "Adelanto" : "Pago"} cancelado`,
-        },
+        auditEvent(`${tipo === "adelantos" ? "Adelanto" : "Pago"} cancelado`),
       ],
     };
 
@@ -166,6 +181,11 @@ export default function OperacionDetalle() {
 
   /* ===== Documentos (sube a Storage + guarda URL) ===== */
   const agregarDocumento = async () => {
+    if (operacion.estado === "FINALIZADA") {
+      alert("La operación está finalizada. No se pueden agregar documentos.");
+      return;
+    }
+
     if (!docNombre.trim()) return alert("Nombre requerido");
     if (!docFile) return alert("Adjuntá el PDF del documento");
     if (docFile.type !== "application/pdf")
@@ -206,10 +226,10 @@ export default function OperacionDetalle() {
         documentos: [...(operacion.documentos || []), nuevoDoc],
         historial: [
           ...(operacion.historial || []),
-          {
-            fecha: new Date().toISOString(),
-            evento: `Documento agregado: ${docNombre} (PDF)`,
-          },
+          auditEvent("Documento agregado", {
+            nombre: docNombre,
+            tipo: docTipo,
+          }),
         ],
       };
 
@@ -227,6 +247,11 @@ export default function OperacionDetalle() {
   };
 
   const eliminarDocumento = async (index) => {
+    if (operacion.estado === "FINALIZADA") {
+      alert("La operación está finalizada. No se pueden eliminar documentos.");
+      return;
+    }
+
     const doc = (operacion.documentos || [])[index];
     if (!doc) return;
 
@@ -243,10 +268,9 @@ export default function OperacionDetalle() {
         documentos: (operacion.documentos || []).filter((_, i) => i !== index),
         historial: [
           ...(operacion.historial || []),
-          {
-            fecha: new Date().toISOString(),
-            evento: `Documento eliminado: ${doc.nombre}`,
-          },
+          auditEvent("Documento eliminado", {
+            nombre: doc.nombre,
+          }),
         ],
       };
 
@@ -259,47 +283,111 @@ export default function OperacionDetalle() {
   };
 
   /* ===== Estado =====
-     (MISMA FUNCIÓN "cambiarEstado" para no “perder funciones”)
-     + ahora también guarda logística / ruta según estado
+     + guarda logística / ruta según estado
   ===== */
   const cambiarEstado = async () => {
+    if (operacion.estado === "FINALIZADA") {
+      alert("La operación ya está finalizada.");
+      return;
+    }
 
-  if (nuevoEstado === operacion.estado) {
-    alert("El estado ya es ese.");
-    return;
-  }
+    if (nuevoEstado === operacion.estado) {
+      alert("El estado ya es ese.");
+      return;
+    }
 
-  const logistica = {
-    ...(operacion.logistica || {}),
-    origen: origen || null,
-    destino: destino || null,
-    medio: medio || "MARÍTIMO",
-    fechaSalida: fechaSalida || null,
-    eta: eta || null,
-    fechaArribo: fechaArribo || null,
-    deposito: deposito || null,
-    etaLiberacion: etaLiberacion || null,
+    const logistica = {
+      ...(operacion.logistica || {}),
+      origen: origen || null,
+      destino: destino || null,
+      medio: medio || "MARÍTIMO",
+      fechaSalida: fechaSalida || null,
+      eta: eta || null,
+      fechaArribo: fechaArribo || null,
+      deposito: deposito || null,
+      etaLiberacion: etaLiberacion || null,
+    };
+
+    const updated = {
+      ...operacion,
+      estado: nuevoEstado,
+      logistica,
+      historial: [
+        ...(operacion.historial || []),
+        auditEvent("Estado cambiado", {
+          estado: nuevoEstado,
+        }),
+      ],
+    };
+
+    await upsertOperacionLocal(updated);
+    setOperacion(updated);
+    setNuevoEstado(nuevoEstado);
   };
 
-  const updated = {
-    ...operacion,
-    estado: nuevoEstado,
-    logistica,
-    historial: [
-      ...(operacion.historial || []),
-      {
-        fecha: new Date().toISOString(),
-        evento: `Estado cambiado a ${nuevoEstado}`,
-      },
-    ],
+  const actualizarTotalOperacion = async () => {
+    if (operacion.estado === "FINALIZADA") {
+      alert("La operación está finalizada. No se puede modificar el total.");
+      return;
+    }
+
+    const nuevoTotal = Number(String(totalOperacionInput).replace(",", "."));
+
+    if (nuevoTotal < 0) {
+      alert("Monto inválido");
+      return;
+    }
+
+    if (nuevoTotal < totalPagado) {
+      alert("El monto total no puede ser menor al ya pagado");
+      return;
+    }
+
+    const updated = {
+      ...operacion,
+      totalOperacion: nuevoTotal,
+      historial: [
+        ...(operacion.historial || []),
+        auditEvent("Monto total actualizado", {
+          montoAnterior: operacion.totalOperacion || 0,
+          montoNuevo: nuevoTotal,
+          moneda: operacion.moneda || "USD",
+        }),
+      ],
+    };
+
+    await upsertOperacionLocal(updated);
+    setOperacion(updated);
   };
 
-  await upsertOperacionLocal(updated);
-  setOperacion(updated);
-  setNuevoEstado(nuevoEstado); // mantener sincronizado
-};
+  /* ===== FINALIZAR OPERACIÓN ===== */
+  const finalizarOperacion = async () => {
+    if (operacion.estado === "FINALIZADA") {
+      alert("La operación ya está finalizada.");
+      return;
+    }
 
-  /* ===== NUEVO: ELIMINAR OPERACIÓN ===== */
+    const confirmar = window.confirm(
+      "¿Seguro que deseas finalizar esta operación?"
+    );
+    if (!confirmar) return;
+
+    const updated = {
+      ...operacion,
+      estado: "FINALIZADA",
+      fechaFinalizacion: new Date().toISOString(),
+      historial: [
+        ...(operacion.historial || []),
+        auditEvent("Operación finalizada"),
+      ],
+    };
+
+    await upsertOperacionLocal(updated);
+    setOperacion(updated);
+    setNuevoEstado("FINALIZADA");
+  };
+
+  /* ===== ELIMINAR OPERACIÓN ===== */
   const eliminarOperacion = async () => {
     const ok = window.confirm(
       `⚠️ Vas a eliminar la operación "${operacion.id}".\n` +
@@ -308,8 +396,17 @@ export default function OperacionDetalle() {
     if (!ok) return;
 
     try {
+      const updated = {
+        ...operacion,
+        historial: [
+          ...(operacion.historial || []),
+          auditEvent("Operación eliminada"),
+        ],
+      };
+
+      await upsertOperacionLocal(updated);
       await deleteOperacionLocal(operacion.id);
-      navigate("/operaciones"); // ajustá la ruta si tu listado principal es otra
+      navigate("/operaciones");
     } catch (e) {
       console.error(e);
       alert("Error eliminando la operación");
@@ -326,42 +423,101 @@ export default function OperacionDetalle() {
         </button>
 
         <div>
-          <h1>{operacion.proveedor}</h1>
+          <h1>{operacion.proveedorNombre || operacion.proveedor || "-"}</h1>
           <p className="op-id">ID {operacion.id}</p>
-          <p className="op-id">Cliente ID: {operacion.clienteId || "-"}</p>
+          <p className="op-id">Proveedor ID: {operacion.proveedorId || "-"}</p>
         </div>
 
         <div className="inline-group">
-  <span className="mini-label">Moneda</span>
-  <select
-    value={operacion.moneda || "USD"}
-    onChange={async (e) => {
-      const updated = {
-        ...operacion,
-        moneda: e.target.value,
-      };
+          <span className="mini-label">Moneda</span>
+          <select
+            value={operacion.moneda || "USD"}
+            disabled={operacion.estado === "FINALIZADA"}
+            onChange={async (e) => {
+              if (operacion.estado === "FINALIZADA") {
+                alert("La operación está finalizada. No se puede modificar la moneda.");
+                return;
+              }
 
-      await upsertOperacionLocal(updated);
-      setOperacion(updated);
-    }}
-  >
-    <option value="USD">USD</option>
-    <option value="EUR">EUR</option>
-  </select>
-</div>
+              const nuevaMoneda = e.target.value;
 
-        <span className={`estado-badge ${operacion.estado.toLowerCase()}`}>
-          {operacion.estado.replace("_", " ")}
+              const updated = {
+                ...operacion,
+                moneda: nuevaMoneda,
+                historial: [
+                  ...(operacion.historial || []),
+                  auditEvent("Moneda modificada", {
+                    moneda: nuevaMoneda,
+                  }),
+                ],
+              };
+
+              await upsertOperacionLocal(updated);
+              setOperacion(updated);
+            }}
+          >
+            <option value="USD">USD</option>
+            <option value="EUR">EUR</option>
+          </select>
+        </div>
+
+        <span className={`estado-badge ${String(operacion.estado || "").toLowerCase()}`}>
+          {String(operacion.estado || "").replace("_", " ")}
         </span>
-
-        
       </div>
-
-
 
       {/* Finanzas */}
       <section className="detalle-card">
         <h3>Estado financiero</h3>
+
+        <div className="total-operacion">
+          <span className="mini-label">Total operación</span>
+
+          {!editandoTotal ? (
+            <div className="total-view">
+              <strong className="total-amount">
+                {money(totalOperacionInput || 0)}
+              </strong>
+
+              {operacion.estado !== "FINALIZADA" && (
+                <button
+                  className="btn-link"
+                  onClick={() => setEditandoTotal(true)}
+                >
+                  Editar
+                </button>
+              )}
+            </div>
+          ) : (
+            <div className="total-edit">
+              <input
+                type="number"
+                value={totalOperacionInput}
+                onChange={(e) => setTotalOperacionInput(e.target.value)}
+              />
+
+              <button
+                className="btn-secondary"
+                onClick={async () => {
+                  await actualizarTotalOperacion();
+                  setEditandoTotal(false);
+                }}
+              >
+                Guardar
+              </button>
+
+              <button
+                className="btn-link"
+                onClick={() => {
+                  setEditandoTotal(false);
+                  setTotalOperacionInput(operacion.totalOperacion || "");
+                }}
+              >
+                Cancelar
+              </button>
+            </div>
+          )}
+        </div>
 
         <div className="pago-grid">
           <div>
@@ -386,7 +542,11 @@ export default function OperacionDetalle() {
         </div>
 
         <div className="pago-actions">
-          <select value={tipoPago} onChange={(e) => setTipoPago(e.target.value)}>
+          <select
+            value={tipoPago}
+            disabled={operacion.estado === "FINALIZADA"}
+            onChange={(e) => setTipoPago(e.target.value)}
+          >
             <option value="ADELANTO">Adelanto</option>
             <option value="PAGO">Pago parcial</option>
           </select>
@@ -395,17 +555,20 @@ export default function OperacionDetalle() {
             type="number"
             placeholder="Monto"
             value={montoInput}
+            disabled={operacion.estado === "FINALIZADA"}
             onChange={(e) => setMontoInput(e.target.value)}
           />
 
           <input
             type="date"
             value={fechaInput}
+            disabled={operacion.estado === "FINALIZADA"}
             onChange={(e) => setFechaInput(e.target.value)}
           />
 
           <select
             value={instrumentoInput}
+            disabled={operacion.estado === "FINALIZADA"}
             onChange={(e) => setInstrumentoInput(e.target.value)}
           >
             <option>TRANSFERENCIA</option>
@@ -417,10 +580,15 @@ export default function OperacionDetalle() {
             type="text"
             placeholder="Banco"
             value={bancoInput}
+            disabled={operacion.estado === "FINALIZADA"}
             onChange={(e) => setBancoInput(e.target.value)}
           />
 
-          <button className="btn-primary" onClick={registrarMovimiento}>
+          <button
+            className="btn-primary"
+            onClick={registrarMovimiento}
+            disabled={operacion.estado === "FINALIZADA"}
+          >
             Registrar
           </button>
         </div>
@@ -428,7 +596,7 @@ export default function OperacionDetalle() {
         {(operacion.adelantos || []).map((a, i) => (
           <div key={i} className="pago-line">
             Adelanto {money(a.monto)} · {a.instrumento} · {a.banco}
-            {a.estado === "ACTIVO" && (
+            {a.estado === "ACTIVO" && operacion.estado !== "FINALIZADA" && (
               <button onClick={() => cancelarMovimiento("adelantos", i)}>
                 Cancelar
               </button>
@@ -439,7 +607,7 @@ export default function OperacionDetalle() {
         {(operacion.pagos || []).map((p, i) => (
           <div key={i} className="pago-line">
             Pago {money(p.monto)} · {p.instrumento} · {p.banco}
-            {p.estado === "ACTIVO" && (
+            {p.estado === "ACTIVO" && operacion.estado !== "FINALIZADA" && (
               <button onClick={() => cancelarMovimiento("pagos", i)}>
                 Cancelar
               </button>
@@ -452,16 +620,31 @@ export default function OperacionDetalle() {
       <section className="detalle-card">
         <h3>Estado de la operación</h3>
 
+        {operacion.estado === "FINALIZADA" && (
+          <div className="operacion-finalizada">
+            ✔ Operación finalizada el{" "}
+            {new Date(operacion.fechaFinalizacion).toLocaleDateString()}
+          </div>
+        )}
+
         <div className="estado-actual">
-          <div><strong>Estado:</strong> {operacion.estado?.replace("_"," ")}</div>
-          <div><strong>Vía:</strong> {operacion.logistica?.medio || "-"}</div>
-          <div><strong>Origen:</strong> {operacion.logistica?.origen || "-"}</div>
+          <div>
+            <strong>Estado:</strong>{" "}
+            {operacion.estado?.replace("_", " ")}
+          </div>
+          <div>
+            <strong>Vía:</strong> {operacion.logistica?.medio || "-"}
+          </div>
+          <div>
+            <strong>Origen:</strong> {operacion.logistica?.origen || "-"}
+          </div>
         </div>
 
         <div className="estado-actions">
           <select
             value={nuevoEstado}
             onChange={(e) => setNuevoEstado(e.target.value)}
+            disabled={operacion.estado === "FINALIZADA"}
           >
             {ESTADOS.map((e) => (
               <option key={e} value={e}>
@@ -472,7 +655,11 @@ export default function OperacionDetalle() {
 
           <div className="inline-group">
             <span className="mini-label">Ruta / Medio de transporte</span>
-            <select value={medio} onChange={(e) => setMedio(e.target.value)}>
+            <select
+              value={medio}
+              onChange={(e) => setMedio(e.target.value)}
+              disabled={operacion.estado === "FINALIZADA"}
+            >
               {MEDIOS.map((m) => (
                 <option key={m} value={m}>
                   {m}
@@ -481,7 +668,11 @@ export default function OperacionDetalle() {
             </select>
           </div>
 
-          <button className="btn-secondary" onClick={cambiarEstado}>
+          <button
+            className="btn-secondary"
+            onClick={cambiarEstado}
+            disabled={operacion.estado === "FINALIZADA"}
+          >
             Actualizar estado
           </button>
         </div>
@@ -491,6 +682,7 @@ export default function OperacionDetalle() {
             type="text"
             placeholder="Origen"
             value={origen}
+            disabled={operacion.estado === "FINALIZADA"}
             onChange={(e) => setOrigen(e.target.value)}
           />
         </div>
@@ -502,6 +694,7 @@ export default function OperacionDetalle() {
               <input
                 type="date"
                 value={fechaSalida}
+                disabled={operacion.estado === "FINALIZADA"}
                 onChange={(e) => setFechaSalida(e.target.value)}
               />
             </div>
@@ -513,6 +706,7 @@ export default function OperacionDetalle() {
               <input
                 type="date"
                 value={eta}
+                disabled={operacion.estado === "FINALIZADA"}
                 onChange={(e) => setEta(e.target.value)}
               />
             </div>
@@ -526,6 +720,7 @@ export default function OperacionDetalle() {
               <input
                 type="date"
                 value={fechaArribo}
+                disabled={operacion.estado === "FINALIZADA"}
                 onChange={(e) => setFechaArribo(e.target.value)}
               />
             </div>
@@ -534,6 +729,7 @@ export default function OperacionDetalle() {
               type="text"
               placeholder="Depósito"
               value={deposito}
+              disabled={operacion.estado === "FINALIZADA"}
               onChange={(e) => setDeposito(e.target.value)}
             />
 
@@ -542,9 +738,21 @@ export default function OperacionDetalle() {
               <input
                 type="date"
                 value={etaLiberacion}
+                disabled={operacion.estado === "FINALIZADA"}
                 onChange={(e) => setEtaLiberacion(e.target.value)}
               />
             </div>
+          </div>
+        )}
+
+        {operacion.estado !== "FINALIZADA" && (
+          <div className="estado-actions" style={{ marginTop: 20 }}>
+            <button
+              className="btn-danger"
+              onClick={finalizarOperacion}
+            >
+              Finalizar operación
+            </button>
           </div>
         )}
       </section>
@@ -579,73 +787,79 @@ export default function OperacionDetalle() {
               </div>
 
               <div className="doc-right">
-                <button
-                  className="btn-link danger"
-                  onClick={() => eliminarDocumento(i)}
-                >
-                  Eliminar
-                </button>
+                {operacion.estado !== "FINALIZADA" && (
+                  <button
+                    className="btn-link danger"
+                    onClick={() => eliminarDocumento(i)}
+                  >
+                    Eliminar
+                  </button>
+                )}
               </div>
             </li>
           ))}
         </ul>
 
         <div className="doc-form">
+          <input
+            placeholder="Nombre"
+            value={docNombre}
+            disabled={operacion.estado === "FINALIZADA"}
+            onChange={(e) => setDocNombre(e.target.value)}
+          />
 
-  <input
-    placeholder="Nombre"
-    value={docNombre}
-    onChange={(e) => setDocNombre(e.target.value)}
-  />
+          <select
+            value={docTipo}
+            disabled={operacion.estado === "FINALIZADA"}
+            onChange={(e) => setDocTipo(e.target.value)}
+          >
+            <option value="FACTURA">Factura comercial</option>
+            <option value="PROFORMA">Factura proforma</option>
+            <option value="BL">B/L</option>
+            <option value="PACKING_LIST">Packing List</option>
+            <option value="SWIFT">Swift</option>
+            <option value="TRANSFERENCIA">Comprobante transferencia</option>
+            <option value="DECLARACION_IMPORTACION">Declaración de importación</option>
+            <option value="OTRO">Otro</option>
+          </select>
 
-  <select value={docTipo} onChange={(e) => setDocTipo(e.target.value)}>
-    <option value="FACTURA">Factura comercial</option>
-    <option value="PROFORMA">Factura proforma</option>
-    <option value="BL">B/L</option>
-    <option value="PACKING_LIST">Packing List</option>
-    <option value="SWIFT">Swift</option>
-    <option value="TRANSFERENCIA">Comprobante transferencia</option>
-    <option value="DECLARACION_IMPORTACION">Declaración de importación</option>
-    <option value="OTRO">Otro</option>
-  </select>
+          <input
+            placeholder={
+              docTipo === "FACTURA" || docTipo === "PROFORMA"
+                ? "Número de factura"
+                : docTipo === "BL"
+                ? "Número BL"
+                : docTipo === "SWIFT"
+                ? "Código SWIFT"
+                : docTipo === "TRANSFERENCIA"
+                ? "N° transferencia"
+                : "Referencia"
+            }
+            value={docRef}
+            disabled={operacion.estado === "FINALIZADA"}
+            onChange={(e) => setDocRef(e.target.value)}
+          />
 
-  <input
-    placeholder={
-  docTipo === "FACTURA" || docTipo === "PROFORMA"
-    ? "Número de factura"
-    : docTipo === "BL"
-    ? "Número BL"
-    : docTipo === "SWIFT"
-    ? "Código SWIFT"
-    : docTipo === "TRANSFERENCIA"
-    ? "N° transferencia"
-    : "Referencia"
-}
-    value={docRef}
-    onChange={(e) => setDocRef(e.target.value)}
-  />
+          <input
+            className="file-input"
+            type="file"
+            accept="application/pdf"
+            disabled={operacion.estado === "FINALIZADA"}
+            onChange={(e) => setDocFile(e.target.files[0] || null)}
+          />
 
-  <input
-    className="file-input"
-    type="file"
-    accept="application/pdf"
-    onChange={(e) => setDocFile(e.target.files[0] || null)}
-  />
-
-  <button
-    className="btn-secondary"
-    onClick={agregarDocumento}
-    disabled={subiendoDoc}
-  >
-    {subiendoDoc ? "Subiendo..." : "Agregar documento"}
-  </button>
-
-</div>
+          <button
+            className="btn-secondary"
+            onClick={agregarDocumento}
+            disabled={subiendoDoc || operacion.estado === "FINALIZADA"}
+          >
+            {subiendoDoc ? "Subiendo..." : "Agregar documento"}
+          </button>
+        </div>
       </section>
 
-      {/* ===== NUEVO: ZONA PELIGROSA (ELIMINAR OPERACIÓN) ===== */}
+      {/* ===== ZONA PELIGROSA (ELIMINAR OPERACIÓN) ===== */}
       <section className="detalle-card danger-zone">
-
         <h3 style={{ color: "#dc2626" }}>Zona peligrosa</h3>
         <p className="op-id" style={{ marginTop: 0 }}>
           Esto elimina la operación del almacenamiento local del sistema.
@@ -655,7 +869,7 @@ export default function OperacionDetalle() {
         </button>
       </section>
 
-      {/* Historial (AL FINAL, como pediste) */}
+      {/* Historial */}
       <section className="detalle-card">
         <h3>Historial</h3>
 
@@ -667,7 +881,14 @@ export default function OperacionDetalle() {
           {(operacion.historial || []).map((h, i) => (
             <li key={i}>
               <span className="time">{new Date(h.fecha).toLocaleString()}</span>
-              <span>{h.evento}</span>
+              <span>
+                {h.evento}
+                {h.actorNombre && (
+                  <em style={{ marginLeft: 6, opacity: 0.6 }}>
+                    · {h.actorNombre}
+                  </em>
+                )}
+              </span>
             </li>
           ))}
         </ul>

@@ -27,23 +27,24 @@ function OperacionesApp() {
   /* =========================
      NORMALIZAR + ALERTAS
   ========================== */
+
   const items = useMemo(() => {
     const hoy = new Date();
 
     return operaciones.map((op) => {
-      const etapa = op.logistica?.etapa || op.estado || "PLANIFICADA";
+      const estado = op.estado || "PLANIFICADA";
       const eta = op.logistica?.eta ? new Date(op.logistica.eta) : null;
 
       let alerta = null;
 
-      if (etapa === "BLOQUEADA") alerta = "BLOQUEADA";
-      else if (etapa === "EN_TRANSITO" && !eta) alerta = "SIN_ETA";
-      else if (eta && eta < hoy && etapa !== "ENTREGADA")
+      if (estado === "BLOQUEADA") alerta = "BLOQUEADA";
+      else if (estado === "EN_TRANSITO" && !eta) alerta = "SIN_ETA";
+      else if (eta && eta < hoy && estado !== "ENTREGADA")
         alerta = "ETA_VENCIDA";
 
       return {
         ...op,
-        etapa,
+        estado,
         alerta,
       };
     });
@@ -52,27 +53,53 @@ function OperacionesApp() {
   /* =========================
      ORDEN INTELIGENTE
   ========================== */
+
   const prioridad = (op) => {
-    if (op.etapa === "BLOQUEADA") return 1;
-    if (op.etapa === "EN_TRANSITO" && op.alerta) return 2;
-    if (op.etapa === "EN_DESPACHO") return 3;
-    if (op.etapa === "ARRIBADA") return 4;
-    if (op.etapa === "EN_TRANSITO") return 5;
-    if (op.etapa === "PLANIFICADA") return 6;
-    return 9;
+    if (op.estado === "BLOQUEADA") return 1;
+    if (op.estado === "EN_TRANSITO" && op.alerta) return 2;
+    if (op.estado === "EN_DESPACHO") return 3;
+    if (op.estado === "ARRIBADA") return 4;
+    if (op.estado === "EN_TRANSITO") return 5;
+    if (op.estado === "PLANIFICADA") return 6;
+    if (op.estado === "FINALIZADA") return 99;
+    return 50;
   };
+
+  /* =========================
+     FILTROS
+  ========================== */
 
   const visibles = useMemo(() => {
     let list = [...items].sort((a, b) => prioridad(a) - prioridad(b));
-    if (filtro === "ALERTAS") list = list.filter((o) => o.alerta);
-    if (filtro !== "TODAS" && filtro !== "ALERTAS")
-      list = list.filter((o) => o.etapa === filtro);
+
+    if (filtro !== "TODAS") {
+      list = list.filter((o) => o.estado === filtro);
+    }
+
     return list;
   }, [items, filtro]);
 
+  /* =========================
+     ESTADOS DISPONIBLES
+  ========================== */
+
+  const filtrosEstado = [
+    "TODAS",
+    "PLANIFICADA",
+    "CARGADA",
+    "EN_TRANSITO",
+    "ARRIBADA",
+    "EN_DESPACHO",
+    "ENTREGADA",
+    "BLOQUEADA",
+    "FINALIZADA",
+  ];
+
   return (
     <section className="operaciones-page">
+
       {/* Header */}
+
       <header className="operaciones-header">
         <div>
           <h1>Operaciones</h1>
@@ -81,11 +108,13 @@ function OperacionesApp() {
       </header>
 
       {/* KPIs */}
+
       <KPIs operaciones={items} onFilter={setFiltro} />
 
-      {/* Filtros rápidos */}
+      {/* Filtros */}
+
       <div className="op-filters">
-        {["TODAS", "EN_TRANSITO", "ALERTAS", "BLOQUEADA"].map((f) => (
+        {filtrosEstado.map((f) => (
           <button
             key={f}
             className={`op-filter ${filtro === f ? "active" : ""}`}
@@ -97,10 +126,12 @@ function OperacionesApp() {
       </div>
 
       {/* Grid */}
+
       <div className="operaciones-grid">
+
         {visibles.length === 0 && (
           <div className="op-empty">
-            No hay operaciones activas
+            No hay operaciones para mostrar
           </div>
         )}
 
@@ -111,16 +142,20 @@ function OperacionesApp() {
             onClick={() => navigate(`/operaciones/${op.id}`)}
           >
             <div className="card-header">
+
               <strong>{op.proveedor}</strong>
 
-              <span className={`estado-badge ${op.etapa.toLowerCase()}`}>
-                {op.etapa.replace("_", " ")}
+              <span className={`estado-badge ${op.estado.toLowerCase()}`}>
+                {op.estado.replace("_", " ")}
               </span>
+
             </div>
 
             <div className="card-body">
+
               <p className="activo">{op.activo}</p>
               <p className="id">ID {op.id}</p>
+
             </div>
 
             {op.alerta && (
@@ -128,8 +163,10 @@ function OperacionesApp() {
                 ⚠ {op.alerta.replace("_", " ")}
               </div>
             )}
+
           </div>
         ))}
+
       </div>
     </section>
   );

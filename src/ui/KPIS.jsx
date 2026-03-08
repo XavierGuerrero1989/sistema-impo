@@ -1,19 +1,54 @@
 import "./KPIs.css";
 
 export default function KPIs({ operaciones }) {
-  const activas = operaciones.filter((op) => !op.deleted).length;
+
+  /* =========================
+     Operaciones activas
+  ========================== */
+
+  const activas = operaciones.filter(
+    (op) => !op.deleted && op.estado !== "FINALIZADA"
+  ).length;
+
+  /* =========================
+     En tránsito
+  ========================== */
 
   const enTransito = operaciones.filter(
-    (op) => op.estado === "EN_TRANSITO" || op.estado === "EN_CHILE"
+    (op) => op.estado === "EN_TRANSITO"
   ).length;
+
+  /* =========================
+     Docs pendientes
+  ========================== */
 
   const docsPendientes = operaciones.filter((op) =>
-    Object.values(op.documentos || {}).some((d) => d.recibido === false)
+    (op.documentos || []).some((d) => d.estado === "PENDIENTE")
   ).length;
 
-  const pagosPendientes = operaciones.filter(
-    (op) => op.finanzas?.saldo > 0
-  ).length;
+  /* =========================
+     Pagos pendientes
+  ========================== */
+
+  const pagosPendientes = operaciones.filter((op) => {
+
+    if (op.estado === "FINALIZADA") return false;
+
+    const total = Number(op.totalOperacion || 0);
+
+    const adelantos = (op.adelantos || [])
+      .filter((m) => m.estado === "ACTIVO")
+      .reduce((acc, m) => acc + Number(m.monto || 0), 0);
+
+    const pagos = (op.pagos || [])
+      .filter((m) => m.estado === "ACTIVO")
+      .reduce((acc, m) => acc + Number(m.monto || 0), 0);
+
+    const pagado = adelantos + pagos;
+
+    return total > pagado;
+
+  }).length;
 
   return (
     <div className="kpi-grid">

@@ -370,3 +370,42 @@
 .file-input{
   max-width:220px;
 }
+
+.total-operacion {
+  margin-bottom: 18px;
+}
+
+.total-view {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.total-amount {
+  font-size: 1.6rem;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.total-edit {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.total-edit input {
+  width: 180px;
+  padding: 6px 8px;
+  font-size: 0.95rem;
+}
+
+.operacion-finalizada {
+  margin-top: 10px;
+  margin-bottom: 14px;
+  padding: 10px 14px;
+  background: #ecfdf5;
+  border: 1px solid #10b981;
+  border-radius: 6px;
+  color: #065f46;
+  font-weight: 500;
+}

@@ -46,30 +46,51 @@ export default function Navbar() {
   return (
     <nav className="navbar">
       <div className="navbar-left">
-        {/* 🔗 BRAND → DASHBOARD */}
+
         <Link to="/" className="navbar-brand">
           ImportSys
         </Link>
 
-        <NavLink to="/operaciones" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}>
+        <NavLink
+          to="/operaciones"
+          className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}
+        >
           Operaciones
         </NavLink>
 
-        <NavLink to="/documentos" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}>
+        {/* NUEVA SECCIÓN */}
+        <NavLink
+          to="/proveedores"
+          className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}
+        >
+          Proveedores
+        </NavLink>
+
+        <NavLink
+          to="/documentos"
+          className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}
+        >
           Documentos
         </NavLink>
 
-        <NavLink to="/finanzas" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}>
+        <NavLink
+          to="/finanzas"
+          className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}
+        >
           Finanzas
         </NavLink>
 
-        <NavLink to="/logistica" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}>
+        <NavLink
+          to="/logistica"
+          className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}
+        >
           Logística
         </NavLink>
+
       </div>
 
       <div className="navbar-right">
-        {/* 🔄 SYNC STATUS */}
+
         <div className={syncClass}>
           <span className="dot" />
           {syncLabel}
@@ -80,6 +101,7 @@ export default function Navbar() {
         <button className="logout-btn" onClick={logout}>
           Salir
         </button>
+
       </div>
     </nav>
   );

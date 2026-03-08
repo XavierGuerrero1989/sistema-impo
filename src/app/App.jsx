@@ -15,6 +15,10 @@ import CrearOperacion from "../ui/CrearOperacion";
 
 import { useAutoSync } from "../hooks/useAutoSync";
 
+import Proveedores from "../proveedores/Proveedores";
+import NuevoProveedor from "../proveedores/NuevoProveedor";
+import ProveedorDetalle from "../proveedores/ProveedorDetalle";
+
 function App() {
   const { user } = useAuth();
 
@@ -49,6 +53,9 @@ function App() {
                   <Route path="/finanzas" element={<Finanzas />} />
                   <Route path="/documentos" element={<Documentos />} />
                   <Route path="/logistica" element={<Logistica />} />
+                  <Route path="/proveedores" element={<Proveedores />} />
+                  <Route path="/proveedores/nuevo" element={<NuevoProveedor />} />
+                  <Route path="/proveedores/:id" element={<ProveedorDetalle />} />
                 </Routes>
               </main>
             </div>
