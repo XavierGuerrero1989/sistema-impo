@@ -12,5 +12,5 @@ dbLocal.version(2).stores({
   operaciones: "&id, estado, proveedor, deleted, updatedAtLocal",
   outbox: "++key, entityType, entityId, op, createdAt",
   meta: "key",
-  proveedores: "++id, proveedorId, nombreComercial, pais"
+  proveedores: "&proveedorId, nombreComercial, pais"
 });
