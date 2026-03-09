@@ -106,11 +106,11 @@ export default function ProveedorDetalle() {
       updatedAt: new Date()
     };
 
-    await actualizarProveedor(Number(id), data);
+    await actualizarProveedor(Number(proveedorId), data);
 
     setEditando(false);
 
-    const updated = await getProveedorById(Number(id));
+    const updated = await getProveedorById(Number(proveedorId));
     setProveedor(updated);
   }
 
@@ -122,7 +122,7 @@ export default function ProveedorDetalle() {
 
     if (!confirmar) return;
 
-    await eliminarProveedor(Number(id));
+    await eliminarProveedor(Number(proveedorId));
 
     navigate("/proveedores");
   }
