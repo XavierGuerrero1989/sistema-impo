@@ -10,7 +10,7 @@ import "./proveedores.css";
 
 export default function ProveedorDetalle() {
 
-  const { id } = useParams();
+  const { proveedorId } = useParams();
   const navigate = useNavigate();
 
   const [proveedor, setProveedor] = useState(null);
@@ -66,7 +66,7 @@ export default function ProveedorDetalle() {
 
     load().catch(console.error);
 
-  }, [id]);
+  }, [proveedorId]);
 
   function handleChange(e) {
 
