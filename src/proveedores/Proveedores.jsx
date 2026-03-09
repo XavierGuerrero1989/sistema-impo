@@ -63,7 +63,7 @@ export default function Proveedores() {
               <tr
                 key={p.id}
                 className="proveedores-row"
-                onClick={() => navigate(`/proveedores/${p.id}`)}
+                onClick={() => navigate(`/proveedores/${p.proveedorId}`)}
               >
                 <td className="proveedor-id">
                   {p.proveedorId}

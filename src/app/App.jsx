@@ -55,7 +55,7 @@ function App() {
                   <Route path="/logistica" element={<Logistica />} />
                   <Route path="/proveedores" element={<Proveedores />} />
                   <Route path="/proveedores/nuevo" element={<NuevoProveedor />} />
-                  <Route path="/proveedores/:id" element={<ProveedorDetalle />} />
+                  <Route path="/proveedores/:proveedorId" element={<ProveedorDetalle />} />
                 </Routes>
               </main>
             </div>
