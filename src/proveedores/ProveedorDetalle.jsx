@@ -4,7 +4,7 @@ import {
   getProveedorById,
   eliminarProveedor,
   actualizarProveedor
-} from "./proveedoresRepo";
+} from "./ProveedoresRepo";
 import { getOperacionesLocal } from "../offline/operacionesRepo";
 import "./proveedores.css";
 
