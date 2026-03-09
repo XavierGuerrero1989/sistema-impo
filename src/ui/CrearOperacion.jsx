@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { upsertOperacionLocal } from "../offline/operacionesRepo";
-import { getProveedoresLocal } from "../proveedores/proveedoresRepo";
+import { getProveedoresLocal } from "../proveedores/ProveedoresRepo";
 import { auditEvent } from "../auth/audit";
 import "./CrearOperacion.css";
 
