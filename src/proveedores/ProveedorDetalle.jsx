@@ -34,7 +34,7 @@ export default function ProveedorDetalle() {
   useEffect(() => {
     async function load() {
 
-      const data = await getProveedorById(Number(proveedorId));
+      const data = await getProveedorById(proveedorId);
       setProveedor(data);
 
       if (data) {
@@ -106,11 +106,11 @@ export default function ProveedorDetalle() {
       updatedAt: new Date()
     };
 
-    await actualizarProveedor(Number(proveedorId), data);
+    await actualizarProveedor(proveedorId, data);
 
     setEditando(false);
 
-    const updated = await getProveedorById(Number(proveedorId));
+    const updated = await getProveedorById(proveedorId);
     setProveedor(updated);
   }
 
@@ -122,7 +122,7 @@ export default function ProveedorDetalle() {
 
     if (!confirmar) return;
 
-    await eliminarProveedor(Number(proveedorId));
+    await eliminarProveedor(proveedorId);
 
     navigate("/proveedores");
   }
@@ -175,10 +175,6 @@ export default function ProveedorDetalle() {
         </div>
 
       </div>
-
-      {/* ============================= */}
-      {/* DATOS DEL PROVEEDOR */}
-      {/* ============================= */}
 
       <div className="proveedores-table-card">
 
@@ -298,10 +294,6 @@ export default function ProveedorDetalle() {
 
       </div>
 
-      {/* ============================= */}
-      {/* OPERACIONES DEL PROVEEDOR */}
-      {/* ============================= */}
-
       <div className="proveedores-table-card" style={{marginTop:"24px"}}>
 
         <div style={{padding:"16px 20px", borderBottom:"1px solid #e2e8f0"}}>
@@ -360,10 +352,6 @@ export default function ProveedorDetalle() {
         </table>
 
       </div>
-
-      {/* ============================= */}
-      {/* ZONA PELIGROSA */}
-      {/* ============================= */}
 
       <div
         style={{
