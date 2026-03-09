@@ -34,7 +34,7 @@ export default function ProveedorDetalle() {
   useEffect(() => {
     async function load() {
 
-      const data = await getProveedorById(Number(id));
+      const data = await getProveedorById(Number(proveedorId));
       setProveedor(data);
 
       if (data) {
