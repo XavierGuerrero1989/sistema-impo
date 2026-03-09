@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { crearProveedor } from "./proveedoresRepo";
+import { crearProveedor } from "./ProveedoresRepo";
 import { useNavigate } from "react-router-dom";
 import "./NuevoProveedor.css";
 

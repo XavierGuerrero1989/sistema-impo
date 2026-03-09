@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getProveedoresLocal } from "./proveedoresRepo";
+import { getProveedoresLocal } from "./ProveedoresRepo";
 import { useNavigate } from "react-router-dom";
 import "./proveedores.css";
 
