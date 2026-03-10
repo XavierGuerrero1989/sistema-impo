@@ -6,7 +6,7 @@ import {
   actualizarProveedor
 } from "./ProveedoresRepo";
 import { getOperacionesLocal } from "../offline/operacionesRepo";
-import { pushProveedor } from "../sync/pushProveedor";
+import { pushProveedor } from "../sync/PushProveedor";
 import "./proveedores.css";
 
 export default function ProveedorDetalle() {

@@ -20,7 +20,7 @@ import NuevoProveedor from "../proveedores/NuevoProveedor";
 import ProveedorDetalle from "../proveedores/ProveedorDetalle";
 
 import { useEffect } from "react";
-import { listenProveedores } from "../sync/listenProveedores";
+import { listenProveedores } from "../sync/ListenProveedores";
 
 
 function App() {
