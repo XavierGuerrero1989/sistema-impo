@@ -19,8 +19,20 @@ import Proveedores from "../proveedores/Proveedores";
 import NuevoProveedor from "../proveedores/NuevoProveedor";
 import ProveedorDetalle from "../proveedores/ProveedorDetalle";
 
+import { useEffect } from "react";
+import { listenProveedores } from "../sync/listenProveedores";
+
+
 function App() {
   const { user } = useAuth();
+
+  useEffect(() => {
+
+  const unsubscribe = listenProveedores();
+
+  return () => unsubscribe();
+
+}, []);
 
   // 🔐 Sync SOLO si hay usuario
   useAutoSync();

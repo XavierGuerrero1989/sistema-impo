@@ -6,6 +6,7 @@ import {
   actualizarProveedor
 } from "./ProveedoresRepo";
 import { getOperacionesLocal } from "../offline/operacionesRepo";
+import { pushProveedor } from "../sync/pushProveedor";
 import "./proveedores.css";
 
 export default function ProveedorDetalle() {
@@ -34,37 +35,55 @@ export default function ProveedorDetalle() {
   useEffect(() => {
     async function load() {
 
-      const data = await getProveedorById(proveedorId);
+      console.log("ProveedorId recibido:", proveedorId);
+
+      if (!proveedorId) {
+        console.warn("ProveedorId vacío");
+        return;
+      }
+
+      const data = await getProveedorById(String(proveedorId));
+
+      console.log("Proveedor cargado desde Dexie:", data);
+
+      if (!data) {
+        console.warn("Proveedor no encontrado en Dexie");
+        return;
+      }
+
       setProveedor(data);
 
-      if (data) {
+      setForm({
+        proveedorId: data.proveedorId || "",
+        nombreComercial: data.nombreComercial || "",
+        nombreLegal: data.nombreLegal || "",
+        pais: data.pais || "",
+        monedaHabitual: data?.comercial?.monedaHabitual || "USD",
+        email: data?.contacto?.email || "",
+        telefono: data?.contacto?.telefono || "",
+        contacto: data?.contacto?.nombre || "",
+        banco: data?.banco?.banco || "",
+        condicionPago: data?.comercial?.condicionPago || "",
+        plazoPagoDias: data?.comercial?.plazoPagoDias || ""
+      });
 
-        setForm({
-          proveedorId: data.proveedorId || "",
-          nombreComercial: data.nombreComercial || "",
-          nombreLegal: data.nombreLegal || "",
-          pais: data.pais || "",
-          monedaHabitual: data?.comercial?.monedaHabitual || "USD",
-          email: data?.contacto?.email || "",
-          telefono: data?.contacto?.telefono || "",
-          contacto: data?.contacto?.nombre || "",
-          banco: data?.banco?.banco || "",
-          condicionPago: data?.comercial?.condicionPago || "",
-          plazoPagoDias: data?.comercial?.plazoPagoDias || ""
-        });
+      // buscar operaciones del proveedor
+      const operaciones = await getOperacionesLocal();
 
-        // buscar operaciones del proveedor
-        const operaciones = await getOperacionesLocal();
+      console.log("Operaciones encontradas:", operaciones);
 
-        const filtradas = operaciones.filter(
-          (op) => op.proveedor === data.nombreComercial
-        );
+      const filtradas = operaciones.filter(
+        (op) => op.proveedor === data.nombreComercial
+      );
 
-        setOperacionesProveedor(filtradas);
-      }
+      console.log("Operaciones filtradas proveedor:", filtradas);
+
+      setOperacionesProveedor(filtradas);
     }
 
-    load().catch(console.error);
+    load().catch((err) => {
+      console.error("Error cargando proveedor:", err);
+    });
 
   }, [proveedorId]);
 
@@ -80,39 +99,41 @@ export default function ProveedorDetalle() {
 
   async function handleGuardar() {
 
-    const data = {
+  const data = {
 
-      proveedorId: form.proveedorId,
-      nombreComercial: form.nombreComercial,
-      nombreLegal: form.nombreLegal,
-      pais: form.pais,
+    nombreComercial: form.nombreComercial,
+    nombreLegal: form.nombreLegal,
+    pais: form.pais,
 
-      contacto: {
-        nombre: form.contacto,
-        email: form.email,
-        telefono: form.telefono
-      },
+    contacto: {
+      nombre: form.contacto,
+      email: form.email,
+      telefono: form.telefono
+    },
 
-      banco: {
-        banco: form.banco
-      },
+    banco: {
+      banco: form.banco
+    },
 
-      comercial: {
-        monedaHabitual: form.monedaHabitual,
-        condicionPago: form.condicionPago,
-        plazoPagoDias: form.plazoPagoDias
-      },
+    comercial: {
+      monedaHabitual: form.monedaHabitual,
+      condicionPago: form.condicionPago,
+      plazoPagoDias: form.plazoPagoDias
+    },
 
-      updatedAt: new Date()
-    };
+    updatedAt: new Date()
+  };
 
-    await actualizarProveedor(proveedorId, data);
+  await actualizarProveedor(String(proveedorId), data);
 
-    setEditando(false);
+  await pushProveedor(String(proveedorId), data);
 
-    const updated = await getProveedorById(proveedorId);
-    setProveedor(updated);
-  }
+  setEditando(false);
+
+  const updated = await getProveedorById(proveedorId);
+
+  setProveedor(updated);
+}
 
   async function handleEliminar() {
 
@@ -123,6 +144,8 @@ export default function ProveedorDetalle() {
     if (!confirmar) return;
 
     await eliminarProveedor(proveedorId);
+
+    console.log("Proveedor eliminado:", proveedorId);
 
     navigate("/proveedores");
   }
@@ -183,13 +206,20 @@ export default function ProveedorDetalle() {
           <tbody>
 
             <tr>
-              <th>ID proveedor</th>
-              <td>
-                {editando
-                  ? <input name="proveedorId" value={form.proveedorId} onChange={handleChange}/>
-                  : proveedor.proveedorId}
-              </td>
-            </tr>
+  <th>ID proveedor</th>
+  <td>
+    {editando
+      ? (
+        <input
+          name="proveedorId"
+          value={form.proveedorId}
+          readOnly
+          className="input-readonly"
+        />
+      )
+      : proveedor.proveedorId}
+  </td>
+</tr>
 
             <tr>
               <th>Nombre comercial</th>

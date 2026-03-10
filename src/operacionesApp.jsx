@@ -143,7 +143,7 @@ function OperacionesApp() {
           >
             <div className="card-header">
 
-              <strong>{op.proveedor}</strong>
+              <strong>{op.proveedorNombre}</strong>
 
               <span className={`estado-badge ${op.estado.toLowerCase()}`}>
                 {op.estado.replace("_", " ")}

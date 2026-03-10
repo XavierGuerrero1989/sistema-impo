@@ -9,6 +9,7 @@ export async function getProveedorById(proveedorId) {
 }
 
 export async function crearProveedor(proveedor) {
+
   proveedor.createdAt = new Date();
   proveedor.updatedAt = new Date();
 
@@ -16,11 +17,13 @@ export async function crearProveedor(proveedor) {
 }
 
 export async function actualizarProveedor(proveedorId, data) {
+
   data.updatedAt = new Date();
 
   return await dbLocal.proveedores.update(proveedorId, data);
 }
 
 export async function eliminarProveedor(proveedorId) {
+
   return await dbLocal.proveedores.delete(proveedorId);
 }

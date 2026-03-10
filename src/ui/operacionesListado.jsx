@@ -132,7 +132,7 @@ export default function OperacionesListado() {
               return (
                 <tr key={op.id}>
                   <td className="mono">{op.id}</td>
-                  <td>{op.proveedor}</td>
+                  <td>{op.proveedorNombre}</td>
                   <td>{op.activo}</td>
 
                   <td>

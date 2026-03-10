@@ -115,3 +115,8 @@
   padding: 40px;
   color: #64748b;
 }
+
+.input-readonly {
+  background: #f1f5f9;
+  cursor: not-allowed;
+}
