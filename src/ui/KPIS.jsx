@@ -22,9 +22,17 @@ export default function KPIs({ operaciones }) {
      Docs pendientes
   ========================== */
 
-  const docsPendientes = operaciones.filter((op) =>
-    (op.documentos || []).some((d) => d.estado === "PENDIENTE")
-  ).length;
+  const docsPendientes = operaciones.filter((op) => {
+
+  const documentos = Array.isArray(op.documentos)
+    ? op.documentos
+    : [];
+
+  return documentos.some(
+    (d) => d.estado === "PENDIENTE"
+  );
+
+}).length;
 
   /* =========================
      Pagos pendientes
