@@ -21,6 +21,27 @@ export default function KPIs({ operaciones }) {
   /* =========================
      Docs pendientes
   ========================== */
+  console.log(
+  "OPERACIONES KPI",
+  operaciones
+);
+
+operaciones.forEach((op) => {
+
+  if (
+    op.documentos &&
+    !Array.isArray(op.documentos)
+  ) {
+
+    console.warn(
+      "Operacion con documentos invalidos:",
+      op.id,
+      op.documentos
+    );
+
+  }
+
+});
 
   const docsPendientes = operaciones.filter((op) => {
 

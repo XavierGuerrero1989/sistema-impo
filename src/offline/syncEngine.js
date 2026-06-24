@@ -39,6 +39,8 @@ export async function syncOutbox(user) {
 
     const { dirty, deleted, updatedAtLocal, ...payload } = op;
 
+    console.log("SYNC PAYLOAD", payload);
+
     await setDoc(
       doc(dbRemote, "operaciones", op.id),
       {
