@@ -38,11 +38,14 @@ export default function Login() {
 
       <div className="login-page">
         <form className="login-box" onSubmit={handleLogin}>
-          <h2>Ingreso al sistema</h2>
+          <div className="login-brand"><span>SI</span><div><b>SISTEMA</b><em>IMPO</em></div></div>
+          <span className="login-kicker">Centro de control</span>
+          <h2>Bienvenido de nuevo</h2>
+          <p>Ingresá para continuar gestionando tus importaciones.</p>
 
           <input
             type="email"
-            placeholder="Email"
+            placeholder="Correo electrónico"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
@@ -59,7 +62,7 @@ export default function Login() {
           {error && <div className="login-error">{error}</div>}
 
           <button type="submit" disabled={loading}>
-            Ingresar
+            Ingresar al sistema →
           </button>
         </form>
       </div>

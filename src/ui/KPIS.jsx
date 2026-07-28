@@ -48,19 +48,19 @@ export default function KPIs({ operaciones }) {
 
   return (
     <div className="kpi-grid">
-      <KpiCard title="Operaciones activas" value={activas} />
-      <KpiCard title="En tránsito" value={enTransito} />
-      <KpiCard title="Docs pendientes" value={docsPendientes} alert />
-      <KpiCard title="Pagos pendientes" value={pagosPendientes} alert />
+      <KpiCard title="Operaciones activas" value={activas} icon="▦" tone="blue" caption="En seguimiento" />
+      <KpiCard title="En tránsito" value={enTransito} icon="→" tone="cyan" caption="Moviéndose ahora" />
+      <KpiCard title="Docs pendientes" value={docsPendientes} icon="▤" tone="amber" caption="Requieren revisión" />
+      <KpiCard title="Pagos pendientes" value={pagosPendientes} icon="$" tone="violet" caption="Con saldo abierto" />
     </div>
   );
 }
 
-function KpiCard({ title, value, alert }) {
+function KpiCard({ title, value, icon, tone, caption }) {
   return (
-    <div className={`kpi-card ${alert ? "alert" : ""}`}>
-      <span className="kpi-title">{title}</span>
-      <span className="kpi-value">{value}</span>
+    <div className={`kpi-card ${tone}`}>
+      <span className="kpi-icon">{icon}</span>
+      <div><span className="kpi-title">{title}</span><span className="kpi-value">{value}</span><small>{caption}</small></div>
     </div>
   );
 }
