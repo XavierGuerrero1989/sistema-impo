@@ -20,6 +20,10 @@ service cloud.firestore {
         && get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.role in roles;
     }
 
+    function canManageUsers() {
+      return primaryAdmin() || hasRole(["admin"]);
+    }
+
     match /operaciones/{operacionId} {
       allow read: if signedIn();
       allow write: if primaryAdmin() || hasRole(["admin", "operaciones", "finanzas"]);
@@ -36,20 +40,20 @@ service cloud.firestore {
     }
 
     match /usuarios/{userId} {
-      allow read: if primaryAdmin() || (signedIn() && request.auth.uid == userId);
-      allow create: if primaryAdmin() || (
+      allow read: if canManageUsers() || (signedIn() && request.auth.uid == userId);
+      allow create: if canManageUsers() || (
         signedIn()
         && request.auth.uid == userId
         && request.resource.data.role == "lectura"
         && request.resource.data.email == request.auth.token.email
       );
-      allow update: if primaryAdmin() || (
+      allow update: if canManageUsers() || (
         signedIn()
         && request.auth.uid == userId
         && request.resource.data.role == resource.data.role
         && request.resource.data.email == request.auth.token.email
       );
-      allow delete: if primaryAdmin() && request.auth.uid != userId;
+      allow delete: if canManageUsers() && request.auth.uid != userId;
     }
 
   }
