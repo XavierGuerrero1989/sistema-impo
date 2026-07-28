@@ -3,6 +3,7 @@ import { getOperacionesLocal, upsertOperacionLocal } from "../offline/operacione
 import { useNavigate } from "react-router-dom";
 import "./logistica.css";
 import { useAuth } from "../auth/AuthContext";
+import { countryLabel } from "../domain/paises";
 
 /* =========================
    ETAPAS NORMALIZADAS
@@ -310,7 +311,7 @@ export default function Logistica() {
                 </td>
 
                 <td>
-                  {i.origen} → {i.destino}
+                  {countryLabel(i.origen)} → {countryLabel(i.destino)}
                 </td>
 
                 <td>

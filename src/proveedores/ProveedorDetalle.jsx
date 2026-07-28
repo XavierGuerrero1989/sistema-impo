@@ -9,6 +9,7 @@ import { getOperacionesLocal } from "../offline/operacionesRepo";
 import { pushProveedor } from "../sync/PushProveedor";
 import "./proveedores.css";
 import { useAuth } from "../auth/AuthContext";
+import { countryLabel } from "../domain/paises";
 
 export default function ProveedorDetalle() {
 
@@ -248,7 +249,7 @@ export default function ProveedorDetalle() {
               <td>
                 {editando
                   ? <input name="pais" value={form.pais} onChange={handleChange}/>
-                  : proveedor.pais || "-"}
+                  : countryLabel(proveedor.pais, "-")}
               </td>
             </tr>
 
