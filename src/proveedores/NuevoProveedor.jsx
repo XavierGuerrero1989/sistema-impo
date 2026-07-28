@@ -12,13 +12,19 @@ export default function NuevoProveedor() {
   const [nombreLegal, setNombreLegal] = useState("");
   const [pais, setPais] = useState("");
   const [moneda, setMoneda] = useState("USD");
+  const [identificacionFiscal, setIdentificacionFiscal] = useState("");
+  const [error, setError] = useState("");
+  const [guardando, setGuardando] = useState(false);
 
   async function handleCrear() {
+    setError("");
+    setGuardando(true);
     const proveedor = {
       proveedorId,
       nombreComercial,
       nombreLegal,
       pais,
+      identificacionFiscal,
 
       comercial: {
         monedaHabitual: moneda,
@@ -29,9 +35,14 @@ export default function NuevoProveedor() {
       activo: true,
     };
 
-    await crearProveedor(proveedor);
-
-    navigate("/proveedores");
+    try {
+      await crearProveedor(proveedor);
+      navigate("/proveedores");
+    } catch (err) {
+      setError(err.message || "No se pudo crear el proveedor");
+    } finally {
+      setGuardando(false);
+    }
   }
 
   return (
@@ -63,6 +74,16 @@ export default function NuevoProveedor() {
           </div>
 
         </div>
+
+        <div className="form-group">
+          <label>Identificación fiscal</label>
+          <input
+            value={identificacionFiscal}
+            onChange={(e) => setIdentificacionFiscal(e.target.value)}
+          />
+        </div>
+
+        {error && <p className="form-error">{error}</p>}
 
         <div className="form-row">
 
@@ -111,9 +132,10 @@ export default function NuevoProveedor() {
 
           <button
             className="btn-primary"
+            disabled={guardando}
             onClick={handleCrear}
           >
-            Crear proveedor
+            {guardando ? "Guardando…" : "Crear proveedor"}
           </button>
 
         </div>

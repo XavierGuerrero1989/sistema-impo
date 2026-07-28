@@ -9,6 +9,7 @@ import { storage } from "../firebase/firebase";
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import "./operacionesDetalle.css";
 import { auditEvent } from "../auth/audit";
+import { useAuth } from "../auth/AuthContext";
 
 const ESTADOS = [
   "PLANIFICADA",
@@ -24,6 +25,7 @@ const ESTADOS = [
 const MEDIOS = ["MARÍTIMO", "TERRESTRE", "AÉREO"];
 
 export default function OperacionDetalle() {
+  const { permissions } = useAuth();
   const { id } = useParams();
   const navigate = useNavigate();
 
@@ -59,6 +61,7 @@ export default function OperacionDetalle() {
   const [subiendoDoc, setSubiendoDoc] = useState(false);
 
   const [totalOperacionInput, setTotalOperacionInput] = useState("");
+  const [vencimientoPago, setVencimientoPago] = useState("");
 
   useEffect(() => {
     async function load() {
@@ -68,6 +71,7 @@ export default function OperacionDetalle() {
       setOperacion(op || null);
       setNuevoEstado(op?.estado || "");
       setTotalOperacionInput(op?.totalOperacion || "");
+      setVencimientoPago(op?.fechaVencimientoPago || "");
 
       // hidratar logística (si existe)
       const l = op?.logistica || {};
@@ -117,6 +121,7 @@ export default function OperacionDetalle() {
 
   /* ===== Finanzas acciones ===== */
   const registrarMovimiento = async () => {
+    if (!permissions.manageFinances) return alert("No tenés permiso para modificar finanzas.");
     if (operacion.estado === "FINALIZADA") {
       alert("La operación está finalizada. No se pueden registrar movimientos.");
       return;
@@ -158,7 +163,24 @@ export default function OperacionDetalle() {
     setBancoInput("");
   };
 
+  const actualizarVencimientoPago = async () => {
+    if (!permissions.manageFinances) return;
+    const updated = {
+      ...operacion,
+      fechaVencimientoPago: vencimientoPago || null,
+      historial: [
+        ...(operacion.historial || []),
+        auditEvent("Vencimiento de pago actualizado", {
+          fecha: vencimientoPago || null,
+        }),
+      ],
+    };
+    await upsertOperacionLocal(updated);
+    setOperacion(updated);
+  };
+
   const cancelarMovimiento = async (tipo, index) => {
+    if (!permissions.manageFinances) return alert("No tenés permiso para modificar finanzas.");
     if (operacion.estado === "FINALIZADA") {
       alert("La operación está finalizada. No se pueden cancelar movimientos.");
       return;
@@ -181,6 +203,7 @@ export default function OperacionDetalle() {
 
   /* ===== Documentos (sube a Storage + guarda URL) ===== */
   const agregarDocumento = async () => {
+    if (!permissions.manageDocuments) return alert("No tenés permiso para modificar documentos.");
     if (operacion.estado === "FINALIZADA") {
       alert("La operación está finalizada. No se pueden agregar documentos.");
       return;
@@ -190,6 +213,8 @@ export default function OperacionDetalle() {
     if (!docFile) return alert("Adjuntá el PDF del documento");
     if (docFile.type !== "application/pdf")
       return alert("Solo se permiten archivos PDF");
+    if (docFile.size > 10 * 1024 * 1024)
+      return alert("El archivo no puede superar los 10 MB");
 
     setSubiendoDoc(true);
 
@@ -247,6 +272,7 @@ export default function OperacionDetalle() {
   };
 
   const eliminarDocumento = async (index) => {
+    if (!permissions.manageDocuments) return alert("No tenés permiso para modificar documentos.");
     if (operacion.estado === "FINALIZADA") {
       alert("La operación está finalizada. No se pueden eliminar documentos.");
       return;
@@ -282,10 +308,44 @@ export default function OperacionDetalle() {
     }
   };
 
+  const cambiarEstadoDocumento = async (index, estado) => {
+    if (!permissions.manageDocuments) {
+      return alert("No tenés permiso para validar documentos.");
+    }
+    if (operacion.estado === "FINALIZADA") return;
+
+    const documento = operacion.documentos?.[index];
+    if (!documento) return;
+    const revision = auditEvent("Documento revisado");
+    const updated = {
+      ...operacion,
+      documentos: operacion.documentos.map((item, itemIndex) =>
+        itemIndex === index
+          ? {
+              ...item,
+              estado,
+              validadoAt: revision.fecha,
+              validadoPor: revision.actorEmail,
+            }
+          : item
+      ),
+      historial: [
+        ...(operacion.historial || []),
+        auditEvent(`Documento ${estado.toLowerCase()}`, {
+          nombre: documento.nombre,
+        }),
+      ],
+    };
+
+    await upsertOperacionLocal(updated);
+    setOperacion(updated);
+  };
+
   /* ===== Estado =====
      + guarda logística / ruta según estado
   ===== */
   const cambiarEstado = async () => {
+    if (!permissions.manageOperations) return alert("No tenés permiso para modificar operaciones.");
     if (operacion.estado === "FINALIZADA") {
       alert("La operación ya está finalizada.");
       return;
@@ -326,6 +386,7 @@ export default function OperacionDetalle() {
   };
 
   const actualizarTotalOperacion = async () => {
+    if (!permissions.manageFinances) return alert("No tenés permiso para modificar finanzas.");
     if (operacion.estado === "FINALIZADA") {
       alert("La operación está finalizada. No se puede modificar el total.");
       return;
@@ -362,6 +423,7 @@ export default function OperacionDetalle() {
 
   /* ===== FINALIZAR OPERACIÓN ===== */
   const finalizarOperacion = async () => {
+    if (!permissions.manageOperations) return alert("No tenés permiso para finalizar operaciones.");
     if (operacion.estado === "FINALIZADA") {
       alert("La operación ya está finalizada.");
       return;
@@ -389,6 +451,7 @@ export default function OperacionDetalle() {
 
   /* ===== ELIMINAR OPERACIÓN ===== */
   const eliminarOperacion = async () => {
+    if (!permissions.manageOperations) return alert("No tenés permiso para eliminar operaciones.");
     const ok = window.confirm(
       `⚠️ Vas a eliminar la operación "${operacion.id}".\n` +
         `Esto la borra del sistema local.\n\n¿Confirmás?`
@@ -432,7 +495,7 @@ export default function OperacionDetalle() {
           <span className="mini-label">Moneda</span>
           <select
             value={operacion.moneda || "USD"}
-            disabled={operacion.estado === "FINALIZADA"}
+            disabled={operacion.estado === "FINALIZADA" || !permissions.manageFinances}
             onChange={async (e) => {
               if (operacion.estado === "FINALIZADA") {
                 alert("La operación está finalizada. No se puede modificar la moneda.");
@@ -517,6 +580,25 @@ export default function OperacionDetalle() {
               </button>
             </div>
           )}
+        </div>
+
+        <div className="total-operacion">
+          <span className="mini-label">Vencimiento estimado de pago</span>
+          <div className="total-edit">
+            <input
+              type="date"
+              value={vencimientoPago}
+              disabled={operacion.estado === "FINALIZADA" || !permissions.manageFinances}
+              onChange={(event) => setVencimientoPago(event.target.value)}
+            />
+            <button
+              className="btn-secondary"
+              disabled={operacion.estado === "FINALIZADA" || !permissions.manageFinances}
+              onClick={actualizarVencimientoPago}
+            >
+              Guardar vencimiento
+            </button>
+          </div>
         </div>
 
         <div className="pago-grid">
@@ -769,7 +851,7 @@ export default function OperacionDetalle() {
           {(operacion.documentos || []).map((d, i) => (
             <li key={i} className="doc-row">
               <div className="doc-left">
-                <strong>{d.nombre}</strong> – {d.tipo}
+                <strong>{d.nombre}</strong> – {d.tipo} · {d.estado || "PENDIENTE"}
                 {d.referencia && ` · ${d.referencia}`}
                 {d.archivo?.downloadURL && (
                   <>
@@ -788,12 +870,24 @@ export default function OperacionDetalle() {
 
               <div className="doc-right">
                 {operacion.estado !== "FINALIZADA" && (
-                  <button
-                    className="btn-link danger"
-                    onClick={() => eliminarDocumento(i)}
-                  >
-                    Eliminar
-                  </button>
+                  <>
+                    {d.estado !== "VALIDADO" && (
+                      <button className="btn-link" onClick={() => cambiarEstadoDocumento(i, "VALIDADO")}>
+                        Validar
+                      </button>
+                    )}
+                    {d.estado !== "RECHAZADO" && (
+                      <button className="btn-link" onClick={() => cambiarEstadoDocumento(i, "RECHAZADO")}>
+                        Rechazar
+                      </button>
+                    )}
+                    <button
+                      className="btn-link danger"
+                      onClick={() => eliminarDocumento(i)}
+                    >
+                      Eliminar
+                    </button>
+                  </>
                 )}
               </div>
             </li>

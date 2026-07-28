@@ -25,17 +25,19 @@ export async function upsertOperacionLocal(operacion) {
     ...operacion,
   };
 
-  /* 1️⃣ Guardar / actualizar en IndexedDB */
-  await dbLocal.operaciones.put(data);
-
-  /* 2️⃣ Registrar en OUTBOX para sync */
-  await dbLocal.outbox.add({
-    entityType: "operacion",
-    entityId: data.id,
-    op: "upsert",
-    createdAt: now,
+  await dbLocal.transaction("rw", dbLocal.operaciones, dbLocal.outbox, async () => {
+    await dbLocal.operaciones.put(data);
+    await dbLocal.outbox.add({
+      entityType: "operacion",
+      entityId: data.id,
+      op: "upsert",
+      createdAt: now,
+    });
   });
 
+  window.dispatchEvent(new CustomEvent("data:changed", {
+    detail: { entityType: "operacion", entityId: data.id },
+  }));
   return data;
 }
 
@@ -45,6 +47,11 @@ export async function upsertOperacionLocal(operacion) {
 export async function getOperacionesLocal() {
   const all = await dbLocal.operaciones.toArray();
   return all.filter((op) => op.deleted !== true);
+}
+
+export async function getOperacionesEliminadasLocal() {
+  const all = await dbLocal.operaciones.toArray();
+  return all.filter((op) => op.deleted === true);
 }
 
 /* ======================================================
@@ -70,15 +77,29 @@ export async function deleteOperacionLocal(id) {
     updatedAtLocal: now,
   };
 
-  /* 1️⃣ Marcar como eliminada localmente */
-  await dbLocal.operaciones.put(deletedOp);
+  await dbLocal.transaction("rw", dbLocal.operaciones, dbLocal.outbox, async () => {
+    await dbLocal.operaciones.put(deletedOp);
+    await dbLocal.outbox.add({
+      entityType: "operacion",
+      entityId: id,
+      op: "delete",
+      createdAt: now,
+    });
+  });
 
-  /* 2️⃣ Registrar en outbox */
-  await dbLocal.outbox.add({
-    entityType: "operacion",
-    entityId: id,
-    op: "delete",
-    createdAt: now,
+  window.dispatchEvent(new CustomEvent("data:changed", {
+    detail: { entityType: "operacion", entityId: id },
+  }));
+}
+
+export async function restaurarOperacionLocal(id) {
+  const operacion = await dbLocal.operaciones.get(id);
+  if (!operacion?.deleted) return;
+
+  return upsertOperacionLocal({
+    ...operacion,
+    deleted: false,
+    restoredAt: new Date().toISOString(),
   });
 }
 

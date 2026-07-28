@@ -280,3 +280,28 @@
     align-items: flex-start;
   }
 }
+.log-filters {
+  display: flex;
+  gap: 12px;
+  margin: 16px 0;
+}
+
+.log-filters input,
+.log-filters select {
+  padding: 9px 10px;
+  border: 1px solid #e2e8f0;
+  border-radius: 7px;
+  background: #fff;
+}
+
+.log-filters input {
+  flex: 1;
+}
+
+.log-eta-danger {
+  color: #b91c1c;
+}
+
+.log-eta-warning {
+  color: #b45309;
+}

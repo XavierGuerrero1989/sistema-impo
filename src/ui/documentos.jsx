@@ -17,6 +17,8 @@ const formatBytes = (bytes = 0) => {
 export default function Documentos() {
   const [operaciones, setOperaciones] = useState([]);
   const [filtroTipo, setFiltroTipo] = useState("TODOS");
+  const [search, setSearch] = useState("");
+  const [filtroEstado, setFiltroEstado] = useState("TODOS");
 
   // Modal preview
   const [preview, setPreview] = useState(null); // { url, titulo, subtitulo }
@@ -24,7 +26,10 @@ export default function Documentos() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    getOperacionesLocal().then(setOperaciones).catch(console.error);
+    const load = () => getOperacionesLocal().then(setOperaciones).catch(console.error);
+    load();
+    window.addEventListener("data:changed", load);
+    return () => window.removeEventListener("data:changed", load);
   }, []);
 
   /* =========================
@@ -41,9 +46,10 @@ export default function Documentos() {
         return {
           id: `${op.id}_${index}`,
           operacionId: op.id,
-          proveedor: op.proveedor || "-",
+          proveedor: op.proveedorNombre || op.proveedor || "-",
           nombre: doc?.nombre || "Sin nombre",
           tipo: doc?.tipo || "OTRO",
+          estado: doc?.estado || "PENDIENTE",
           referencia: doc?.referencia || null,
           fecha: doc?.fecha || null,
 
@@ -74,9 +80,18 @@ export default function Documentos() {
   const documentosFiltrados = useMemo(() => {
     return documentos.filter((doc) => {
       if (filtroTipo !== "TODOS" && doc.tipo !== filtroTipo) return false;
-      return true;
+      if (filtroEstado !== "TODOS" && doc.estado !== filtroEstado) return false;
+      const query = search.trim().toLowerCase();
+      if (!query) return true;
+      return [
+        doc.nombre,
+        doc.referencia,
+        doc.proveedor,
+        doc.operacionId,
+        doc.archivoNombre,
+      ].some((value) => String(value || "").toLowerCase().includes(query));
     });
-  }, [documentos, filtroTipo]);
+  }, [documentos, filtroTipo, filtroEstado, search]);
 
   const openPreview = (doc) => {
     if (!doc.downloadURL) return;
@@ -120,12 +135,23 @@ export default function Documentos() {
 
       {/* Filtros */}
       <div className="documentos-filtros">
+        <input
+          value={search}
+          onChange={(event) => setSearch(event.target.value)}
+          placeholder="Buscar documento, referencia, operación o proveedor…"
+        />
         <select value={filtroTipo} onChange={(e) => setFiltroTipo(e.target.value)}>
           <option value="TODOS">Tipo: todos</option>
           <option value="FACTURA">Factura</option>
           <option value="BL">B/L</option>
           <option value="PACKING_LIST">Packing List</option>
           <option value="OTRO">Otro</option>
+        </select>
+        <select value={filtroEstado} onChange={(e) => setFiltroEstado(e.target.value)}>
+          <option value="TODOS">Estado: todos</option>
+          <option value="PENDIENTE">Pendientes</option>
+          <option value="VALIDADO">Validados</option>
+          <option value="RECHAZADO">Rechazados</option>
         </select>
       </div>
 

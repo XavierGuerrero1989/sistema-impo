@@ -121,3 +121,11 @@ textarea {
 .btn-secondary:hover {
   background: #cbd5f5;
 }
+.form-error {
+  padding: 10px 12px;
+  border: 1px solid #fecaca;
+  border-radius: 6px;
+  color: #b91c1c;
+  background: #fef2f2;
+  white-space: pre-line;
+}

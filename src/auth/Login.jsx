@@ -26,8 +26,7 @@ export default function Login() {
       setLoading(false);
       navigate("/", { replace: true });
 
-    } catch (err) {
-      console.error("LOGIN ERROR:", err.code, err.message);
+    } catch {
       setError("Usuario o contraseña incorrectos");
       setLoading(false);
     }

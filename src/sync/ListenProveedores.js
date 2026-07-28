@@ -2,23 +2,35 @@ import { collection, onSnapshot } from "firebase/firestore";
 import { db } from "../firebase/firebase";
 import { dbLocal } from "../offline/db";
 
-export function listenProveedores() {
-
+export function listenProveedores(onError) {
   return onSnapshot(collection(db, "proveedores"), async (snapshot) => {
+    const pendingJobs = await dbLocal.outbox
+      .where("entityType")
+      .equals("proveedor")
+      .toArray();
+    const pendingIds = new Set(pendingJobs.map((job) => job.entityId));
 
-    const proveedores = [];
+    let changed = false;
+    for (const change of snapshot.docChanges()) {
+      const proveedorId = change.doc.id;
+      if (pendingIds.has(proveedorId)) continue;
 
-    snapshot.forEach((doc) => {
-      proveedores.push({
-        proveedorId: doc.id,
-        ...doc.data()
-      });
-    });
+      if (change.type === "removed") {
+        await dbLocal.proveedores.delete(proveedorId);
+      } else {
+        await dbLocal.proveedores.put({
+          proveedorId,
+          ...change.doc.data(),
+        });
+      }
+      changed = true;
+    }
 
-    await dbLocal.proveedores.bulkPut(proveedores);
-
-    console.log("Proveedores sincronizados:", proveedores.length);
-
-  });
+    if (changed) {
+      window.dispatchEvent(new CustomEvent("data:changed", {
+        detail: { entityType: "proveedor" },
+      }));
+    }
+  }, onError);
 
 }

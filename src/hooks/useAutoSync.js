@@ -9,9 +9,10 @@ import {
 
 import {
   saveOperacionFirestore,
-  deleteOperacionFirestore,
-  getOperacionesFirestore,
 } from "../services/operacionesServices.js";
+import { pushProveedor } from "../sync/PushProveedor";
+import { deleteDoc, doc } from "firebase/firestore";
+import { db } from "../firebase/firebase";
 
 export function useAutoSync() {
   const { user } = useAuth();
@@ -19,14 +20,11 @@ export function useAutoSync() {
   useEffect(() => {
     // 🔐 BLOQUEO TOTAL SI NO HAY USUARIO
     if (!user) {
-      console.log("SYNC detenido: usuario no autenticado");
       return;
     }
 
     let syncing = false;
     let cancelled = false;
-
-    console.log("SYNC corriendo para user:", user.uid);
 
     async function sync() {
       if (syncing || cancelled) return;
@@ -39,56 +37,62 @@ export function useAutoSync() {
         /* =====================================
            1️⃣ PROCESAR OUTBOX (SUBIR CAMBIOS)
         ====================================== */
-        const queue = await dbLocal.outbox
+        const pendingJobs = await dbLocal.outbox
           .orderBy("createdAt")
           .toArray();
+        const latestByEntity = new Map();
+        for (const job of pendingJobs) {
+          latestByEntity.set(`${job.entityType}:${job.entityId}`, job);
+        }
+        const queue = [...latestByEntity.values()];
 
         for (const job of queue) {
           const { entityType, entityId, op } = job;
 
-          if (entityType !== "operacion") continue;
-
-          if (op === "upsert") {
+          if (entityType === "operacion" && op === "upsert") {
             const localOp = await getOperacionByIdLocal(entityId);
-            if (!localOp) continue;
+            if (!localOp) {
+              await dbLocal.outbox.delete(job.key);
+              continue;
+            }
 
             await saveOperacionFirestore(user, localOp);
             await markOperacionAsSynced(entityId);
           }
 
-          if (op === "delete") {
-            await deleteOperacionFirestore(user, entityId);
+          if (entityType === "operacion" && op === "delete") {
+            const localOp = await getOperacionByIdLocal(entityId);
+            if (localOp) await saveOperacionFirestore(user, localOp);
           }
 
-          // 👉 solo se borra si salió bien
+          if (entityType === "proveedor" && op === "upsert") {
+            const proveedor = await dbLocal.proveedores.get(entityId);
+            if (!proveedor) {
+              await dbLocal.outbox.delete(job.key);
+              continue;
+            }
+            await pushProveedor(entityId, proveedor);
+          }
+
+          if (entityType === "proveedor" && op === "delete") {
+            await deleteDoc(doc(db, "proveedores", entityId));
+          }
+
           await dbLocal.outbox.delete(job.key);
+          await dbLocal.outbox
+            .where("[entityType+entityId]")
+            .equals([entityType, entityId])
+            .delete();
         }
 
-        /* =====================================
-           2️⃣ BAJAR CAMBIOS DESDE FIRESTORE
-        ====================================== */
-        const remotas = await getOperacionesFirestore(user);
-
-        for (const remoto of remotas) {
-          const local = await getOperacionByIdLocal(remoto.id);
-
-          const remoteTime = remoto.updatedAt?.toDate
-            ? remoto.updatedAt.toDate().getTime()
-            : new Date(remoto.updatedAt || 0).getTime();
-
-          const localTime = local?.updatedAtLocal || 0;
-
-          if (!local || remoteTime > localTime) {
-            await dbLocal.operaciones.put({
-              ...remoto,
-              dirty: false,
-              deleted: false,
-              updatedAtLocal: remoteTime,
-            });
-          }
-        }
+        window.dispatchEvent(new CustomEvent("data:changed", {
+          detail: { entityType: "sync" },
+        }));
       } catch (err) {
         console.error("SYNC ERROR:", err);
+        window.dispatchEvent(new CustomEvent("sync:error", {
+          detail: { message: err?.message || "No se pudo sincronizar" },
+        }));
       } finally {
         syncing = false;
 
@@ -100,11 +104,15 @@ export function useAutoSync() {
     // ▶️ correr al autenticarse
     sync();
 
-    // 🔁 repetir cada 15s
-    const interval = setInterval(sync, 15000);
+    const onOnline = () => sync();
+    window.addEventListener("online", onOnline);
+
+    // Red de seguridad; los cambios remotos llegan por escucha incremental.
+    const interval = setInterval(sync, 60000);
 
     return () => {
       cancelled = true;
+      window.removeEventListener("online", onOnline);
       clearInterval(interval);
     };
   }, [user]); // 👈 CLAVE

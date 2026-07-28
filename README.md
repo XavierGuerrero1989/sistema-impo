@@ -1,17 +1,54 @@
-# React + Vite
+# ImportSys
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Sistema interno de gestión de importaciones para un único cliente. Incluye
+operaciones, proveedores, logística, documentos, finanzas y funcionamiento
+offline.
 
-Currently, two official plugins are available:
+## Requisitos
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- Node.js 20 o superior
+- Un proyecto de Firebase con Authentication, Firestore y Storage
 
-## React Compiler
+## Instalación
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+1. Ejecutar `npm install`.
+2. Copiar las variables de Firebase a un archivo `.env`.
+3. Ejecutar `npm run dev`.
 
-## Expanding the ESLint configuration
+## Comprobaciones
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
-# sistema-impo
+- `npm run lint`: revisa problemas de código.
+- `npm run build`: genera la versión de producción.
+- `npm test`: ejecuta las pruebas automatizadas del dominio.
+- `npm run check`: ejecuta análisis, pruebas y compilación.
+
+## Firebase
+
+Las reglas se encuentran en `firestore.rules` y `storage.rules`. Para publicarlas:
+
+`firebase deploy --only firestore:rules,storage`
+
+Publicar reglas es una acción independiente de compilar o desplegar la interfaz.
+
+## Funcionamiento offline
+
+Cada usuario autenticado utiliza una base IndexedDB separada. Las operaciones y
+proveedores pendientes se guardan en una cola local y se sincronizan cuando
+regresa la conexión. La primera sesión posterior a esta actualización migra los
+datos de la base local anterior al primer usuario autenticado.
+
+## Seguridad
+
+El sistema es para un único cliente; no contiene tenants ni organizaciones.
+Los roles internos requieren definir inicialmente la cuenta administradora antes
+de activar las reglas restrictivas definitivas.
+
+La cuenta administradora principal configurada es
+`xavierignacioguerrero@gmail.com`. Desde la pantalla Usuarios puede asignar los
+roles `admin`, `operaciones`, `finanzas` y `lectura`.
+
+## Trazabilidad
+
+Los cambios relevantes se incorporan al historial de cada operación. La pantalla
+Historial permite buscar por operación, proveedor, evento o usuario, filtrar por
+fechas y exportar los resultados a CSV.

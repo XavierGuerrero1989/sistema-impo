@@ -1,4 +1,5 @@
 import "./KPIs.css";
+import { calcularFinanzas } from "../domain/operacion";
 
 export default function KPIs({ operaciones }) {
 
@@ -21,28 +22,6 @@ export default function KPIs({ operaciones }) {
   /* =========================
      Docs pendientes
   ========================== */
-  console.log(
-  "OPERACIONES KPI",
-  operaciones
-);
-
-operaciones.forEach((op) => {
-
-  if (
-    op.documentos &&
-    !Array.isArray(op.documentos)
-  ) {
-
-    console.warn(
-      "Operacion con documentos invalidos:",
-      op.id,
-      op.documentos
-    );
-
-  }
-
-});
-
   const docsPendientes = operaciones.filter((op) => {
 
   const documentos = Array.isArray(op.documentos)
@@ -63,19 +42,7 @@ operaciones.forEach((op) => {
 
     if (op.estado === "FINALIZADA") return false;
 
-    const total = Number(op.totalOperacion || 0);
-
-    const adelantos = (op.adelantos || [])
-      .filter((m) => m.estado === "ACTIVO")
-      .reduce((acc, m) => acc + Number(m.monto || 0), 0);
-
-    const pagos = (op.pagos || [])
-      .filter((m) => m.estado === "ACTIVO")
-      .reduce((acc, m) => acc + Number(m.monto || 0), 0);
-
-    const pagado = adelantos + pagos;
-
-    return total > pagado;
+    return calcularFinanzas(op).saldo > 0;
 
   }).length;
 
