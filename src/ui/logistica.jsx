@@ -67,7 +67,7 @@ export default function Logistica() {
         proveedor: op.proveedorNombre || op.proveedor || "-",
         activo: op.activo,
         origen: op.logistica?.origen || "-",
-        destino: op.logistica?.destino || "-",
+        destino: "Chile",
         medio: op.logistica?.medio || "MARÍTIMO",
         etapa,
         eta,

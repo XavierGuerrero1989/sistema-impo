@@ -47,7 +47,7 @@ export default function OperacionDetalle() {
 
   /* ===== LOGÍSTICA (para el bloque de Estado) ===== */
   const [origen, setOrigen] = useState("");
-  const [destino, setDestino] = useState("");
+  const destino = "Chile";
   const [medio, setMedio] = useState("MARÍTIMO"); // “ruta”
   const [fechaSalida, setFechaSalida] = useState("");
   const [eta, setEta] = useState("");
@@ -89,7 +89,6 @@ export default function OperacionDetalle() {
       // hidratar logística (si existe)
       const l = op?.logistica || {};
       setOrigen(l.origen || "");
-      setDestino(l.destino || "");
       setMedio(l.medio || "MARÍTIMO");
       setFechaSalida(l.fechaSalida ? String(l.fechaSalida).slice(0, 10) : "");
       setEta(l.eta ? String(l.eta).slice(0, 10) : "");
@@ -372,7 +371,7 @@ export default function OperacionDetalle() {
     const logistica = {
       ...(operacion.logistica || {}),
       origen: origen || null,
-      destino: destino || null,
+      destino,
       medio: medio || "MARÍTIMO",
       fechaSalida: fechaSalida || null,
       eta: eta || null,
@@ -742,7 +741,6 @@ export default function OperacionDetalle() {
               : Math.round((safeIndex / (FLUJO_ESTADOS.length - 1)) * 100);
           const faltantes = [];
           if (!origen.trim()) faltantes.push("Definir país de origen");
-          if (!destino.trim()) faltantes.push("Definir país de destino");
           if (proximoEstado === "EN_TRANSITO" && !fechaSalida)
             faltantes.push("Ingresar fecha de salida");
           if (proximoEstado === "EN_TRANSITO" && !eta)
@@ -835,15 +833,10 @@ export default function OperacionDetalle() {
                     </label>
                     <label>
                       <span>País de destino</span>
-                      <div className="country-input">
+                      <div className="country-input fixed-country" aria-label="Destino fijo: Chile">
                         <b>{countryFlag(destino)}</b>
-                        <input
-                          type="text"
-                          placeholder="Ej. Chile"
-                          value={destino}
-                          disabled={estadoActual === "FINALIZADA"}
-                          onChange={(e) => setDestino(e.target.value)}
-                        />
+                        <span>Chile</span>
+                        <small>Destino fijo</small>
                       </div>
                     </label>
                     <label>

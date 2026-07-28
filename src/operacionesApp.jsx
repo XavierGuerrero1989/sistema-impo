@@ -143,7 +143,7 @@ function OperacionesApp() {
               <strong>{op.proveedorNombre || op.proveedor || "Sin proveedor"}</strong>
               <p className="activo">{op.activo || "Mercadería sin especificar"}</p>
               <div className="card-route">
-                <span>{countryLabel(op.logistica?.origen, "Origen")}</span><b>→</b><span>{countryLabel(op.logistica?.destino, "Destino")}</span>
+                <span>{countryLabel(op.logistica?.origen, "Origen")}</span><b>→</b><span>{countryLabel("Chile")}</span>
               </div>
             </div>
             {op.alerta && (

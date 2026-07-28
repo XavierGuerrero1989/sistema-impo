@@ -81,6 +81,10 @@ export default function CrearOperacion() {
       fechaVencimientoPago: form.fechaVencimientoPago || null,
 
       estado: "PLANIFICADA",
+      logistica: {
+        destino: "Chile",
+        medio: "MARÍTIMO",
+      },
 
       adelantos: [],
       pagos: [],
