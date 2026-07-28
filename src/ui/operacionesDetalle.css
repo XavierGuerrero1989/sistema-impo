@@ -505,6 +505,13 @@
 }
 .country-input b { padding-left: 12px; font-size: 1.25rem; }
 .country-input input { border: 0; outline: 0; }
+.fixed-country { min-height: 42px; padding: 0 12px; gap: 9px; }
+.fixed-country b { padding-left: 0; }
+.fixed-country > span { color: #172033; font-size: .9rem; font-weight: 700; }
+.fixed-country small {
+  margin-left: auto; color: #6366f1; font-size: .67rem; font-weight: 750;
+  text-transform: uppercase;
+}
 .next-action-card {
   position: relative; overflow: hidden; padding: 21px; border-radius: 18px;
   background: linear-gradient(145deg,#312e81,#5b21b6 60%,#7c3aed);
