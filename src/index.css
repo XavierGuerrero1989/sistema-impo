@@ -1,16 +1,139 @@
-/* RESET GLOBAL */
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
+@import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap");
+
+:root {
+  font-family: "DM Sans", system-ui, sans-serif;
+  color: #14213d;
+  background: #f3f6fb;
+  font-synthesis: none;
+  --navy: #0b1f3a;
+  --blue: #2563eb;
+  --cyan: #06b6d4;
+  --violet: #7c3aed;
+  --green: #16a34a;
+  --amber: #f59e0b;
+  --red: #ef4444;
+  --surface: #ffffff;
+  --muted: #64748b;
+  --line: #e5eaf2;
+  --shadow: 0 12px 34px rgba(35, 56, 92, 0.08);
 }
 
-/* BASE */
-html,
-body,
-#root {
-  width: 100%;
-  height: 100%;
-  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-  background: #f8fafc;
+* { box-sizing: border-box; }
+html, body, #root { width: 100%; min-height: 100%; margin: 0; }
+body {
+  margin: 0;
+  background:
+    radial-gradient(circle at 90% 5%, rgba(37, 99, 235, .08), transparent 26rem),
+    #f3f6fb;
+}
+button, input, select, textarea { font: inherit; }
+button { transition: transform .18s ease, box-shadow .18s ease, background .18s ease; }
+button:hover:not(:disabled) { transform: translateY(-1px); }
+button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+  outline: 3px solid rgba(37, 99, 235, .22);
+  outline-offset: 2px;
+}
+a { color: inherit; }
+h1, h2, h3, .navbar-brand { font-family: "Manrope", sans-serif; }
+
+.app-layout { min-height: 100vh; }
+.main-content {
+  min-height: 100vh;
+  margin-left: 264px;
+  padding-top: 76px;
+}
+.main-content > * { animation: page-in .3s ease both; }
+@keyframes page-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.btn-primary, .btn-nuevo {
+  border: 0 !important;
+  color: #fff !important;
+  background: linear-gradient(135deg, var(--blue), #4f46e5) !important;
+  box-shadow: 0 8px 18px rgba(37, 99, 235, .24);
+  border-radius: 10px !important;
+  font-weight: 700 !important;
+}
+.btn-secondary {
+  border-color: var(--line) !important;
+  background: #fff !important;
+  color: #334155 !important;
+  border-radius: 10px !important;
+}
+
+table { border-collapse: separate !important; border-spacing: 0; }
+thead th {
+  color: #64748b !important;
+  font-size: .72rem !important;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+tbody tr { transition: background .16s ease; }
+tbody tr:hover { background: #f8fbff !important; }
+
+.estado-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border-radius: 999px !important;
+  font-weight: 800 !important;
+  letter-spacing: .02em;
+}
+.estado-badge.planificada, .estado-badge.creada { background: #eef2ff; color: #4f46e5; }
+.estado-badge.cargada { background: #ecfeff; color: #0e7490; }
+.estado-badge.en_transito { background: #dbeafe; color: #1d4ed8; }
+.estado-badge.arribada { background: #fef3c7; color: #b45309; }
+.estado-badge.en_despacho { background: #ffedd5; color: #c2410c; }
+.estado-badge.entregada, .estado-badge.finalizada { background: #dcfce7; color: #15803d; }
+.estado-badge.bloqueada { background: #fee2e2; color: #b91c1c; }
+
+@media (max-width: 900px) {
+  .main-content { margin-left: 0; padding-top: 68px; }
+}
+
+/* Cohesión visual para todas las áreas existentes */
+.operaciones-listado-page, .proveedores-page, .documentos-page, .fin-page, .log-page, .crear-operacion-page {
+  max-width: 1480px; margin: 0 auto; padding: 28px 30px 60px !important;
+}
+.listado-header, .proveedores-header, .documentos-header, .fin-header, .log-header, .crear-header {
+  min-height: 110px; margin-bottom: 20px; padding: 23px 25px !important;
+  border: 1px solid #e5eaf2 !important; border-radius: 18px !important;
+  color: #173252 !important; background: linear-gradient(135deg,#fff,#f4f8fd) !important;
+  box-shadow: var(--shadow) !important;
+}
+.listado-header h1, .proveedores-header h1, .documentos-header h1, .fin-header h1, .log-header h1, .crear-header h1 {
+  margin: 0 !important; font-size: 25px !important; letter-spacing: -.03em !important;
+}
+.listado-header p, .proveedores-header p, .documentos-header p, .fin-header p, .log-header p, .crear-header p {
+  color: #64748b !important; opacity: 1 !important;
+}
+.tabla-wrapper, .proveedores-table-card, .documentos-table-wrapper, .fin-table-wrap, .log-table-wrap, .form-card, .detalle-card {
+  border: 1px solid #e5eaf2 !important; border-radius: 17px !important; background: #fff !important;
+  box-shadow: 0 8px 26px rgba(39,62,99,.055) !important; overflow: hidden;
+}
+.filtros-bar, .documentos-filtros, .fin-toolbar, .log-filters {
+  padding: 11px !important; border: 1px solid #e5eaf2; border-radius: 14px; background: #fff;
+}
+.filtros-bar input, .filtros-bar select, .documentos-filtros input, .documentos-filtros select,
+.fin-toolbar input, .fin-toolbar select, .log-filters input, .log-filters select {
+  min-height: 39px; border: 1px solid #e3e8f0 !important; border-radius: 9px !important; background: #f8fafc !important;
+}
+.fin-kpi, .log-kpi, .doc-kpis .kpi {
+  border: 1px solid #e5eaf2 !important; color: #173252 !important; background: #fff !important;
+  box-shadow: 0 7px 20px rgba(39,62,99,.055) !important;
+}
+.fin-kpi.ok, .log-kpi.ok { border-top: 3px solid #16a34a !important; }
+.fin-kpi.warn, .log-kpi.warn { border-top: 3px solid #f59e0b !important; }
+.fin-kpi.alert, .log-kpi.alert { border-top: 3px solid #ef4444 !important; }
+.fin-multi-currency, .fin-bank-panel, .fin-currency-strip, .log-pipeline {
+  border-color: #e5eaf2 !important; color: #173252 !important; background: #fff !important;
+}
+.fin-bank-card, .fin-currency-chip, .log-pipe {
+  border-color: #e5eaf2 !important; color: #334155 !important; background: #f8fafc !important;
+}
+.fin-bank-card.active, .log-pipe.active { border-color: #2563eb !important; color: #1d4ed8 !important; background: #eff6ff !important; }
+@media(max-width:760px){
+  .operaciones-listado-page, .proveedores-page, .documentos-page, .fin-page, .log-page, .crear-operacion-page { padding:18px 14px 40px !important; }
 }

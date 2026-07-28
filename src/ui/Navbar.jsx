@@ -3,32 +3,34 @@ import { useAuth } from "../auth/AuthContext";
 import { NavLink, Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 
+const navItems = [
+  { to: "/", label: "Inicio", icon: "⌂" },
+  { to: "/operaciones", label: "Operaciones", icon: "▦" },
+  { to: "/proveedores", label: "Proveedores", icon: "◆" },
+  { to: "/logistica", label: "Logística", icon: "→" },
+  { to: "/documentos", label: "Documentos", icon: "▤" },
+  { to: "/finanzas", label: "Finanzas", icon: "$" },
+  { to: "/historial", label: "Historial", icon: "↺" },
+];
+
 export default function Navbar() {
   const { user, profile, permissions, logout } = useAuth();
-
   const [online, setOnline] = useState(navigator.onLine);
   const [syncing, setSyncing] = useState(false);
   const [syncError, setSyncError] = useState("");
+  const [open, setOpen] = useState(false);
 
   useEffect(() => {
     const goOnline = () => setOnline(true);
     const goOffline = () => setOnline(false);
-
-    window.addEventListener("online", goOnline);
-    window.addEventListener("offline", goOffline);
-
-    // eventos custom desde useAutoSync
-    const onSyncStart = () => {
-      setSyncing(true);
-      setSyncError("");
-    };
+    const onSyncStart = () => { setSyncing(true); setSyncError(""); };
     const onSyncEnd = () => setSyncing(false);
     const onSyncError = (event) => setSyncError(event.detail?.message || "Error de sincronización");
-
+    window.addEventListener("online", goOnline);
+    window.addEventListener("offline", goOffline);
     window.addEventListener("sync:start", onSyncStart);
     window.addEventListener("sync:end", onSyncEnd);
     window.addEventListener("sync:error", onSyncError);
-
     return () => {
       window.removeEventListener("online", goOnline);
       window.removeEventListener("offline", goOffline);
@@ -38,107 +40,60 @@ export default function Navbar() {
     };
   }, []);
 
-  const syncLabel = syncError
-    ? "Error de sincronización"
-    : !online
-    ? "Offline"
-    : syncing
-    ? "Sincronizando"
-    : "Conectado";
-
-  const syncClass = syncError
-    ? "sync-status offline"
-    : !online
-    ? "sync-status offline"
-    : syncing
-    ? "sync-status syncing"
-    : "sync-status online";
+  const syncLabel = syncError ? "Error de sincronización" : !online ? "Sin conexión" : syncing ? "Sincronizando" : "Todo sincronizado";
+  const syncClass = syncError || !online ? "offline" : syncing ? "syncing" : "online";
+  const initials = (user?.email || "U").slice(0, 2).toUpperCase();
 
   return (
-    <nav className="navbar">
-      <div className="navbar-left">
+    <>
+      <header className="topbar">
+        <button className="mobile-menu" onClick={() => setOpen((value) => !value)} aria-label="Abrir menú">☰</button>
+        <div className="topbar-copy">
+          <span className="topbar-eyebrow">Centro de control</span>
+          <strong>Importaciones en movimiento</strong>
+        </div>
+        <div className={`sync-status ${syncClass}`} title={syncError || undefined}>
+          <span className="dot" /> {syncLabel}
+        </div>
+      </header>
 
-        <Link to="/" className="navbar-brand">
-          SISTEMA-IMPO
+      <aside className={`navbar ${open ? "open" : ""}`}>
+        <Link to="/" className="navbar-brand" onClick={() => setOpen(false)}>
+          <span className="brand-mark">SI</span>
+          <span><b>SISTEMA</b><em>IMPO</em></span>
         </Link>
 
-        <NavLink
-          to="/operaciones"
-          className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}
-        >
-          Operaciones
-        </NavLink>
+        <div className="nav-section-label">Navegación</div>
+        <nav className="navbar-links">
+          {navItems.map((item) => (
+            <NavLink key={item.to} to={item.to} end={item.to === "/"} onClick={() => setOpen(false)}
+              className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}>
+              <span className="nav-icon">{item.icon}</span><span>{item.label}</span>
+            </NavLink>
+          ))}
+        </nav>
 
         {permissions.manageUsers && (
-          <NavLink
-            to="/usuarios"
-            className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}
-          >
-            Usuarios
-          </NavLink>
+          <>
+            <div className="nav-section-label">Administración</div>
+            <nav className="navbar-links">
+              <NavLink to="/usuarios" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}>
+                <span className="nav-icon">◎</span><span>Usuarios</span>
+              </NavLink>
+              <NavLink to="/papelera" className={({ isActive }) => isActive ? "nav-link active danger-link" : "nav-link danger-link"}>
+                <span className="nav-icon">⌫</span><span>Papelera</span>
+              </NavLink>
+            </nav>
+          </>
         )}
 
-        {/* NUEVA SECCIÓN */}
-        <NavLink
-          to="/proveedores"
-          className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}
-        >
-          Proveedores
-        </NavLink>
-
-        <NavLink
-          to="/documentos"
-          className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}
-        >
-          Documentos
-        </NavLink>
-
-        <NavLink
-          to="/finanzas"
-          className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}
-        >
-          Finanzas
-        </NavLink>
-
-        <NavLink
-          to="/logistica"
-          className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}
-        >
-          Logística
-        </NavLink>
-
-        <NavLink
-          to="/papelera"
-          className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}
-        >
-          Papelera
-        </NavLink>
-
-        <NavLink
-          to="/historial"
-          className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}
-        >
-          Historial
-        </NavLink>
-
-      </div>
-
-      <div className="navbar-right">
-
-        <div className={syncClass} title={syncError || undefined}>
-          <span className="dot" />
-          {syncLabel}
+        <div className="navbar-user-card">
+          <span className="user-avatar">{initials}</span>
+          <span className="user-copy"><strong>{user?.email?.split("@")[0]}</strong><small>{profile?.role || "lectura"}</small></span>
+          <button className="logout-btn" onClick={logout} title="Cerrar sesión">↪</button>
         </div>
-
-        <span className="navbar-user">
-          {user?.email} · {profile?.role || "lectura"}
-        </span>
-
-        <button className="logout-btn" onClick={logout}>
-          Salir
-        </button>
-
-      </div>
-    </nav>
+      </aside>
+      {open && <button className="nav-backdrop" aria-label="Cerrar menú" onClick={() => setOpen(false)} />}
+    </>
   );
 }
