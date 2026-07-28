@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { collection, getDocs, doc, updateDoc } from "firebase/firestore";
 import { db } from "../firebase/firebase";
-import { ADMIN_EMAIL, ROLES } from "../auth/roles";
+import { isPrimaryAdmin, ROLES } from "../auth/roles";
 import "./operacionesListado.css";
 
 const ROLE_OPTIONS = [
@@ -62,7 +62,7 @@ export default function Usuarios() {
           </thead>
           <tbody>
             {usuarios.map((usuario) => {
-              const primaryAdmin = usuario.email?.toLowerCase() === ADMIN_EMAIL;
+              const primaryAdmin = isPrimaryAdmin(usuario.email);
               const lastAccess = usuario.ultimoAcceso?.toDate?.();
               return (
                 <tr key={usuario.uid}>

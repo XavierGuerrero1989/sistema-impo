@@ -43,9 +43,9 @@ El sistema es para un único cliente; no contiene tenants ni organizaciones.
 Los roles internos requieren definir inicialmente la cuenta administradora antes
 de activar las reglas restrictivas definitivas.
 
-La cuenta administradora principal configurada es
-`xavierignacioguerrero@gmail.com`. Desde la pantalla Usuarios puede asignar los
-roles `admin`, `operaciones`, `finanzas` y `lectura`.
+Las cuentas administradoras principales configuradas son
+`xavierignacioguerrero@gmail.com` y `ariel@ptm.cl`. Desde la pantalla Usuarios
+pueden asignar los roles `admin`, `operaciones`, `finanzas` y `lectura`.
 
 ## Trazabilidad
 
