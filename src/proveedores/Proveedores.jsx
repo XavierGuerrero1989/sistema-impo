@@ -3,6 +3,7 @@ import { getProveedoresLocal } from "./ProveedoresRepo";
 import { useNavigate } from "react-router-dom";
 import "./proveedores.css";
 import { useAuth } from "../auth/AuthContext";
+import { countryLabel } from "../domain/paises";
 
 export default function Proveedores() {
 
@@ -113,7 +114,7 @@ export default function Proveedores() {
                 </td>
 
                 <td className="proveedor-pais">
-                  {p.pais || "-"}
+                  {countryLabel(p.pais, "-")}
                 </td>
 
                 <td>

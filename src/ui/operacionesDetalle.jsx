@@ -10,6 +10,7 @@ import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage
 import "./operacionesDetalle.css";
 import { auditEvent } from "../auth/audit";
 import { useAuth } from "../auth/AuthContext";
+import { countryFlag, countryLabel } from "../domain/paises";
 
 const ESTADOS = [
   "PLANIFICADA",
@@ -23,6 +24,18 @@ const ESTADOS = [
 
 // “Ruta” / medio de transporte (alineado con Logística)
 const MEDIOS = ["MARÍTIMO", "TERRESTRE", "AÉREO"];
+const FLUJO_ESTADOS = [
+  "PLANIFICADA",
+  "CARGADA",
+  "EN_TRANSITO",
+  "ARRIBADA",
+  "EN_DESPACHO",
+  "ENTREGADA",
+];
+
+const estadoLabel = (estado) => estado?.replaceAll("_", " ") || "-";
+const medioIcon = (value) =>
+  value === "AÉREO" ? "✈️" : value === "TERRESTRE" ? "🚚" : "⚓";
 
 export default function OperacionDetalle() {
   const { permissions } = useAuth();
@@ -344,14 +357,14 @@ export default function OperacionDetalle() {
   /* ===== Estado =====
      + guarda logística / ruta según estado
   ===== */
-  const cambiarEstado = async () => {
+  const cambiarEstado = async (estadoObjetivo = nuevoEstado) => {
     if (!permissions.manageOperations) return alert("No tenés permiso para modificar operaciones.");
     if (operacion.estado === "FINALIZADA") {
       alert("La operación ya está finalizada.");
       return;
     }
 
-    if (nuevoEstado === operacion.estado) {
+    if (estadoObjetivo === operacion.estado) {
       alert("El estado ya es ese.");
       return;
     }
@@ -370,19 +383,19 @@ export default function OperacionDetalle() {
 
     const updated = {
       ...operacion,
-      estado: nuevoEstado,
+      estado: estadoObjetivo,
       logistica,
       historial: [
         ...(operacion.historial || []),
         auditEvent("Estado cambiado", {
-          estado: nuevoEstado,
+          estado: estadoObjetivo,
         }),
       ],
     };
 
     await upsertOperacionLocal(updated);
     setOperacion(updated);
-    setNuevoEstado(nuevoEstado);
+    setNuevoEstado(estadoObjetivo);
   };
 
   const actualizarTotalOperacion = async () => {
@@ -426,6 +439,21 @@ export default function OperacionDetalle() {
     if (!permissions.manageOperations) return alert("No tenés permiso para finalizar operaciones.");
     if (operacion.estado === "FINALIZADA") {
       alert("La operación ya está finalizada.");
+      return;
+    }
+    if (operacion.estado !== "ENTREGADA") {
+      alert("Para finalizar, la operación primero debe estar ENTREGADA.");
+      return;
+    }
+    if (saldo > 0) {
+      alert(`Todavía queda un saldo pendiente de ${money(saldo)}.`);
+      return;
+    }
+    const documentosPendientes = (operacion.documentos || []).filter(
+      (documento) => !["VALIDADO", "APROBADO"].includes(documento.estado)
+    );
+    if (documentosPendientes.length > 0) {
+      alert("Hay documentos pendientes de validar antes de finalizar.");
       return;
     }
 
@@ -699,144 +727,211 @@ export default function OperacionDetalle() {
       </section>
 
       {/* ===== ESTADO DE LA OPERACIÓN ===== */}
-      <section className="detalle-card">
-        <h3>Estado de la operación</h3>
+      <section className="detalle-card workflow-card">
+        {(() => {
+          const estadoActual = operacion.estado;
+          const currentIndex = FLUJO_ESTADOS.indexOf(estadoActual);
+          const safeIndex = Math.max(0, currentIndex);
+          const proximoEstado =
+            estadoActual === "FINALIZADA" || safeIndex >= FLUJO_ESTADOS.length - 1
+              ? null
+              : FLUJO_ESTADOS[safeIndex + 1];
+          const avance =
+            estadoActual === "FINALIZADA"
+              ? 100
+              : Math.round((safeIndex / (FLUJO_ESTADOS.length - 1)) * 100);
+          const faltantes = [];
+          if (!origen.trim()) faltantes.push("Definir país de origen");
+          if (!destino.trim()) faltantes.push("Definir país de destino");
+          if (proximoEstado === "EN_TRANSITO" && !fechaSalida)
+            faltantes.push("Ingresar fecha de salida");
+          if (proximoEstado === "EN_TRANSITO" && !eta)
+            faltantes.push("Ingresar fecha estimada de arribo");
+          if (proximoEstado === "ARRIBADA" && !fechaArribo)
+            faltantes.push("Ingresar fecha real de arribo");
 
-        {operacion.estado === "FINALIZADA" && (
-          <div className="operacion-finalizada">
-            ✔ Operación finalizada el{" "}
-            {new Date(operacion.fechaFinalizacion).toLocaleDateString()}
-          </div>
-        )}
+          const avanzar = () => {
+            if (faltantes.length) {
+              alert(`Antes de avanzar:\n• ${faltantes.join("\n• ")}`);
+              return;
+            }
+            cambiarEstado(proximoEstado);
+          };
 
-        <div className="estado-actual">
-          <div>
-            <strong>Estado:</strong>{" "}
-            {operacion.estado?.replace("_", " ")}
-          </div>
-          <div>
-            <strong>Vía:</strong> {operacion.logistica?.medio || "-"}
-          </div>
-          <div>
-            <strong>Origen:</strong> {operacion.logistica?.origen || "-"}
-          </div>
-        </div>
+          return (
+            <>
+              <div className="workflow-head">
+                <div>
+                  <span className="workflow-eyebrow">Seguimiento logístico</span>
+                  <h3>Estado de la operación</h3>
+                  <p>Actualizá el recorrido y avanzá al siguiente hito.</p>
+                </div>
+                <div className="workflow-progress">
+                  <strong>{avance}%</strong>
+                  <span>completado</span>
+                </div>
+              </div>
 
-        <div className="estado-actions">
-          <select
-            value={nuevoEstado}
-            onChange={(e) => setNuevoEstado(e.target.value)}
-            disabled={operacion.estado === "FINALIZADA"}
-          >
-            {ESTADOS.map((e) => (
-              <option key={e} value={e}>
-                {e.replace("_", " ")}
-              </option>
-            ))}
-          </select>
+              {operacion.estado === "FINALIZADA" && (
+                <div className="operacion-finalizada">
+                  ✓ Operación finalizada el{" "}
+                  {new Date(operacion.fechaFinalizacion).toLocaleDateString()}
+                </div>
+              )}
 
-          <div className="inline-group">
-            <span className="mini-label">Ruta / Medio de transporte</span>
-            <select
-              value={medio}
-              onChange={(e) => setMedio(e.target.value)}
-              disabled={operacion.estado === "FINALIZADA"}
-            >
-              {MEDIOS.map((m) => (
-                <option key={m} value={m}>
-                  {m}
-                </option>
-              ))}
-            </select>
-          </div>
+              <div className="workflow-timeline" aria-label="Progreso de la operación">
+                {FLUJO_ESTADOS.map((estado, index) => {
+                  const completed = currentIndex > index || estadoActual === "FINALIZADA";
+                  const active = estadoActual === estado;
+                  return (
+                    <div
+                      key={estado}
+                      className={`workflow-step ${completed ? "is-complete" : ""} ${
+                        active ? "is-active" : ""
+                      }`}
+                    >
+                      <span className="workflow-dot">{completed ? "✓" : index + 1}</span>
+                      <span>{estadoLabel(estado)}</span>
+                    </div>
+                  );
+                })}
+              </div>
 
-          <button
-            className="btn-secondary"
-            onClick={cambiarEstado}
-            disabled={operacion.estado === "FINALIZADA"}
-          >
-            Actualizar estado
-          </button>
-        </div>
+              <div className="workflow-summary">
+                <div>
+                  <span>Estado actual</span>
+                  <strong>{estadoLabel(estadoActual)}</strong>
+                </div>
+                <div>
+                  <span>Transporte</span>
+                  <strong>{medioIcon(medio)} {medio}</strong>
+                </div>
+                <div>
+                  <span>Ruta</span>
+                  <strong>{countryLabel(origen, "Origen")} → {countryLabel(destino, "Destino")}</strong>
+                </div>
+                <div>
+                  <span>Próximo hito</span>
+                  <strong>{proximoEstado ? estadoLabel(proximoEstado) : "Ciclo completo"}</strong>
+                </div>
+              </div>
 
-        <div className="estado-actions" style={{ marginTop: 12 }}>
-          <input
-            type="text"
-            placeholder="Origen"
-            value={origen}
-            disabled={operacion.estado === "FINALIZADA"}
-            onChange={(e) => setOrigen(e.target.value)}
-          />
-        </div>
+              <div className="workflow-body">
+                <div className="workflow-form-panel">
+                  <h4>Datos del recorrido</h4>
+                  <div className="workflow-form-grid">
+                    <label>
+                      <span>País de origen</span>
+                      <div className="country-input">
+                        <b>{countryFlag(origen)}</b>
+                        <input
+                          type="text"
+                          placeholder="Ej. China"
+                          value={origen}
+                          disabled={estadoActual === "FINALIZADA"}
+                          onChange={(e) => setOrigen(e.target.value)}
+                        />
+                      </div>
+                    </label>
+                    <label>
+                      <span>País de destino</span>
+                      <div className="country-input">
+                        <b>{countryFlag(destino)}</b>
+                        <input
+                          type="text"
+                          placeholder="Ej. Chile"
+                          value={destino}
+                          disabled={estadoActual === "FINALIZADA"}
+                          onChange={(e) => setDestino(e.target.value)}
+                        />
+                      </div>
+                    </label>
+                    <label>
+                      <span>Medio de transporte</span>
+                      <select
+                        value={medio}
+                        onChange={(e) => setMedio(e.target.value)}
+                        disabled={estadoActual === "FINALIZADA"}
+                      >
+                        {MEDIOS.map((m) => <option key={m}>{m}</option>)}
+                      </select>
+                    </label>
 
-        {nuevoEstado === "EN_TRANSITO" && (
-          <div className="estado-actions" style={{ marginTop: 12 }}>
-            <div className="inline-group">
-              <span className="mini-label">Fecha de salida</span>
-              <input
-                type="date"
-                value={fechaSalida}
-                disabled={operacion.estado === "FINALIZADA"}
-                onChange={(e) => setFechaSalida(e.target.value)}
-              />
-            </div>
+                    {(proximoEstado === "EN_TRANSITO" || nuevoEstado === "EN_TRANSITO") && (
+                      <>
+                        <label>
+                          <span>Fecha de salida</span>
+                          <input type="date" value={fechaSalida} disabled={estadoActual === "FINALIZADA"} onChange={(e) => setFechaSalida(e.target.value)} />
+                        </label>
+                        <label>
+                          <span>Arribo estimado (ETA)</span>
+                          <input type="date" value={eta} disabled={estadoActual === "FINALIZADA"} onChange={(e) => setEta(e.target.value)} />
+                        </label>
+                      </>
+                    )}
 
-            <div className="inline-group">
-              <span className="mini-label">
-                ETA (fecha estimada de arribo)
-              </span>
-              <input
-                type="date"
-                value={eta}
-                disabled={operacion.estado === "FINALIZADA"}
-                onChange={(e) => setEta(e.target.value)}
-              />
-            </div>
-          </div>
-        )}
+                    {(proximoEstado === "ARRIBADA" || nuevoEstado === "ARRIBADA") && (
+                      <>
+                        <label>
+                          <span>Fecha real de arribo</span>
+                          <input type="date" value={fechaArribo} disabled={estadoActual === "FINALIZADA"} onChange={(e) => setFechaArribo(e.target.value)} />
+                        </label>
+                        <label>
+                          <span>Depósito</span>
+                          <input type="text" value={deposito} disabled={estadoActual === "FINALIZADA"} onChange={(e) => setDeposito(e.target.value)} />
+                        </label>
+                        <label>
+                          <span>Liberación estimada</span>
+                          <input type="date" value={etaLiberacion} disabled={estadoActual === "FINALIZADA"} onChange={(e) => setEtaLiberacion(e.target.value)} />
+                        </label>
+                      </>
+                    )}
+                  </div>
+                </div>
 
-        {nuevoEstado === "ARRIBADA" && (
-          <div className="estado-actions" style={{ marginTop: 12 }}>
-            <div className="inline-group">
-              <span className="mini-label">Fecha de arribo</span>
-              <input
-                type="date"
-                value={fechaArribo}
-                disabled={operacion.estado === "FINALIZADA"}
-                onChange={(e) => setFechaArribo(e.target.value)}
-              />
-            </div>
+                {estadoActual !== "FINALIZADA" && proximoEstado && (
+                  <aside className="next-action-card">
+                    <span>PRÓXIMO PASO</span>
+                    <div className="next-action-icon">→</div>
+                    <h4>{estadoLabel(proximoEstado)}</h4>
+                    {faltantes.length ? (
+                      <>
+                        <p>Completá estos datos para continuar:</p>
+                        <ul>{faltantes.map((item) => <li key={item}>{item}</li>)}</ul>
+                      </>
+                    ) : (
+                      <p className="ready-message">✓ Todo listo para avanzar.</p>
+                    )}
+                    <button onClick={avanzar} disabled={!permissions.manageOperations}>
+                      Avanzar a {estadoLabel(proximoEstado)}
+                    </button>
+                  </aside>
+                )}
+              </div>
 
-            <input
-              type="text"
-              placeholder="Depósito"
-              value={deposito}
-              disabled={operacion.estado === "FINALIZADA"}
-              onChange={(e) => setDeposito(e.target.value)}
-            />
-
-            <div className="inline-group">
-              <span className="mini-label">ETA liberación</span>
-              <input
-                type="date"
-                value={etaLiberacion}
-                disabled={operacion.estado === "FINALIZADA"}
-                onChange={(e) => setEtaLiberacion(e.target.value)}
-              />
-            </div>
-          </div>
-        )}
-
-        {operacion.estado !== "FINALIZADA" && (
-          <div className="estado-actions" style={{ marginTop: 20 }}>
-            <button
-              className="btn-danger"
-              onClick={finalizarOperacion}
-            >
-              Finalizar operación
-            </button>
-          </div>
-        )}
+              {estadoActual !== "FINALIZADA" && (
+                <details className="workflow-more">
+                  <summary>Más acciones y correcciones</summary>
+                  <div className="workflow-more-content">
+                    <label>
+                      <span>Cambiar estado manualmente</span>
+                      <select value={nuevoEstado} onChange={(e) => setNuevoEstado(e.target.value)}>
+                        {ESTADOS.map((estado) => <option key={estado} value={estado}>{estadoLabel(estado)}</option>)}
+                      </select>
+                    </label>
+                    <button className="btn-secondary" onClick={() => cambiarEstado(nuevoEstado)}>
+                      Guardar cambio
+                    </button>
+                    <button className="btn-danger btn-finalize" onClick={finalizarOperacion}>
+                      Finalizar operación
+                    </button>
+                  </div>
+                  <small>Solo se puede finalizar cuando esté entregada, sin saldo ni documentos pendientes.</small>
+                </details>
+              )}
+            </>
+          );
+        })()}
       </section>
 
       {/* Documentos */}

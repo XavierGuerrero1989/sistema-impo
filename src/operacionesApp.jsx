@@ -7,6 +7,7 @@ import KPIs from "./ui/KPIS";
 import "./operacionesApp.css";
 import { alertasOperacion } from "./domain/operacion";
 import { useAuth } from "./auth/AuthContext";
+import { countryLabel } from "./domain/paises";
 
 function OperacionesApp() {
   const [operaciones, setOperaciones] = useState([]);
@@ -142,7 +143,7 @@ function OperacionesApp() {
               <strong>{op.proveedorNombre || op.proveedor || "Sin proveedor"}</strong>
               <p className="activo">{op.activo || "Mercadería sin especificar"}</p>
               <div className="card-route">
-                <span>{op.logistica?.origen || "Origen"}</span><b>→</b><span>{op.logistica?.destino || "Destino"}</span>
+                <span>{countryLabel(op.logistica?.origen, "Origen")}</span><b>→</b><span>{countryLabel(op.logistica?.destino, "Destino")}</span>
               </div>
             </div>
             {op.alerta && (
