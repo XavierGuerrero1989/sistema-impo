@@ -2,15 +2,51 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    // Operaciones
-    match /operaciones/{operacionId} {
-      allow read, write: if request.auth != null;
+    function signedIn() {
+      return request.auth != null;
     }
 
-    // Documentos (si ya los usás)
+    function primaryAdmin() {
+      return signedIn()
+        && request.auth.token.email == "xavierignacioguerrero@gmail.com";
+    }
+
+    function hasRole(roles) {
+      return signedIn()
+        && exists(/databases/$(database)/documents/usuarios/$(request.auth.uid))
+        && get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.role in roles;
+    }
+
+    match /operaciones/{operacionId} {
+      allow read: if signedIn();
+      allow write: if primaryAdmin() || hasRole(["admin", "operaciones", "finanzas"]);
+    }
+
     match /documentos/{docId} {
-      allow read, write: if request.auth != null;
+      allow read: if signedIn();
+      allow write: if primaryAdmin() || hasRole(["admin", "operaciones"]);
+    }
+
+    match /proveedores/{proveedorId} {
+      allow read: if signedIn();
+      allow write: if primaryAdmin() || hasRole(["admin", "operaciones"]);
+    }
+
+    match /usuarios/{userId} {
+      allow read: if primaryAdmin() || (signedIn() && request.auth.uid == userId);
+      allow create: if primaryAdmin() || (
+        signedIn()
+        && request.auth.uid == userId
+        && request.resource.data.role == "lectura"
+        && request.resource.data.email == request.auth.token.email
+      );
+      allow update: if primaryAdmin() || (
+        signedIn()
+        && request.auth.uid == userId
+        && request.resource.data.role == resource.data.role
+        && request.resource.data.email == request.auth.token.email
+      );
+      allow delete: if primaryAdmin() && request.auth.uid != userId;
     }
 
   }

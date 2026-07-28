@@ -4,6 +4,7 @@ import { upsertOperacionLocal } from "../offline/operacionesRepo";
 import { getProveedoresLocal } from "../proveedores/ProveedoresRepo";
 import { auditEvent } from "../auth/audit";
 import "./CrearOperacion.css";
+import { normalizarOperacion, validarOperacion } from "../domain/operacion";
 
 export default function CrearOperacion() {
 
@@ -17,6 +18,7 @@ export default function CrearOperacion() {
     activo: "",
     moneda: "USD",
     totalOperacion: "",
+    fechaVencimientoPago: "",
     observaciones: "",
   });
 
@@ -45,13 +47,6 @@ export default function CrearOperacion() {
 
   const crearOperacion = async () => {
 
-    if (!form.id || !form.proveedorId || !form.activo) {
-
-      alert("Completá los campos obligatorios");
-      return;
-
-    }
-
     const proveedorSeleccionado = proveedores.find(
       (p) => p.proveedorId === form.proveedorId
     );
@@ -63,7 +58,15 @@ export default function CrearOperacion() {
 
     }
 
-    const nuevaOperacion = {
+    if (
+      proveedorSeleccionado.estado === "BLOQUEADO" ||
+      proveedorSeleccionado.activo === false
+    ) {
+      alert("El proveedor está bloqueado y no puede usarse en una operación nueva");
+      return;
+    }
+
+    const nuevaOperacion = normalizarOperacion({
 
       id: form.id,
 
@@ -75,6 +78,7 @@ export default function CrearOperacion() {
       moneda: form.moneda,
 
       totalOperacion: Number(form.totalOperacion || 0),
+      fechaVencimientoPago: form.fechaVencimientoPago || null,
 
       estado: "PLANIFICADA",
 
@@ -95,7 +99,13 @@ export default function CrearOperacion() {
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
 
-    };
+    });
+
+    const errores = validarOperacion(nuevaOperacion);
+    if (errores.length) {
+      alert(errores.join("\n"));
+      return;
+    }
 
     await upsertOperacionLocal(nuevaOperacion);
 
@@ -146,8 +156,10 @@ export default function CrearOperacion() {
               <option
                 key={p.proveedorId}
                 value={p.proveedorId}
+                disabled={p.estado === "BLOQUEADO" || p.activo === false}
               >
                 {p.proveedorId} — {p.nombreComercial}
+                {(p.estado === "BLOQUEADO" || p.activo === false) ? " (bloqueado)" : ""}
               </option>
 
             ))}
@@ -200,6 +212,16 @@ export default function CrearOperacion() {
 
           </div>
 
+        </div>
+
+        <div className="form-group">
+          <label>Vencimiento estimado de pago</label>
+          <input
+            name="fechaVencimientoPago"
+            type="date"
+            value={form.fechaVencimientoPago}
+            onChange={onChange}
+          />
         </div>
 
         <div className="form-group">

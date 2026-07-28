@@ -8,15 +8,18 @@ import {
 import { getOperacionesLocal } from "../offline/operacionesRepo";
 import { pushProveedor } from "../sync/PushProveedor";
 import "./proveedores.css";
+import { useAuth } from "../auth/AuthContext";
 
 export default function ProveedorDetalle() {
 
   const { proveedorId } = useParams();
   const navigate = useNavigate();
+  const { permissions } = useAuth();
 
   const [proveedor, setProveedor] = useState(null);
   const [editando, setEditando] = useState(false);
   const [operacionesProveedor, setOperacionesProveedor] = useState([]);
+  const [loadError, setLoadError] = useState("");
 
   const [form, setForm] = useState({
     proveedorId: "",
@@ -30,24 +33,22 @@ export default function ProveedorDetalle() {
     banco: "",
     condicionPago: "",
     plazoPagoDias: ""
+    ,identificacionFiscal: ""
+    ,estado: "ACTIVO"
   });
 
   useEffect(() => {
     async function load() {
 
-      console.log("ProveedorId recibido:", proveedorId);
-
       if (!proveedorId) {
-        console.warn("ProveedorId vacío");
+        setLoadError("El ID del proveedor no es válido.");
         return;
       }
 
       const data = await getProveedorById(String(proveedorId));
 
-      console.log("Proveedor cargado desde Dexie:", data);
-
       if (!data) {
-        console.warn("Proveedor no encontrado en Dexie");
+        setLoadError("Proveedor no encontrado.");
         return;
       }
 
@@ -65,24 +66,24 @@ export default function ProveedorDetalle() {
         banco: data?.banco?.banco || "",
         condicionPago: data?.comercial?.condicionPago || "",
         plazoPagoDias: data?.comercial?.plazoPagoDias || ""
+        ,identificacionFiscal: data.identificacionFiscal || ""
+        ,estado: data.estado || (data.activo === false ? "BLOQUEADO" : "ACTIVO")
       });
 
       // buscar operaciones del proveedor
       const operaciones = await getOperacionesLocal();
 
-      console.log("Operaciones encontradas:", operaciones);
-
       const filtradas = operaciones.filter(
-        (op) => op.proveedor === data.nombreComercial
+        (op) =>
+          op.proveedorId === data.proveedorId ||
+          (!op.proveedorId && op.proveedor === data.nombreComercial)
       );
-
-      console.log("Operaciones filtradas proveedor:", filtradas);
 
       setOperacionesProveedor(filtradas);
     }
 
     load().catch((err) => {
-      console.error("Error cargando proveedor:", err);
+      setLoadError(err.message || "No se pudo cargar el proveedor.");
     });
 
   }, [proveedorId]);
@@ -98,12 +99,16 @@ export default function ProveedorDetalle() {
   }
 
   async function handleGuardar() {
+  if (!permissions.manageProviders) return;
 
   const data = {
 
     nombreComercial: form.nombreComercial,
     nombreLegal: form.nombreLegal,
     pais: form.pais,
+    identificacionFiscal: form.identificacionFiscal,
+    estado: form.estado,
+    activo: form.estado !== "BLOQUEADO",
 
     contacto: {
       nombre: form.contacto,
@@ -136,6 +141,7 @@ export default function ProveedorDetalle() {
 }
 
   async function handleEliminar() {
+    if (!permissions.manageProviders) return;
 
     const confirmar = window.confirm(
       "¿Seguro que quieres eliminar este proveedor?"
@@ -145,15 +151,13 @@ export default function ProveedorDetalle() {
 
     await eliminarProveedor(proveedorId);
 
-    console.log("Proveedor eliminado:", proveedorId);
-
     navigate("/proveedores");
   }
 
   if (!proveedor) {
     return (
       <div className="proveedores-page">
-        <p>Cargando proveedor...</p>
+        <p>{loadError || "Cargando proveedor..."}</p>
       </div>
     );
   }
@@ -170,7 +174,7 @@ export default function ProveedorDetalle() {
 
         <div style={{display:"flex",gap:"10px"}}>
 
-          {!editando && (
+          {!editando && permissions.manageProviders && (
             <button
               className="btn-primary"
               onClick={() => setEditando(true)}
@@ -245,6 +249,30 @@ export default function ProveedorDetalle() {
                 {editando
                   ? <input name="pais" value={form.pais} onChange={handleChange}/>
                   : proveedor.pais || "-"}
+              </td>
+            </tr>
+
+            <tr>
+              <th>Identificación fiscal</th>
+              <td>
+                {editando
+                  ? <input name="identificacionFiscal" value={form.identificacionFiscal} onChange={handleChange}/>
+                  : proveedor.identificacionFiscal || "-"}
+              </td>
+            </tr>
+
+            <tr>
+              <th>Estado</th>
+              <td>
+                {editando
+                  ? (
+                    <select name="estado" value={form.estado} onChange={handleChange}>
+                      <option value="ACTIVO">Activo</option>
+                      <option value="SUSPENDIDO">Suspendido</option>
+                      <option value="BLOQUEADO">Bloqueado</option>
+                    </select>
+                  )
+                  : proveedor.estado || (proveedor.activo === false ? "BLOQUEADO" : "ACTIVO")}
               </td>
             </tr>
 
@@ -383,7 +411,7 @@ export default function ProveedorDetalle() {
 
       </div>
 
-      <div
+      {permissions.manageProviders && <div
         style={{
           marginTop: "24px",
           background: "#fff",
@@ -411,7 +439,7 @@ export default function ProveedorDetalle() {
           Eliminar proveedor
         </button>
 
-      </div>
+      </div>}
 
     </div>
   );

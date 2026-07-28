@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { getOperacionesLocal, upsertOperacionLocal } from "../offline/operacionesRepo";
 import { useNavigate } from "react-router-dom";
 import "./logistica.css";
+import { useAuth } from "../auth/AuthContext";
 
 /* =========================
    ETAPAS NORMALIZADAS
@@ -23,11 +24,17 @@ export default function Logistica() {
 
   const [operaciones, setOperaciones] = useState([]);
   const [filtroEtapa, setFiltroEtapa] = useState("TODAS");
+  const [search, setSearch] = useState("");
+  const [filtroEta, setFiltroEta] = useState("TODAS");
 
   const navigate = useNavigate();
+  const { permissions } = useAuth();
 
   useEffect(() => {
-    getOperacionesLocal().then(setOperaciones).catch(console.error);
+    const load = () => getOperacionesLocal().then(setOperaciones).catch(console.error);
+    load();
+    window.addEventListener("data:changed", load);
+    return () => window.removeEventListener("data:changed", load);
   }, []);
 
   /* =========================
@@ -44,18 +51,26 @@ export default function Logistica() {
       const etapa = op.logistica?.etapa || "PLANIFICADA";
 
       const eta = op.logistica?.eta
-        ? new Date(`${op.logistica.eta}T00:00:00`)
+        ? new Date(
+            String(op.logistica.eta).includes("T")
+              ? op.logistica.eta
+              : `${op.logistica.eta}T00:00:00`
+          )
         : null;
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const diasEta = eta ? Math.ceil((eta - today) / 86400000) : null;
 
       return {
         id: op.id,
-        proveedor: op.proveedor,
+        proveedor: op.proveedorNombre || op.proveedor || "-",
         activo: op.activo,
         origen: op.logistica?.origen || "-",
         destino: op.logistica?.destino || "-",
         medio: op.logistica?.medio || "MARÍTIMO",
         etapa,
         eta,
+        diasEta,
       };
 
     });
@@ -102,19 +117,38 @@ export default function Logistica() {
 
   const visibles = useMemo(() => {
 
-    if (filtroEtapa === "TODAS") return items;
+    const query = search.trim().toLowerCase();
+    return items
+      .filter((item) => filtroEtapa === "TODAS" || item.etapa === filtroEtapa)
+      .filter((item) => {
+        if (filtroEta === "VENCIDA") return item.diasEta !== null && item.diasEta < 0;
+        if (filtroEta === "7_DIAS") {
+          return item.diasEta !== null && item.diasEta >= 0 && item.diasEta <= 7;
+        }
+        if (filtroEta === "SIN_ETA") return item.diasEta === null;
+        return true;
+      })
+      .filter((item) => !query || [
+        item.id,
+        item.proveedor,
+        item.activo,
+        item.origen,
+        item.destino,
+      ].some((value) => String(value || "").toLowerCase().includes(query)))
+      .sort((a, b) => {
+        if (a.diasEta === null) return 1;
+        if (b.diasEta === null) return -1;
+        return a.diasEta - b.diasEta;
+      });
 
-    return items.filter(
-      (i) => i.etapa === filtroEtapa
-    );
-
-  }, [items, filtroEtapa]);
+  }, [items, filtroEtapa, filtroEta, search]);
 
   /* =========================
      CAMBIAR ETAPA
   ========================== */
 
   const cambiarEtapa = async (opId, nuevaEtapa) => {
+    if (!permissions.manageOperations) return;
 
     const op = operaciones.find(
       (o) => o.id === opId
@@ -222,6 +256,20 @@ export default function Logistica() {
 
       </section>
 
+      <div className="log-filters">
+        <input
+          value={search}
+          onChange={(event) => setSearch(event.target.value)}
+          placeholder="Buscar operación, proveedor, mercadería o ruta…"
+        />
+        <select value={filtroEta} onChange={(event) => setFiltroEta(event.target.value)}>
+          <option value="TODAS">Todas las ETA</option>
+          <option value="VENCIDA">ETA vencida</option>
+          <option value="7_DIAS">Próximos 7 días</option>
+          <option value="SIN_ETA">Sin ETA</option>
+        </select>
+      </div>
+
       {/* Tabla */}
 
       <div className="log-table-wrap">
@@ -268,6 +316,7 @@ export default function Logistica() {
                 <td>
 
                   <select
+                    disabled={!permissions.manageOperations}
                     value={i.etapa}
                     onChange={(e) =>
                       cambiarEtapa(i.id, e.target.value)
@@ -292,7 +341,13 @@ export default function Logistica() {
                 <td>
 
                   {i.eta ? (
-                    i.eta.toLocaleDateString()
+                    <>
+                      {i.eta.toLocaleDateString("es-AR")}
+                      {i.diasEta < 0 && <strong className="log-eta-danger"> · Vencida</strong>}
+                      {i.diasEta >= 0 && i.diasEta <= 7 && (
+                        <strong className="log-eta-warning"> · {i.diasEta} día(s)</strong>
+                      )}
+                    </>
                   ) : (
                     <span className="muted">–</span>
                   )}

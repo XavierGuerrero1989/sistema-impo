@@ -1,18 +1,9 @@
 import {
-  collection,
   doc,
-  getDocs,
-  getDoc,
   setDoc,
-  deleteDoc,
   serverTimestamp,
 } from "firebase/firestore";
 import { db } from "../firebase/firebase";
-
-/* =========================
-   COLLECTION REF
-========================= */
-const operacionesRef = collection(db, "operaciones");
 
 /* =========================
    GUARDAR / UPDATE
@@ -27,11 +18,16 @@ export async function saveOperacionFirestore(user, operacion) {
   }
 
   const ref = doc(db, "operaciones", operacion.id);
+  const {
+    dirty: _dirty,
+    updatedAtLocal: _updatedAtLocal,
+    ...payload
+  } = operacion;
 
   await setDoc(
     ref,
     {
-      ...operacion,
+      ...payload,
       updatedAt: serverTimestamp(),
       createdAt: operacion.createdAt
         ? operacion.createdAt
@@ -39,47 +35,4 @@ export async function saveOperacionFirestore(user, operacion) {
     },
     { merge: true }
   );
-}
-
-/* =========================
-   OBTENER TODAS
-========================= */
-export async function getOperacionesFirestore(user) {
-  if (!user) {
-    console.warn("Firestore read bloqueado: sin usuario");
-    return [];
-  }
-
-  const snap = await getDocs(operacionesRef);
-
-  return snap.docs.map((d) => ({
-    id: d.id,
-    ...d.data(),
-  }));
-}
-
-/* =========================
-   OBTENER UNA
-========================= */
-export async function getOperacionFirestore(user, id) {
-  if (!user) return null;
-
-  const ref = doc(db, "operaciones", id);
-  const snap = await getDoc(ref);
-
-  if (!snap.exists()) return null;
-
-  return { id: snap.id, ...snap.data() };
-}
-
-/* =========================
-   ELIMINAR
-========================= */
-export async function deleteOperacionFirestore(user, id) {
-  if (!user) {
-    throw new Error("Usuario no autenticado");
-  }
-
-  const ref = doc(db, "operaciones", id);
-  await deleteDoc(ref);
 }

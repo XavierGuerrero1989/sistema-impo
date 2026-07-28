@@ -2,6 +2,31 @@ import { useEffect, useMemo, useState } from "react";
 import { getOperacionesLocal } from "../offline/operacionesRepo";
 import "./finanzas.css";
 
+const norm = (v, fallback = "") => String(v ?? fallback).trim();
+const normBank = (b) => norm(b, "SIN BANCO") || "SIN BANCO";
+const normMoneda = (m) => String(m || "USD").toUpperCase();
+const normEstado = (e) => String(e || "ACTIVO").trim().toUpperCase();
+const isActivo = (estado) => normEstado(estado) === "ACTIVO";
+
+const getMovimientosFromOp = (op) => {
+  const adelantos = Array.isArray(op.adelantos) ? op.adelantos : [];
+  const pagos = Array.isArray(op.pagos) ? op.pagos : [];
+
+  const movsA = adelantos.map((a, idx) => ({
+    ...a,
+    tipo: "ADELANTO",
+    _idx: idx,
+  }));
+
+  const movsP = pagos.map((p, idx) => ({
+    ...p,
+    tipo: "PAGO",
+    _idx: idx,
+  }));
+
+  return [...movsA, ...movsP];
+};
+
 export default function Finanzas() {
   const [operaciones, setOperaciones] = useState([]);
 
@@ -13,20 +38,15 @@ export default function Finanzas() {
   const [orden, setOrden] = useState("SALDO_DESC"); // SALDO_DESC | TOTAL_DESC | PROVEEDOR_ASC | PROGRESO_ASC
 
   useEffect(() => {
-    getOperacionesLocal().then(setOperaciones).catch(console.error);
+    const load = () => getOperacionesLocal().then(setOperaciones).catch(console.error);
+    load();
+    window.addEventListener("data:changed", load);
+    return () => window.removeEventListener("data:changed", load);
   }, []);
 
   /* =========================
      HELPERS / FORMATTERS
   ========================== */
-  const norm = (v, fallback = "") => String(v ?? fallback).trim();
-  const normBank = (b) => norm(b, "SIN BANCO") || "SIN BANCO";
-  const normMoneda = (m) => String(m || "USD").toUpperCase();
-  const normEstado = (e) => String(e || "ACTIVO").trim().toUpperCase();
-
-  // 👉 Definición estricta: solo "ACTIVO" cuenta como pago vigente.
-  const isActivo = (estado) => normEstado(estado) === "ACTIVO";
-
   const money = (n, curr = "USD") => {
     const value = Number(n || 0);
     const c = String(curr || "USD").toUpperCase();
@@ -43,26 +63,6 @@ export default function Finanzas() {
         maximumFractionDigits: 2,
       }).format(value);
     }
-  };
-
-  // ✅ Fuente real: adelantos[] + pagos[]
-  const getMovimientosFromOp = (op) => {
-    const adelantos = Array.isArray(op.adelantos) ? op.adelantos : [];
-    const pagos = Array.isArray(op.pagos) ? op.pagos : [];
-
-    const movsA = adelantos.map((a, idx) => ({
-      ...a,
-      tipo: "ADELANTO",
-      _idx: idx,
-    }));
-
-    const movsP = pagos.map((p, idx) => ({
-      ...p,
-      tipo: "PAGO",
-      _idx: idx,
-    }));
-
-    return [...movsA, ...movsP];
   };
 
   /* =========================
@@ -94,13 +94,18 @@ export default function Finanzas() {
       return {
         ...op,
         _id: norm(op.id, ""),
-        _proveedor: norm(op.proveedor, "-"),
+        _proveedor: norm(op.proveedorNombre || op.proveedor, "-"),
         _moneda: normMoneda(op.moneda || "USD"),
         _total: total,
         _pagado: pagadoActivo,
         _adelantos: adelantosActivos,
         _saldo: saldo,
         _progreso: progreso,
+        _vencimiento: op.fechaVencimientoPago || null,
+        _vencida:
+          saldo > 0 &&
+          !!op.fechaVencimientoPago &&
+          new Date(`${op.fechaVencimientoPago}T23:59:59`) < new Date(),
         _movs: movs,
       };
     });
@@ -141,23 +146,11 @@ export default function Finanzas() {
      MÉTRICAS GLOBALES (REFERENCIALES)
      (no mezclamos monedas en "conversión", solo suma)
   ========================== */
-  const resumen = useMemo(() => {
-    let total = 0;
-    let adelantos = 0;
-    let pagado = 0;
-    let pendiente = 0;
-    let conPendiente = 0;
-
-    rows.forEach((r) => {
-      total += r._total;
-      adelantos += r._adelantos; // ✅ adelantos ACTIVO
-      pagado += r._pagado; // ✅ pagado ACTIVO (adelantos + pagos)
-      pendiente += r._saldo;
-      if (r._saldo > 0) conPendiente++;
-    });
-
-    return { total, adelantos, pagado, pendiente, conPendiente };
-  }, [rows]);
+  const estadoCartera = useMemo(() => ({
+    pendientes: rows.filter((row) => row._saldo > 0).length,
+    vencidas: rows.filter((row) => row._vencida).length,
+    pagadas: rows.filter((row) => row._saldo === 0).length,
+  }), [rows]);
 
   /* =========================
      RESUMEN POR MONEDA (operaciones)
@@ -219,7 +212,7 @@ export default function Finanzas() {
         totalActivo: x.totalActivo,
         operaciones: x.ops.size,
       }))
-      .sort((a, b) => b.totalActivo - a.totalActivo);
+      .sort((a, b) => b.movimientosActivos - a.movimientosActivos);
 
     const bancosUsados = ranking.length;
     const topBanco = ranking[0] || null;
@@ -252,6 +245,7 @@ export default function Finanzas() {
       const matchEstado =
         estadoSaldo === "TODAS" ||
         (estadoSaldo === "PENDIENTE" && r._saldo > 0) ||
+        (estadoSaldo === "VENCIDA" && r._vencida) ||
         (estadoSaldo === "OK" && r._saldo === 0);
 
       const matchMoneda = moneda === "TODAS" || r._moneda === moneda;
@@ -292,6 +286,8 @@ export default function Finanzas() {
       "pagadoActivo",
       "saldo",
       "progreso",
+      "vencimiento",
+      "vencida",
     ];
 
     const lines = filtered.map((r) => [
@@ -303,6 +299,8 @@ export default function Finanzas() {
       r._pagado,
       r._saldo,
       Math.round(r._progreso),
+      r._vencimiento || "",
+      r._vencida ? "SI" : "NO",
     ]);
 
     const csv = [header, ...lines]
@@ -372,32 +370,29 @@ export default function Finanzas() {
         </div>
       )}
 
-      {/* =========================
-          KPIs financieros (LOS DE ANTES - referenciales)
-      ========================== */}
       <div className="fin-kpis">
         <div className="fin-kpi">
-          <span>Total de operaciones</span>
-          <strong>{money(resumen.total, "USD")}</strong>
-          <small>Sumatoria (referencial)</small>
+          <span>Operaciones financieras</span>
+          <strong>{rows.length}</strong>
+          <small>Sin mezclar monedas</small>
         </div>
 
         <div className="fin-kpi ok">
-          <span>Adelantos pagados</span>
-          <strong>{money(resumen.adelantos, "USD")}</strong>
-          <small>Solo ADELANTO con estado ACTIVO</small>
+          <span>Pagadas</span>
+          <strong>{estadoCartera.pagadas}</strong>
+          <small>Sin saldo pendiente</small>
         </div>
 
         <div className="fin-kpi warn">
-          <span>Saldo a pagar</span>
-          <strong>{money(resumen.pendiente, "USD")}</strong>
-          <small>Deuda total (total - pagado activo)</small>
+          <span>Con saldo pendiente</span>
+          <strong>{estadoCartera.pendientes}</strong>
+          <small>Ver totales por moneda</small>
         </div>
 
         <div className="fin-kpi alert">
-          <span>Ops con saldo pendiente</span>
-          <strong>{resumen.conPendiente}</strong>
-          <small>Requieren acción</small>
+          <span>Pagos vencidos</span>
+          <strong>{estadoCartera.vencidas}</strong>
+          <small>Requieren atención</small>
         </div>
       </div>
 
@@ -416,7 +411,7 @@ export default function Finanzas() {
           <strong>{bankStats.topBanco?.banco || "-"}</strong>
           <small>
             {bankStats.topBanco
-              ? `${money(bankStats.topBanco.totalActivo, "USD")} (volumen)`
+              ? `${bankStats.topBanco.movimientosActivos} movimiento(s)`
               : "—"}
           </small>
         </div>
@@ -492,7 +487,7 @@ export default function Finanzas() {
                     <span className="fin-bank-pill">{b.movimientosActivos} movs</span>
                   </div>
 
-                  <div className="fin-bank-main">{money(b.totalActivo, "USD")}</div>
+                  <div className="fin-bank-main">{b.movimientosActivos} movimientos</div>
 
                   <div className="fin-bank-sub">
                     <span className="muted">Ops afectadas</span>
@@ -522,6 +517,7 @@ export default function Finanzas() {
           <select value={estadoSaldo} onChange={(e) => setEstadoSaldo(e.target.value)}>
             <option value="TODAS">Todas</option>
             <option value="PENDIENTE">Con saldo</option>
+            <option value="VENCIDA">Vencidas</option>
             <option value="OK">Saldo 0</option>
           </select>
 
@@ -564,6 +560,7 @@ export default function Finanzas() {
               <th>Adelantos</th>
               <th>Pagado</th>
               <th>Saldo</th>
+              <th>Vencimiento</th>
               <th>Progreso</th>
             </tr>
           </thead>
@@ -571,7 +568,7 @@ export default function Finanzas() {
           <tbody>
             {filtered.length === 0 && (
               <tr>
-                <td colSpan="8" className="fin-empty">
+                <td colSpan="9" className="fin-empty">
                   No hay datos para mostrar con estos filtros.
                 </td>
               </tr>
@@ -590,6 +587,12 @@ export default function Finanzas() {
                   <td>{money(op._pagado, op._moneda)}</td>
                   <td className={saldoOk ? "fin-saldo ok" : "fin-saldo warn"}>
                     {money(op._saldo, op._moneda)}
+                  </td>
+                  <td className={op._vencida ? "fin-saldo warn" : ""}>
+                    {op._vencimiento
+                      ? new Date(`${op._vencimiento}T00:00:00`).toLocaleDateString("es-AR")
+                      : "-"}
+                    {op._vencida ? " · Vencida" : ""}
                   </td>
                   <td>
                     <div className="fin-progress">

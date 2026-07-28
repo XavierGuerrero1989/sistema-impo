@@ -1,27 +1,25 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  upsertOperacionLocal,
   getOperacionesLocal,
 } from "./offline/operacionesRepo";
-import { useAutoSync } from "./hooks/useAutoSync";
 import KPIs from "./ui/KPIS";
 import "./operacionesApp.css";
+import { alertasOperacion } from "./domain/operacion";
 
 function OperacionesApp() {
   const [operaciones, setOperaciones] = useState([]);
   const [filtro, setFiltro] = useState("TODAS");
   const navigate = useNavigate();
 
-  // 🔁 Sync automático
-  useAutoSync();
-
   useEffect(() => {
-    async function init() {
+    async function load() {
       const ops = await getOperacionesLocal();
       setOperaciones(ops);
     }
-    init().catch(console.error);
+    load().catch(console.error);
+    window.addEventListener("data:changed", load);
+    return () => window.removeEventListener("data:changed", load);
   }, []);
 
   /* =========================
@@ -33,19 +31,13 @@ function OperacionesApp() {
 
     return operaciones.map((op) => {
       const estado = op.estado || "PLANIFICADA";
-      const eta = op.logistica?.eta ? new Date(op.logistica.eta) : null;
-
-      let alerta = null;
-
-      if (estado === "BLOQUEADA") alerta = "BLOQUEADA";
-      else if (estado === "EN_TRANSITO" && !eta) alerta = "SIN_ETA";
-      else if (eta && eta < hoy && estado !== "ENTREGADA")
-        alerta = "ETA_VENCIDA";
+      const alertas = alertasOperacion(op, hoy);
 
       return {
         ...op,
         estado,
-        alerta,
+        alertas,
+        alerta: alertas[0] || null,
       };
     });
   }, [operaciones]);
@@ -160,7 +152,7 @@ function OperacionesApp() {
 
             {op.alerta && (
               <div className={`alerta ${op.alerta.toLowerCase()}`}>
-                ⚠ {op.alerta.replace("_", " ")}
+                ⚠ {op.alertas.map((alerta) => alerta.replaceAll("_", " ")).join(" · ")}
               </div>
             )}
 

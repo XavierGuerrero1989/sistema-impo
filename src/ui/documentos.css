@@ -64,13 +64,19 @@
   flex-wrap: wrap;
 }
 
-.documentos-filtros select {
+.documentos-filtros select,
+.documentos-filtros input {
   padding: 9px 10px;
   border-radius: 10px;
   border: 1px solid #e5e7eb;
   background: #ffffff;
   font-size: 0.85rem;
   color: #0f172a;
+}
+
+.documentos-filtros input {
+  min-width: 320px;
+  flex: 1;
 }
 
 /* ===== Table Wrapper ===== */

@@ -2,24 +2,23 @@ import { useEffect, useMemo, useState } from "react";
 import { getOperacionesLocal } from "../offline/operacionesRepo";
 import "./operacionesListado.css";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../auth/AuthContext";
+import { calcularFinanzas, ESTADOS_OPERACION } from "../domain/operacion";
 
-const ESTADOS = [
-  "CREADA",
-  "EN_TRANSITO",
-  "EN_CHILE",
-  "DOCS_PENDIENTES",
-  "PAGOS_PENDIENTES",
-  "FINALIZADA",
-];
+const ESTADOS = ESTADOS_OPERACION;
 
 export default function OperacionesListado() {
   const [operaciones, setOperaciones] = useState([]);
   const [estadoFiltro, setEstadoFiltro] = useState("ALL");
   const [search, setSearch] = useState("");
   const navigate = useNavigate();
+  const { permissions } = useAuth();
 
   useEffect(() => {
-    getOperacionesLocal().then(setOperaciones).catch(console.error);
+    const load = () => getOperacionesLocal().then(setOperaciones).catch(console.error);
+    load();
+    window.addEventListener("data:changed", load);
+    return () => window.removeEventListener("data:changed", load);
   }, []);
 
   const operacionesFiltradas = useMemo(() => {
@@ -29,9 +28,9 @@ export default function OperacionesListado() {
 
       const q = search.toLowerCase();
       const matchSearch =
-        op.id.toLowerCase().includes(q) ||
-        op.proveedor.toLowerCase().includes(q) ||
-        op.activo.toLowerCase().includes(q);
+        String(op.id || "").toLowerCase().includes(q) ||
+        String(op.proveedorNombre || op.proveedor || "").toLowerCase().includes(q) ||
+        String(op.activo || "").toLowerCase().includes(q);
 
       return matchEstado && matchSearch;
     });
@@ -52,12 +51,14 @@ export default function OperacionesListado() {
           <p>Listado completo y gestión de operaciones de importación</p>
         </div>
 
-        <button
-          className="btn-primary"
-          onClick={() => navigate("/operaciones/nueva")}
-        >
-          + Nueva operación
-        </button>
+        {permissions.manageOperations && (
+          <button
+            className="btn-primary"
+            onClick={() => navigate("/operaciones/nueva")}
+          >
+            + Nueva operación
+          </button>
+        )}
       </header>
 
       {/* Filtros */}
@@ -106,20 +107,8 @@ export default function OperacionesListado() {
             )}
 
             {operacionesFiltradas.map((op) => {
-              const adelantos = (op.adelantos || []).filter(
-                (a) => a.estado === "ACTIVO"
-              );
-              const pagos = (op.pagos || []).filter(
-                (p) => p.estado === "ACTIVO"
-              );
-
-              const totalPagado = [...adelantos, ...pagos].reduce(
-                (acc, m) => acc + Number(m.monto || 0),
-                0
-              );
-
-              const total = Number(op.totalOperacion || 0);
-              const saldo = Math.max(0, total - totalPagado);
+              const adelantos = (op.adelantos || []).filter((a) => a.estado === "ACTIVO");
+              const { total, pagado: totalPagado, saldo } = calcularFinanzas(op);
               const moneda = op.moneda || "USD";
 
               const estadoPago =
