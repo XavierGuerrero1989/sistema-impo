@@ -1,4 +1,11 @@
-export const ADMIN_EMAIL = "xavierignacioguerrero@gmail.com";
+export const ADMIN_EMAILS = [
+  "xavierignacioguerrero@gmail.com",
+  "ariel@ptm.cl",
+];
+
+export function isPrimaryAdmin(email) {
+  return ADMIN_EMAILS.includes(String(email || "").toLowerCase());
+}
 
 export const ROLES = {
   ADMIN: "admin",

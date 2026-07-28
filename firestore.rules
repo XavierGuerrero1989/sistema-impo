@@ -8,7 +8,10 @@ service cloud.firestore {
 
     function primaryAdmin() {
       return signedIn()
-        && request.auth.token.email == "xavierignacioguerrero@gmail.com";
+        && request.auth.token.email in [
+          "xavierignacioguerrero@gmail.com",
+          "ariel@ptm.cl"
+        ];
     }
 
     function hasRole(roles) {

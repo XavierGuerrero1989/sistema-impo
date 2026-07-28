@@ -4,7 +4,10 @@ service firebase.storage {
   match /b/{bucket}/o {
     function primaryAdmin() {
       return request.auth != null
-        && request.auth.token.email == "xavierignacioguerrero@gmail.com";
+        && request.auth.token.email in [
+          "xavierignacioguerrero@gmail.com",
+          "ariel@ptm.cl"
+        ];
     }
 
     function canManageDocuments() {
