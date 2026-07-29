@@ -92,6 +92,20 @@ export default function Navbar() {
           <span className="user-copy"><strong>{user?.email?.split("@")[0]}</strong><small>{profile?.role || "lectura"}</small></span>
           <button className="logout-btn" onClick={logout} title="Cerrar sesión">↪</button>
         </div>
+
+        <footer className="sidebar-credit">
+          <span>Desarrollado por</span>
+          <a
+            href="https://brainworks.vercel.app"
+            target="_blank"
+            rel="noreferrer"
+            aria-label="Visitar el sitio web de Brainworks"
+          >
+            <span className="brainworks-mark">B</span>
+            <strong>BRAINWORKS</strong>
+            <span className="credit-arrow">↗</span>
+          </a>
+        </footer>
       </aside>
       {open && <button className="nav-backdrop" aria-label="Cerrar menú" onClick={() => setOpen(false)} />}
     </>
