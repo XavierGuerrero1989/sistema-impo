@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "./AuthContext";
 import { sendPasswordResetEmail, signInWithEmailAndPassword } from "firebase/auth";
 import { useNavigate } from "react-router-dom";
@@ -6,7 +6,7 @@ import Loader from "../ui/Loader";
 import "./Login.css";
 
 export default function Login() {
-  const { auth } = useAuth();
+  const { auth, user } = useAuth();
   const navigate = useNavigate();
 
   const [email, setEmail] = useState("");
@@ -16,6 +16,12 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [recovering, setRecovering] = useState(false);
 
+  useEffect(() => {
+    if (user) {
+      navigate("/", { replace: true });
+    }
+  }, [navigate, user]);
+
   async function handleLogin(e) {
     e.preventDefault();
     setError("");
@@ -24,13 +30,9 @@ export default function Login() {
 
     try {
       await signInWithEmailAndPassword(auth, email, password);
-
-      // ✅ LOGIN OK → IR AL DASHBOARD
-      setLoading(false);
-      navigate("/", { replace: true });
-
     } catch {
       setError("Usuario o contraseña incorrectos");
+    } finally {
       setLoading(false);
     }
   }

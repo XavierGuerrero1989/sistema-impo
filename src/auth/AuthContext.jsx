@@ -3,7 +3,7 @@ import { onAuthStateChanged, signOut } from "firebase/auth";
 import { auth } from "../firebase/firebase";
 import { selectLocalDatabase } from "../offline/db";
 import { loadUserProfile } from "./userProfile";
-import { permissionsFor } from "./roles";
+import { isPrimaryAdmin, permissionsFor, ROLES } from "./roles";
 
 const AuthContext = createContext(null);
 
@@ -14,11 +14,23 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (firebaseUser) => {
-      await selectLocalDatabase(firebaseUser?.uid);
-      const nextProfile = await loadUserProfile(firebaseUser);
+      setLoading(true);
       setUser(firebaseUser);
-      setProfile(nextProfile);
-      setLoading(false);
+
+      try {
+        await selectLocalDatabase(firebaseUser?.uid);
+        const nextProfile = await loadUserProfile(firebaseUser);
+        setProfile(nextProfile);
+      } catch (error) {
+        console.error("No se pudo cargar el perfil del usuario:", error);
+        setProfile(firebaseUser ? {
+          uid: firebaseUser.uid,
+          email: firebaseUser.email,
+          role: isPrimaryAdmin(firebaseUser.email) ? ROLES.ADMIN : ROLES.LECTURA,
+        } : null);
+      } finally {
+        setLoading(false);
+      }
     });
 
     return () => unsub();
