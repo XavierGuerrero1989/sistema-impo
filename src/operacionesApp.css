@@ -17,11 +17,35 @@
 .hero-orbit { position: absolute; border: 1px solid rgba(255,255,255,.14); border-radius: 50%; }
 .orbit-one { width: 350px; height: 350px; right: -100px; top: -190px; }
 .orbit-two { width: 210px; height: 210px; right: 80px; top: -100px; }
-.dashboard-section-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; }
+.dashboard-section-head {
+  display: flex;
+  align-items: flex-start;
+  flex-direction: column;
+  gap: 16px;
+}
 .dashboard-section-head h2 { margin: 0; color: #173252; font-size: 22px; }
 .section-kicker { color: #2563eb; }
-.op-filters { max-width: 720px; display: flex; gap: 7px; overflow-x: auto; padding-bottom: 3px; }
-.op-filter { flex: 0 0 auto; padding: 7px 11px; border: 1px solid #e1e8f1; border-radius: 999px; color: #64748b; background: #fff; font-size: 10px; font-weight: 800; cursor: pointer; }
+.op-filters {
+  display: flex;
+  width: 100%;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 11px;
+  border: 1px solid #e5eaf2;
+  border-radius: 15px;
+  background: rgba(255,255,255,.68);
+}
+.op-filter {
+  flex: 0 0 auto;
+  padding: 8px 13px;
+  border: 1px solid #e1e8f1;
+  border-radius: 999px;
+  color: #64748b;
+  background: #fff;
+  font-size: 10px;
+  font-weight: 800;
+  cursor: pointer;
+}
 .op-filter.active { color: #fff; border-color: #2563eb; background: #2563eb; box-shadow: 0 5px 12px rgba(37,99,235,.2); }
 .operaciones-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 16px; }
 .operacion-card { position: relative; min-height: 220px; overflow: hidden; padding: 19px; border: 1px solid #e5eaf2; border-radius: 18px; background: #fff; box-shadow: 0 8px 26px rgba(39,62,99,.06); cursor: pointer; transition: transform .2s ease, box-shadow .2s ease; }
@@ -44,6 +68,11 @@
 @media (max-width: 760px) {
   .operaciones-page { padding: 18px 14px 40px; }
   .dashboard-hero { padding: 28px 24px; flex-direction: column; align-items: flex-start; }
-  .dashboard-section-head { align-items: flex-start; flex-direction: column; }
-  .op-filters { max-width: 100%; }
+  .op-filters {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding: 9px;
+    scrollbar-width: none;
+  }
+  .op-filters::-webkit-scrollbar { display: none; }
 }
