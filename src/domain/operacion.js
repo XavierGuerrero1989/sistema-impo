@@ -30,6 +30,8 @@ export function normalizarOperacion(input = {}) {
     estado: ESTADOS_OPERACION.includes(input.estado) ? input.estado : "PLANIFICADA",
     adelantos: Array.isArray(input.adelantos) ? input.adelantos : [],
     pagos: Array.isArray(input.pagos) ? input.pagos : [],
+    pagosProgramados: Array.isArray(input.pagosProgramados) ? input.pagosProgramados : [],
+    condicionVenta: input.condicionVenta || null,
     documentos: Array.isArray(input.documentos) ? input.documentos : [],
     historial: Array.isArray(input.historial) ? input.historial : [],
   };

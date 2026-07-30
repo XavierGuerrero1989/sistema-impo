@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { getOperacionesLocal } from "../offline/operacionesRepo";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
+import { estadoPagoProgramado } from "../domain/pagos";
 import "./finanzas.css";
 
 const norm = (v, fallback = "") => String(v ?? fallback).trim();
@@ -111,6 +112,7 @@ export default function Finanzas() {
           !!op.fechaVencimientoPago &&
           new Date(`${op.fechaVencimientoPago}T23:59:59`) < new Date(),
         _movs: movs,
+        _programados: Array.isArray(op.pagosProgramados) ? op.pagosProgramados : [],
       };
     });
   }, [operaciones]);
@@ -155,6 +157,33 @@ export default function Finanzas() {
     vencidas: rows.filter((row) => row._vencida).length,
     pagadas: rows.filter((row) => row._saldo === 0).length,
   }), [rows]);
+
+  const proximosPagos = useMemo(() => {
+    return rows
+      .flatMap((row) =>
+        row._programados
+          .filter((pago) => !["PAGADO", "CANCELADO"].includes(pago.estado))
+          .map((pago) => ({
+            ...pago,
+            operacionId: row._id,
+            proveedor: row._proveedor,
+            moneda: pago.moneda || row._moneda,
+            estadoCalculado: estadoPagoProgramado(pago),
+          }))
+      )
+      .sort((a, b) => String(a.fechaProgramada || "9999").localeCompare(String(b.fechaProgramada || "9999")));
+  }, [rows]);
+
+  const proximosPorMoneda = useMemo(() => {
+    const totals = new Map();
+    proximosPagos
+      .filter((pago) => ["PROXIMO", "VENCIDO"].includes(pago.estadoCalculado))
+      .forEach((pago) => {
+        const currency = pago.moneda || "USD";
+        totals.set(currency, (totals.get(currency) || 0) + Number(pago.monto || 0));
+      });
+    return Array.from(totals.entries());
+  }, [proximosPagos]);
 
   /* =========================
      RESUMEN POR MONEDA (operaciones)
@@ -400,6 +429,34 @@ export default function Finanzas() {
         </div>
       </div>
 
+      <section className="upcoming-payments-panel">
+        <div className="fin-bank-head">
+          <div>
+            <h3>Próximos pagos</h3>
+            <p>Pagos programados que requieren atención del administrador.</p>
+          </div>
+          <div className="upcoming-totals">
+            {proximosPorMoneda.map(([currency, amount]) => (
+              <span key={currency}>{money(amount, currency)} <small>{currency}</small></span>
+            ))}
+          </div>
+        </div>
+        <div className="upcoming-payment-grid">
+          {proximosPagos.slice(0, 5).map((pago) => (
+            <button key={pago.id} onClick={() => navigate(`/finanzas/${pago.operacionId}`)}>
+              <span className={`upcoming-status ${pago.estadoCalculado.toLowerCase()}`}>
+                {pago.estadoCalculado.replaceAll("_", " ")}
+              </span>
+              <strong>{pago.proveedor}</strong>
+              <small>{pago.operacionId} · {pago.motivo}</small>
+              <b>{money(pago.monto, pago.moneda)}</b>
+              <time>{pago.fechaProgramada ? new Date(`${pago.fechaProgramada}T00:00:00`).toLocaleDateString("es-AR") : "Sin fecha"}</time>
+            </button>
+          ))}
+          {!proximosPagos.length && <div className="fin-empty-box">No hay pagos programados pendientes.</div>}
+        </div>
+      </section>
+
       {/* =========================
           KPIs bancos (LOS DE ANTES)
       ========================== */}
@@ -565,6 +622,7 @@ export default function Finanzas() {
               <th>Pagado</th>
               <th>Saldo</th>
               <th>Vencimiento</th>
+              <th>Próximo pago</th>
               <th>Progreso</th>
               <th></th>
             </tr>
@@ -573,7 +631,7 @@ export default function Finanzas() {
           <tbody>
             {filtered.length === 0 && (
               <tr>
-                <td colSpan="10" className="fin-empty">
+                <td colSpan="11" className="fin-empty">
                   No hay datos para mostrar con estos filtros.
                 </td>
               </tr>
@@ -598,6 +656,19 @@ export default function Finanzas() {
                       ? new Date(`${op._vencimiento}T00:00:00`).toLocaleDateString("es-AR")
                       : "-"}
                     {op._vencida ? " · Vencida" : ""}
+                  </td>
+                  <td>
+                    {(() => {
+                      const next = op._programados
+                        .filter((pago) => !["PAGADO", "CANCELADO"].includes(pago.estado))
+                        .sort((a, b) => String(a.fechaProgramada || "9999").localeCompare(String(b.fechaProgramada || "9999")))[0];
+                      return next ? (
+                        <span className="next-payment-cell">
+                          <strong>{money(next.monto, next.moneda || op._moneda)}</strong>
+                          <small>{next.fechaProgramada ? new Date(`${next.fechaProgramada}T00:00:00`).toLocaleDateString("es-AR") : "Sin fecha"}</small>
+                        </span>
+                      ) : "–";
+                    })()}
                   </td>
                   <td>
                     <div className="fin-progress">

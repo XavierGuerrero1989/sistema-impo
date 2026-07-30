@@ -5,6 +5,7 @@ import { getProveedoresLocal } from "../proveedores/ProveedoresRepo";
 import { auditEvent } from "../auth/audit";
 import "./CrearOperacion.css";
 import { normalizarOperacion, validarOperacion } from "../domain/operacion";
+import { CONDICIONES_PAGO, crearPlanPagos } from "../domain/pagos";
 
 export default function CrearOperacion() {
 
@@ -18,7 +19,11 @@ export default function CrearOperacion() {
     activo: "",
     moneda: "USD",
     totalOperacion: "",
-    fechaVencimientoPago: "",
+    porcentajeAdelanto: "30",
+    porcentajeSaldo: "70",
+    condicionSaldo: "ARRIBO_CHILE",
+    fechaAdelanto: "",
+    fechaSaldo: "",
     observaciones: "",
   });
 
@@ -66,6 +71,17 @@ export default function CrearOperacion() {
       return;
     }
 
+    const porcentajeAdelanto = Number(form.porcentajeAdelanto || 0);
+    const porcentajeSaldo = Number(form.porcentajeSaldo || 0);
+    if (porcentajeAdelanto < 0 || porcentajeSaldo < 0) {
+      alert("Los porcentajes no pueden ser negativos");
+      return;
+    }
+    if (porcentajeAdelanto + porcentajeSaldo !== 100) {
+      alert("El adelanto y el saldo deben sumar 100%");
+      return;
+    }
+
     const nuevaOperacion = normalizarOperacion({
 
       id: form.id,
@@ -78,7 +94,16 @@ export default function CrearOperacion() {
       moneda: form.moneda,
 
       totalOperacion: Number(form.totalOperacion || 0),
-      fechaVencimientoPago: form.fechaVencimientoPago || null,
+      condicionVenta: {
+        cuotas: crearPlanPagos({
+          porcentajeAdelanto,
+          porcentajeSaldo,
+          condicionSaldo: form.condicionSaldo,
+          fechaAdelanto: form.fechaAdelanto,
+          fechaSaldo: form.fechaSaldo,
+        }),
+      },
+      pagosProgramados: [],
 
       estado: "PLANIFICADA",
       logistica: {
@@ -218,15 +243,79 @@ export default function CrearOperacion() {
 
         </div>
 
-        <div className="form-group">
-          <label>Vencimiento estimado de pago</label>
-          <input
-            name="fechaVencimientoPago"
-            type="date"
-            value={form.fechaVencimientoPago}
-            onChange={onChange}
-          />
-        </div>
+        <section className="sale-condition">
+          <div className="sale-condition-head">
+            <span>Condición comercial</span>
+            <h2>Plan de pagos</h2>
+            <p>Definí cómo se distribuirá el valor de esta operación.</p>
+          </div>
+
+          <div className="payment-split">
+            <div className="payment-part advance">
+              <span>Primer tramo</span>
+              <strong>Adelanto</strong>
+              <label>Porcentaje</label>
+              <div className="percent-input">
+                <input
+                  name="porcentajeAdelanto"
+                  type="number"
+                  min="0"
+                  max="100"
+                  value={form.porcentajeAdelanto}
+                  onChange={onChange}
+                />
+                <b>%</b>
+              </div>
+              <label>Fecha estimada</label>
+              <input
+                name="fechaAdelanto"
+                type="date"
+                value={form.fechaAdelanto}
+                onChange={onChange}
+              />
+            </div>
+
+            <div className="payment-part balance">
+              <span>Segundo tramo</span>
+              <strong>Saldo</strong>
+              <label>Porcentaje</label>
+              <div className="percent-input">
+                <input
+                  name="porcentajeSaldo"
+                  type="number"
+                  min="0"
+                  max="100"
+                  value={form.porcentajeSaldo}
+                  onChange={onChange}
+                />
+                <b>%</b>
+              </div>
+              <label>Condición de pago</label>
+              <select name="condicionSaldo" value={form.condicionSaldo} onChange={onChange}>
+                {CONDICIONES_PAGO.filter((item) => item.value !== "AL_CREAR").map((item) => (
+                  <option key={item.value} value={item.value}>{item.label}</option>
+                ))}
+              </select>
+              <label>Fecha estimada, si corresponde</label>
+              <input
+                name="fechaSaldo"
+                type="date"
+                value={form.fechaSaldo}
+                onChange={onChange}
+              />
+            </div>
+          </div>
+
+          <div className={`payment-total ${
+            Number(form.porcentajeAdelanto || 0) + Number(form.porcentajeSaldo || 0) === 100
+              ? "valid"
+              : "invalid"
+          }`}>
+            <span>Total distribuido</span>
+            <strong>{Number(form.porcentajeAdelanto || 0) + Number(form.porcentajeSaldo || 0)}%</strong>
+            <small>Debe sumar exactamente 100%</small>
+          </div>
+        </section>
 
         <div className="form-group">
 
