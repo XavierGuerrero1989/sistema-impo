@@ -51,7 +51,7 @@ export default function OperacionesListado() {
           <p>Listado completo y gestión de operaciones de importación</p>
         </div>
 
-        {permissions.manageOperations && (
+        {permissions.createOperations && (
           <button
             className="btn-primary"
             onClick={() => navigate("/operaciones/nueva")}
@@ -152,12 +152,12 @@ export default function OperacionesListado() {
                       <button className="btn-ver" onClick={() => navigate(`/operaciones/${op.id}`)}>
                         Ver resumen
                       </button>
-                      {permissions.manageOperations && (
+                      {permissions.viewLogistics && (
                         <button className="btn-area logistics" onClick={() => navigate(`/logistica/${op.id}`)}>
                           Logística
                         </button>
                       )}
-                      {permissions.manageFinances && (
+                      {permissions.viewFinances && (
                         <button className="btn-area finances" onClick={() => navigate(`/finanzas/${op.id}`)}>
                           Finanzas
                         </button>

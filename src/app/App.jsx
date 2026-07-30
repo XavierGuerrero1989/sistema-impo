@@ -90,7 +90,7 @@ function App() {
                   <Route
                     path="/operaciones/nueva"
                     element={
-                      <PermissionRoute permission="manageOperations">
+                      <PermissionRoute permission="createOperations">
                         <CrearOperacion />
                       </PermissionRoute>
                     }
@@ -103,22 +103,22 @@ function App() {
                   <Route
                     path="/finanzas/:id"
                     element={
-                      <PermissionRoute permission="manageFinances">
+                      <PermissionRoute permission="viewFinances">
                         <OperacionDetalle modo="finanzas" />
                       </PermissionRoute>
                     }
                   />
                   <Route path="/documentos" element={<Documentos />} />
-                  <Route path="/logistica" element={<Logistica />} />
+                  <Route path="/logistica" element={<PermissionRoute permission="viewLogistics"><Logistica /></PermissionRoute>} />
                   <Route
                     path="/logistica/:id"
                     element={
-                      <PermissionRoute permission="manageOperations">
+                      <PermissionRoute permission="viewLogistics">
                         <OperacionDetalle modo="logistica" />
                       </PermissionRoute>
                     }
                   />
-                  <Route path="/proveedores" element={<Proveedores />} />
+                  <Route path="/proveedores" element={<PermissionRoute permission="viewDirectories"><Proveedores /></PermissionRoute>} />
                   <Route
                     path="/proveedores/nuevo"
                     element={
@@ -127,8 +127,8 @@ function App() {
                       </PermissionRoute>
                     }
                   />
-                  <Route path="/proveedores/:proveedorId" element={<ProveedorDetalle />} />
-                  <Route path="/forwarders" element={<DirectorioEntidades tipo="forwarders" />} />
+                  <Route path="/proveedores/:proveedorId" element={<PermissionRoute permission="viewDirectories"><ProveedorDetalle /></PermissionRoute>} />
+                  <Route path="/forwarders" element={<PermissionRoute permission="viewDirectories"><DirectorioEntidades tipo="forwarders" /></PermissionRoute>} />
                   <Route
                     path="/forwarders/nuevo"
                     element={
@@ -137,8 +137,8 @@ function App() {
                       </PermissionRoute>
                     }
                   />
-                  <Route path="/forwarders/:entidadId" element={<EntidadDetalle tipo="forwarders" />} />
-                  <Route path="/agentes-aduana" element={<DirectorioEntidades tipo="agentesAduana" />} />
+                  <Route path="/forwarders/:entidadId" element={<PermissionRoute permission="viewDirectories"><EntidadDetalle tipo="forwarders" /></PermissionRoute>} />
+                  <Route path="/agentes-aduana" element={<PermissionRoute permission="viewDirectories"><DirectorioEntidades tipo="agentesAduana" /></PermissionRoute>} />
                   <Route
                     path="/agentes-aduana/nuevo"
                     element={
@@ -147,11 +147,11 @@ function App() {
                       </PermissionRoute>
                     }
                   />
-                  <Route path="/agentes-aduana/:entidadId" element={<EntidadDetalle tipo="agentesAduana" />} />
+                  <Route path="/agentes-aduana/:entidadId" element={<PermissionRoute permission="viewDirectories"><EntidadDetalle tipo="agentesAduana" /></PermissionRoute>} />
                   <Route
                     path="/papelera"
                     element={
-                      <PermissionRoute permission="manageOperations">
+                      <PermissionRoute permission="deleteOperations">
                         <Papelera />
                       </PermissionRoute>
                     }

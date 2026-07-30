@@ -785,6 +785,7 @@
 
 /* Planificación y confirmación de pagos */
 .payment-plan-card,.payment-scheduler,.scheduled-payments{margin-top:22px;padding:19px;border:1px solid #e5eaf2;border-radius:16px;background:#fbfdff}
+.finance-readonly-note{margin:15px 0 0;padding:11px 13px;border-radius:10px;color:#64748b;background:#f1f5f9;font-size:.75rem}
 .payment-plan-head,.payment-scheduler-head,.scheduled-payments-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
 .payment-plan-head h4,.payment-scheduler-head h4,.scheduled-payments-head h4{margin:4px 0 0;color:#233047}
 .payment-plan-head>small{padding:6px 9px;border-radius:8px;background:#ede9fe;color:#6d28d9;font-size:.68rem;font-weight:750}

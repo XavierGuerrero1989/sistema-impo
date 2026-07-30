@@ -15,11 +15,21 @@ export const ROLES = {
 };
 
 export function permissionsFor(role) {
+  const isAdmin = role === ROLES.ADMIN;
+  const isImports = role === ROLES.OPERACIONES;
+  const isFinance = role === ROLES.FINANZAS;
+  const isReadOnly = role === ROLES.LECTURA;
   return {
-    manageUsers: role === ROLES.ADMIN,
-    manageOperations: [ROLES.ADMIN, ROLES.OPERACIONES, ROLES.FINANZAS].includes(role),
-    manageProviders: [ROLES.ADMIN, ROLES.OPERACIONES].includes(role),
-    manageDocuments: [ROLES.ADMIN, ROLES.OPERACIONES].includes(role),
-    manageFinances: [ROLES.ADMIN, ROLES.FINANZAS].includes(role),
+    manageUsers: isAdmin,
+    createOperations: isAdmin || isImports,
+    deleteOperations: isAdmin,
+    manageOperations: isAdmin || isImports,
+    manageProviders: isAdmin || isImports,
+    manageDocuments: isAdmin || isImports,
+    manageFinanceDocuments: isAdmin || isFinance,
+    manageFinances: isAdmin || isFinance,
+    viewLogistics: isAdmin || isImports || isReadOnly,
+    viewFinances: isAdmin || isImports || isFinance || isReadOnly,
+    viewDirectories: isAdmin || isImports || isReadOnly,
   };
 }

@@ -151,7 +151,7 @@ function OperacionesApp() {
           <p>Prioridades, vencimientos y movimientos importantes en un solo lugar.</p>
         </div>
         <div className="hero-actions">
-          {permissions.manageOperations && (
+          {permissions.createOperations && (
             <button className="hero-primary" onClick={() => navigate("/operaciones/nueva")}>＋ Nueva operación</button>
           )}
           <button className="hero-secondary" onClick={() => navigate("/operaciones")}>Ver todas →</button>
