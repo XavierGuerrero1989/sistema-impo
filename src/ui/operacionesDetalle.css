@@ -311,6 +311,79 @@
   font-size: 0.8rem;
 }
 
+.shared-collapsible {
+  padding: 0;
+  overflow: hidden;
+}
+
+.shared-collapsible > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 19px 22px;
+  list-style: none;
+  background: linear-gradient(90deg, #fbfdff, #f8fafc);
+  cursor: pointer;
+}
+
+.shared-collapsible > summary::-webkit-details-marker { display: none; }
+
+.shared-collapsible > summary::after {
+  content: "⌄";
+  display: grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  border-radius: 9px;
+  background: #eef2f7;
+  color: #64748b;
+  font-size: 1rem;
+  transition: transform .2s ease;
+}
+
+.shared-collapsible[open] > summary::after { transform: rotate(180deg); }
+
+.shared-collapsible > summary > span {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.shared-collapsible > summary small {
+  color: #8a96a8;
+  font-size: .65rem;
+  font-weight: 750;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.shared-collapsible > summary strong { color: #26344a; font-size: 1rem; }
+
+.shared-collapsible > summary > b {
+  display: grid;
+  min-width: 28px;
+  height: 28px;
+  padding: 0 7px;
+  place-items: center;
+  border-radius: 9px;
+  background: #e0e7ff;
+  color: #4f46e5;
+  font-size: .72rem;
+}
+
+.shared-collapsible > .docs-list,
+.shared-collapsible > .timeline {
+  margin: 0;
+  padding: 18px 22px;
+  border-top: 1px solid #edf0f5;
+}
+
+.shared-collapsible > .doc-form {
+  margin: 0 22px 22px;
+}
+
 .time {
   color: #64748b;
   white-space: nowrap;
