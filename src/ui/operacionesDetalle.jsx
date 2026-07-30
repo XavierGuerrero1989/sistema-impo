@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   getOperacionesLocal,
@@ -1733,7 +1734,7 @@ export default function OperacionDetalle({ modo = "resumen" }) {
         )}
       </details>
 
-      {documentoPreview?.archivo?.downloadURL && (
+      {documentoPreview?.archivo?.downloadURL && createPortal(
         <div
           className="document-preview-backdrop"
           role="presentation"
@@ -1775,7 +1776,8 @@ export default function OperacionDetalle({ modo = "resumen" }) {
               </a>
             </footer>
           </section>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Historial */}
