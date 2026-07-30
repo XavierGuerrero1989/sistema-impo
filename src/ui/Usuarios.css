@@ -13,18 +13,22 @@
   font-weight: 750; cursor: pointer;
 }
 .usuarios-add span { font-size: 1.1rem; }
-.access-overview { display: grid; grid-template-columns: repeat(2,1fr); gap: 14px; margin: 25px 0; }
+.access-overview { display: grid; grid-template-columns: repeat(4,1fr); gap: 14px; margin: 25px 0; }
 .access-card {
   display: flex; align-items: center; gap: 14px; padding: 18px;
   border: 1px solid #e5eaf2; border-radius: 17px; background: white;
 }
 .access-card.admin { background: linear-gradient(135deg,#f5f3ff,#fff); border-color: #ddd6fe; }
 .access-card.lectura { background: linear-gradient(135deg,#eff8ff,#fff); border-color: #dbeafe; }
+.access-card.operaciones { background: linear-gradient(135deg,#ecfeff,#fff); border-color: #a5f3fc; }
+.access-card.finanzas { background: linear-gradient(135deg,#faf5ff,#fff); border-color: #e9d5ff; }
 .access-icon {
   display: grid; flex: 0 0 auto; width: 38px; height: 38px; place-items: center;
   border-radius: 11px; background: #eef2ff; color: #5b4fd3; font-size: 1.05rem;
 }
 .access-card.lectura .access-icon { background: #e0f2fe; color: #0284c7; }
+.access-card.operaciones .access-icon { background: #cffafe; color: #0891b2; }
+.access-card.finanzas .access-icon { background: #f3e8ff; color: #7e22ce; }
 .access-card strong { color: #1f2937; }
 .access-card p { margin: 4px 0 0; color: #718096; font-size: .8rem; }
 .usuarios-alert { margin: 0 0 14px; padding: 12px 15px; border-radius: 11px; font-size: .84rem; }
@@ -42,6 +46,14 @@
   align-items: center; gap: 14px; min-height: 78px; padding: 0 23px;
   border-bottom: 1px solid #f0f2f6;
 }
+.usuario-row.inactive { opacity: .62; background: #f8fafc; }
+.user-access-action {
+  padding: 7px 9px; border: 0; border-radius: 8px;
+  font-size: .64rem; font-weight: 800; cursor: pointer; white-space: nowrap;
+}
+.user-access-action.remove { color: #b91c1c; background: #fee2e2; }
+.user-access-action.restore { color: #15803d; background: #dcfce7; }
+.user-access-action:disabled { opacity: .5; cursor: wait; }
 .usuario-row:last-child { border-bottom: 0; }
 .usuario-avatar {
   display: grid; width: 42px; height: 42px; place-items: center;
@@ -58,9 +70,13 @@
   border: 1px solid #ddd6fe; border-radius: 10px; background: #f5f3ff;
 }
 .access-select.lectura { border-color: #bae6fd; background: #f0f9ff; }
+.access-select.operaciones { border-color: #a5f3fc; background: #ecfeff; }
+.access-select.finanzas { border-color: #e9d5ff; background: #faf5ff; }
 .access-select > span { color: #6d5ce7; }
 .access-select select { width: 100%; border: 0; outline: 0; background: transparent; color: #42378f; font-weight: 750; }
 .access-select.lectura select { color: #0369a1; }
+.access-select.operaciones select { color: #0e7490; }
+.access-select.finanzas select { color: #7e22ce; }
 .protected-user {
   padding: 5px 8px; border-radius: 7px; background: #f1f5f9;
   color: #64748b; font-size: .62rem; font-weight: 750; text-transform: uppercase;
@@ -108,10 +124,12 @@
 .user-modal-actions button[type="submit"] { border-color: #6d5ce7; background: #6d5ce7; color: white; }
 .user-modal-actions button:disabled { opacity: .55; cursor: wait; }
 @media (max-width: 780px) {
+  .access-overview { grid-template-columns: repeat(2, 1fr); }
   .usuario-row { grid-template-columns: 44px 1fr; padding: 15px 18px; }
   .usuario-last-access { display: none; }
   .access-select { grid-column: 2; }
   .protected-user { grid-column: 2; width: fit-content; }
+  .user-access-action { grid-column: 2; width: fit-content; }
 }
 @media (max-width: 560px) {
   .usuarios-page { padding: 20px 16px; }

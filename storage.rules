@@ -15,7 +15,7 @@ service firebase.storage {
         primaryAdmin()
         || firestore.get(
           /databases/(default)/documents/usuarios/$(request.auth.uid)
-        ).data.role in ["admin", "operaciones"]
+        ).data.role in ["admin", "operaciones", "finanzas"]
       );
     }
 

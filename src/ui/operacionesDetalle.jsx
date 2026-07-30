@@ -229,6 +229,9 @@ export default function OperacionDetalle({ modo = "resumen" }) {
   const esFinanzas = modo === "finanzas";
   const esAdminGeneral =
     profile?.role === ROLES.ADMIN || isPrimaryAdmin(user?.email);
+  const canManageAreaDocuments = esFinanzas
+    ? permissions.manageFinanceDocuments
+    : permissions.manageDocuments;
 
   const cotizacionesForwarder = operacion?.cotizacionesForwarder || [];
 
@@ -399,7 +402,7 @@ export default function OperacionDetalle({ modo = "resumen" }) {
 
   /* ===== Documentos (sube a Storage + guarda URL) ===== */
   const agregarDocumento = async () => {
-    if (!permissions.manageDocuments) return alert("No tenés permiso para modificar documentos.");
+    if (!canManageAreaDocuments) return alert("No tenés permiso para modificar documentos.");
     if (operacion.estado === "FINALIZADA") {
       alert("La operación está finalizada. No se pueden agregar documentos.");
       return;
@@ -470,7 +473,7 @@ export default function OperacionDetalle({ modo = "resumen" }) {
   };
 
   const eliminarDocumento = async (index) => {
-    if (!permissions.manageDocuments) return alert("No tenés permiso para modificar documentos.");
+    if (!canManageAreaDocuments) return alert("No tenés permiso para modificar documentos.");
     if (operacion.estado === "FINALIZADA") {
       alert("La operación está finalizada. No se pueden eliminar documentos.");
       return;
@@ -508,7 +511,7 @@ export default function OperacionDetalle({ modo = "resumen" }) {
   };
 
   const cambiarEstadoDocumento = async (index, estado) => {
-    if (!permissions.manageDocuments) {
+    if (!canManageAreaDocuments) {
       return alert("No tenés permiso para validar documentos.");
     }
     if (operacion.estado === "FINALIZADA") return;
@@ -955,7 +958,7 @@ export default function OperacionDetalle({ modo = "resumen" }) {
                 {money(totalOperacionInput || 0)}
               </strong>
 
-              {operacion.estado !== "FINALIZADA" && (
+              {operacion.estado !== "FINALIZADA" && permissions.manageFinances && (
                 <button
                   className="btn-link"
                   onClick={() => setEditandoTotal(true)}
@@ -1055,6 +1058,7 @@ export default function OperacionDetalle({ modo = "resumen" }) {
             </div>
             <span className="scheduled-state">POR HACER</span>
           </div>
+          {permissions.manageFinances ? (
           <div className="payment-scheduler-form">
             <label>
               <span>Tramo</span>
@@ -1076,10 +1080,13 @@ export default function OperacionDetalle({ modo = "resumen" }) {
               <span>Motivo</span>
               <input type="text" placeholder="Ej. Adelanto solicitado por proveedor" value={motivoInput} onChange={(e) => setMotivoInput(e.target.value)} />
             </label>
-            <button className="btn-primary" onClick={programarPago} disabled={operacion.estado === "FINALIZADA"}>
+            <button className="btn-primary" onClick={programarPago} disabled={operacion.estado === "FINALIZADA" || !permissions.manageFinances}>
               Programar pago
             </button>
           </div>
+          ) : (
+            <p className="finance-readonly-note">Modo consulta: este perfil no puede programar pagos.</p>
+          )}
         </section>
 
         <div className="scheduled-payments">
@@ -1260,7 +1267,7 @@ export default function OperacionDetalle({ modo = "resumen" }) {
                           type="text"
                           placeholder="Ej. China"
                           value={origen}
-                          disabled={estadoActual === "FINALIZADA"}
+                          disabled={estadoActual === "FINALIZADA" || !permissions.manageOperations}
                           onChange={(e) => setOrigen(e.target.value)}
                         />
                       </div>
@@ -1278,7 +1285,7 @@ export default function OperacionDetalle({ modo = "resumen" }) {
                       <select
                         value={medio}
                         onChange={(e) => setMedio(e.target.value)}
-                        disabled={estadoActual === "FINALIZADA"}
+                        disabled={estadoActual === "FINALIZADA" || !permissions.manageOperations}
                       >
                         {MEDIOS.map((m) => <option key={m}>{m}</option>)}
                       </select>
@@ -1287,21 +1294,21 @@ export default function OperacionDetalle({ modo = "resumen" }) {
                     {estadoActual === "PLANIFICADA" && (
                       <label>
                         <span>Salida estimada (ETD)</span>
-                        <input type="date" value={fechaSalida} disabled={estadoActual === "FINALIZADA"} onChange={(e) => setFechaSalida(e.target.value)} />
+                        <input type="date" value={fechaSalida} disabled={estadoActual === "FINALIZADA" || !permissions.manageOperations} onChange={(e) => setFechaSalida(e.target.value)} />
                       </label>
                     )}
 
                     {estadoActual === "PRODUCCION" && (
                       <label>
                         <span>Fin estimado de fabricación</span>
-                        <input type="date" value={fechaFinFabricacion} disabled={estadoActual === "FINALIZADA"} onChange={(e) => setFechaFinFabricacion(e.target.value)} />
+                        <input type="date" value={fechaFinFabricacion} disabled={estadoActual === "FINALIZADA" || !permissions.manageOperations} onChange={(e) => setFechaFinFabricacion(e.target.value)} />
                       </label>
                     )}
 
                     {(estadoActual === "CARGADA" || estadoActual === "EN_TRANSITO") && (
                         <label>
                           <span>Arribo estimado (ETA)</span>
-                          <input type="date" value={eta} disabled={estadoActual === "FINALIZADA"} onChange={(e) => setEta(e.target.value)} />
+                          <input type="date" value={eta} disabled={estadoActual === "FINALIZADA" || !permissions.manageOperations} onChange={(e) => setEta(e.target.value)} />
                         </label>
                     )}
 
@@ -1309,11 +1316,11 @@ export default function OperacionDetalle({ modo = "resumen" }) {
                       <>
                         <label>
                           <span>Depósito</span>
-                          <input type="text" value={deposito} disabled={estadoActual === "FINALIZADA"} onChange={(e) => setDeposito(e.target.value)} />
+                          <input type="text" value={deposito} disabled={estadoActual === "FINALIZADA" || !permissions.manageOperations} onChange={(e) => setDeposito(e.target.value)} />
                         </label>
                         <label>
                           <span>Liberación estimada</span>
-                          <input type="date" value={etaLiberacion} disabled={estadoActual === "FINALIZADA"} onChange={(e) => setEtaLiberacion(e.target.value)} />
+                          <input type="date" value={etaLiberacion} disabled={estadoActual === "FINALIZADA" || !permissions.manageOperations} onChange={(e) => setEtaLiberacion(e.target.value)} />
                         </label>
                       </>
                     )}
@@ -1324,7 +1331,7 @@ export default function OperacionDetalle({ modo = "resumen" }) {
                         <input
                           type="date"
                           value={fechaLlegadaBodega}
-                          disabled={estadoActual === "FINALIZADA"}
+                          disabled={estadoActual === "FINALIZADA" || !permissions.manageOperations}
                           onChange={(e) => setFechaLlegadaBodega(e.target.value)}
                         />
                       </label>
@@ -1369,7 +1376,7 @@ export default function OperacionDetalle({ modo = "resumen" }) {
                   <select
                     value={tipoCarga}
                     onChange={(e) => setTipoCarga(e.target.value)}
-                    disabled={estadoActual === "FINALIZADA"}
+                    disabled={estadoActual === "FINALIZADA" || !permissions.manageOperations}
                   >
                     <option value="">Seleccionar tipo</option>
                     {TIPOS_CARGA.map((tipo) => <option key={tipo} value={tipo}>{tipo}</option>)}
@@ -1381,7 +1388,7 @@ export default function OperacionDetalle({ modo = "resumen" }) {
                     type="number"
                     min="1"
                     value={cantidadBultos}
-                    disabled={estadoActual === "FINALIZADA"}
+                    disabled={estadoActual === "FINALIZADA" || !permissions.manageOperations}
                     onChange={(e) => setCantidadBultos(e.target.value)}
                     placeholder="Ej. 12"
                   />
@@ -1395,7 +1402,7 @@ export default function OperacionDetalle({ modo = "resumen" }) {
                 </button>
               </div>
 
-              {estadoActual !== "FINALIZADA" && (
+              {estadoActual !== "FINALIZADA" && permissions.manageOperations && (
                 <details className="workflow-more">
                   <summary>Más acciones y correcciones</summary>
                   <div className="workflow-more-content">
@@ -1536,7 +1543,7 @@ export default function OperacionDetalle({ modo = "resumen" }) {
               <p>Seleccioná el agente que intervendrá en esta operación.</p>
               <label>
                 <span>Agente asignado</span>
-                <select value={agenteAduanaId} disabled={operacion.estado === "FINALIZADA"}
+                <select value={agenteAduanaId} disabled={operacion.estado === "FINALIZADA" || !permissions.manageOperations}
                   onChange={(e) => setAgenteAduanaId(e.target.value)}>
                   <option value="">Seleccionar agente</option>
                   {agentesAduana.map((item) => (
@@ -1546,7 +1553,7 @@ export default function OperacionDetalle({ modo = "resumen" }) {
               </label>
               <label>
                 <span>Observaciones</span>
-                <textarea value={agenteObservaciones} disabled={operacion.estado === "FINALIZADA"}
+                <textarea value={agenteObservaciones} disabled={operacion.estado === "FINALIZADA" || !permissions.manageOperations}
                   onChange={(e) => setAgenteObservaciones(e.target.value)}
                   placeholder="Criterio de selección o instrucciones" rows="3" />
               </label>
@@ -1599,7 +1606,7 @@ export default function OperacionDetalle({ modo = "resumen" }) {
               </div>
 
               <div className="doc-right">
-                {!esResumen && operacion.estado !== "FINALIZADA" && (
+                {!esResumen && operacion.estado !== "FINALIZADA" && canManageAreaDocuments && (
                   <>
                     {d.estado !== "VALIDADO" && (
                       <button className="btn-link" onClick={() => cambiarEstadoDocumento(index, "VALIDADO")}>
@@ -1624,7 +1631,7 @@ export default function OperacionDetalle({ modo = "resumen" }) {
           ))}
         </ul>
 
-        {!esResumen && (
+        {!esResumen && canManageAreaDocuments && (
         <div className="doc-form">
           <input
             placeholder="Nombre"

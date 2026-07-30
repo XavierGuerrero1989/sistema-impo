@@ -26,12 +26,29 @@ service cloud.firestore {
 
     match /operaciones/{operacionId} {
       allow read: if signedIn();
-      allow write: if primaryAdmin() || hasRole(["admin", "operaciones", "finanzas"]);
+      allow create: if primaryAdmin() || hasRole(["admin", "operaciones"]);
+      allow update: if primaryAdmin() || hasRole(["admin"]) || (
+        hasRole(["operaciones"])
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          "estado", "logistica", "documentos", "historial",
+          "forwarderId", "forwarderNombre", "cotizacionSeleccionadaId",
+          "cotizacionesForwarder", "agenteAduanaId", "agenteAduanaNombre",
+          "agenteAduanaObservaciones", "updatedAt"
+        ])
+      ) || (
+        hasRole(["finanzas"])
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          "moneda", "totalOperacion", "condicionVenta", "pagosProgramados",
+          "adelantos", "pagos", "documentos", "historial",
+          "fechaVencimientoPago", "updatedAt"
+        ])
+      );
+      allow delete: if primaryAdmin() || hasRole(["admin"]);
     }
 
     match /documentos/{docId} {
       allow read: if signedIn();
-      allow write: if primaryAdmin() || hasRole(["admin", "operaciones"]);
+      allow write: if primaryAdmin() || hasRole(["admin", "operaciones", "finanzas"]);
     }
 
     match /proveedores/{proveedorId} {
@@ -62,6 +79,7 @@ service cloud.firestore {
         && request.auth.uid == userId
         && request.resource.data.role == resource.data.role
         && request.resource.data.email == request.auth.token.email
+        && request.resource.data.activo == resource.data.activo
       );
       allow delete: if canManageUsers() && request.auth.uid != userId;
     }

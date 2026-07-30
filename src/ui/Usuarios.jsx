@@ -20,6 +20,18 @@ import "./Usuarios.css";
 
 const ACCESS_LEVELS = [
   {
+    role: ROLES.OPERACIONES,
+    label: "Importaciones",
+    description: "Crea operaciones y gestiona Logística, sin modificar Finanzas.",
+    icon: "→",
+  },
+  {
+    role: ROLES.FINANZAS,
+    label: "Finanzas",
+    description: "Consulta el resumen general y administra únicamente Finanzas.",
+    icon: "$",
+  },
+  {
     role: ROLES.LECTURA,
     label: "Solo lectura",
     description: "Puede consultar toda la información, sin hacer cambios.",
@@ -27,8 +39,8 @@ const ACCESS_LEVELS = [
   },
   {
     role: ROLES.ADMIN,
-    label: "Control total",
-    description: "Puede crear, editar, eliminar y administrar usuarios.",
+    label: "Administrador",
+    description: "Control total, incluida la creación, edición y eliminación de usuarios.",
     icon: "✦",
   },
 ];
@@ -78,6 +90,31 @@ export default function Usuarios() {
       setMensaje(`Acceso actualizado para ${usuario.email}.`);
     } catch {
       setError("No se pudo actualizar el nivel de acceso.");
+    } finally {
+      setGuardando("");
+    }
+  };
+
+  const cambiarEstadoUsuario = async (usuario, activo) => {
+    if (isPrimaryAdmin(usuario.email)) return;
+    const action = activo ? "reactivar" : "eliminar el acceso de";
+    if (!window.confirm(`¿Confirmás que querés ${action} ${usuario.email}?`)) return;
+    setGuardando(usuario.uid);
+    setError("");
+    setMensaje("");
+    try {
+      await updateDoc(doc(db, "usuarios", usuario.uid), {
+        activo,
+        actualizadoAt: serverTimestamp(),
+      });
+      setUsuarios((current) =>
+        current.map((item) => item.uid === usuario.uid ? { ...item, activo } : item)
+      );
+      setMensaje(activo
+        ? `Acceso reactivado para ${usuario.email}.`
+        : `Acceso eliminado para ${usuario.email}.`);
+    } catch {
+      setError("No se pudo modificar el acceso del usuario.");
     } finally {
       setGuardando("");
     }
@@ -188,7 +225,7 @@ export default function Usuarios() {
               .toUpperCase();
 
             return (
-              <article className="usuario-row" key={usuario.uid}>
+              <article className={`usuario-row ${usuario.activo === false ? "inactive" : ""}`} key={usuario.uid}>
                 <span className="usuario-avatar">{initials}</span>
                 <div className="usuario-identity">
                   <strong>{usuario.nombre || usuario.email?.split("@")[0]}</strong>
@@ -212,6 +249,15 @@ export default function Usuarios() {
                   </select>
                 </label>
                 {primaryAdmin && <span className="protected-user">Protegido</span>}
+                {!primaryAdmin && (
+                  <button
+                    className={`user-access-action ${usuario.activo === false ? "restore" : "remove"}`}
+                    disabled={guardando === usuario.uid}
+                    onClick={() => cambiarEstadoUsuario(usuario, usuario.activo === false)}
+                  >
+                    {usuario.activo === false ? "Reactivar" : "Eliminar acceso"}
+                  </button>
+                )}
               </article>
             );
           })}

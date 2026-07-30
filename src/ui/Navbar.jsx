@@ -6,12 +6,12 @@ import { useEffect, useState } from "react";
 const navItems = [
   { to: "/", label: "Inicio", icon: "⌂" },
   { to: "/operaciones", label: "Operaciones", icon: "▦" },
-  { to: "/proveedores", label: "Proveedores", icon: "◆" },
-  { to: "/forwarders", label: "Forwarders", icon: "◈" },
-  { to: "/agentes-aduana", label: "Agentes de aduana", icon: "◇" },
-  { to: "/logistica", label: "Logística", icon: "→" },
+  { to: "/proveedores", label: "Proveedores", icon: "◆", permission: "viewDirectories" },
+  { to: "/forwarders", label: "Forwarders", icon: "◈", permission: "viewDirectories" },
+  { to: "/agentes-aduana", label: "Agentes de aduana", icon: "◇", permission: "viewDirectories" },
+  { to: "/logistica", label: "Logística", icon: "→", permission: "viewLogistics" },
   { to: "/documentos", label: "Documentos", icon: "▤" },
-  { to: "/finanzas", label: "Finanzas", icon: "$" },
+  { to: "/finanzas", label: "Finanzas", icon: "$", permission: "viewFinances" },
   { to: "/historial", label: "Historial", icon: "↺" },
 ];
 
@@ -67,7 +67,7 @@ export default function Navbar() {
 
         <div className="nav-section-label">Navegación</div>
         <nav className="navbar-links">
-          {navItems.map((item) => (
+          {navItems.filter((item) => !item.permission || permissions[item.permission]).map((item) => (
             <NavLink key={item.to} to={item.to} end={item.to === "/"} onClick={() => setOpen(false)}
               className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}>
               <span className="nav-icon">{item.icon}</span><span>{item.label}</span>

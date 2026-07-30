@@ -20,6 +20,11 @@ export function AuthProvider({ children }) {
       try {
         await selectLocalDatabase(firebaseUser?.uid);
         const nextProfile = await loadUserProfile(firebaseUser);
+        if (firebaseUser && nextProfile?.activo === false) {
+          await signOut(auth);
+          setProfile(null);
+          return;
+        }
         setProfile(nextProfile);
       } catch (error) {
         console.error("No se pudo cargar el perfil del usuario:", error);
