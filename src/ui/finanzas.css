@@ -567,3 +567,8 @@
   .fin-bank-head { align-items: flex-start; flex-direction: column; }
 }
 .fin-register { white-space: nowrap; }
+.upcoming-payments-panel{padding:18px;border:1px solid #e6eaf1;border-radius:16px;background:linear-gradient(135deg,#fff,#faf8ff)}
+.upcoming-totals{display:flex;flex-wrap:wrap;gap:7px}.upcoming-totals>span{padding:7px 9px;border-radius:9px;background:#ede9fe;color:#5b21b6;font-size:.74rem;font-weight:800}.upcoming-totals small{opacity:.65}
+.upcoming-payment-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:9px;margin-top:14px}.upcoming-payment-grid>button{display:flex;align-items:flex-start;flex-direction:column;gap:4px;padding:13px;border:1px solid #e8eaf0;border-radius:12px;background:#fff;text-align:left;cursor:pointer}.upcoming-payment-grid strong{color:#26344a}.upcoming-payment-grid small{overflow:hidden;width:100%;color:#718096;font-size:.67rem;text-overflow:ellipsis;white-space:nowrap}.upcoming-payment-grid b{margin-top:5px;color:#4c1d95}.upcoming-payment-grid time{color:#64748b;font-size:.67rem}
+.upcoming-status{padding:4px 6px;border-radius:6px;background:#fef3c7;color:#b45309;font-size:.58rem;font-weight:850}.upcoming-status.vencido{background:#ffe4e6;color:#be123c}.upcoming-status.proximo{background:#ffedd5;color:#c2410c}
+.next-payment-cell{display:flex;flex-direction:column;gap:2px}.next-payment-cell small{color:#718096}

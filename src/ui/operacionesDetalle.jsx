@@ -9,7 +9,15 @@ import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage
 import "./operacionesDetalle.css";
 import { auditEvent } from "../auth/audit";
 import { useAuth } from "../auth/AuthContext";
+import { isPrimaryAdmin, ROLES } from "../auth/roles";
 import { countryFlag, countryLabel } from "../domain/paises";
+import {
+  condicionCumplida,
+  condicionLabel,
+  estadoPagoProgramado,
+  importeCuota,
+  obtenerPlanPagos,
+} from "../domain/pagos";
 
 const ESTADOS = [
   "PLANIFICADA",
@@ -79,7 +87,7 @@ const inferHistoryArea = (item = {}, documentos = []) => {
 };
 
 export default function OperacionDetalle({ modo = "resumen" }) {
-  const { permissions } = useAuth();
+  const { permissions, profile, user } = useAuth();
   const { id } = useParams();
   const navigate = useNavigate();
 
@@ -105,7 +113,9 @@ export default function OperacionDetalle({ modo = "resumen" }) {
   const [fechaInput, setFechaInput] = useState(
     new Date().toISOString().slice(0, 10)
   );
-  const [tipoPago, setTipoPago] = useState("ADELANTO");
+  const [cuotaInput, setCuotaInput] = useState("adelanto");
+  const [motivoInput, setMotivoInput] = useState("");
+  const [confirmandoId, setConfirmandoId] = useState("");
 
   /* ===== Documentos ===== */
   const [docNombre, setDocNombre] = useState("");
@@ -115,7 +125,6 @@ export default function OperacionDetalle({ modo = "resumen" }) {
   const [subiendoDoc, setSubiendoDoc] = useState(false);
 
   const [totalOperacionInput, setTotalOperacionInput] = useState("");
-  const [vencimientoPago, setVencimientoPago] = useState("");
 
   useEffect(() => {
     async function load() {
@@ -125,7 +134,6 @@ export default function OperacionDetalle({ modo = "resumen" }) {
       setOperacion(op || null);
       setNuevoEstado(op?.estado || "");
       setTotalOperacionInput(op?.totalOperacion || "");
-      setVencimientoPago(op?.fechaVencimientoPago || "");
 
       // hidratar logística (si existe)
       const l = op?.logistica || {};
@@ -172,6 +180,8 @@ export default function OperacionDetalle({ modo = "resumen" }) {
   const esResumen = modo === "resumen";
   const esLogistica = modo === "logistica";
   const esFinanzas = modo === "finanzas";
+  const esAdminGeneral =
+    profile?.role === ROLES.ADMIN || isPrimaryAdmin(user?.email);
 
   /* ===== Guard ===== */
   if (!operacion) return <p className="loading">Cargando operación...</p>;
@@ -188,42 +198,50 @@ export default function OperacionDetalle({ modo = "resumen" }) {
     : (operacion.historial || []).filter(
         (item) => inferHistoryArea(item, operacion.documentos || []) === modo
       );
+  const planPagos = obtenerPlanPagos(operacion);
+  const pagosProgramados = operacion.pagosProgramados || [];
 
   /* ===== Finanzas acciones ===== */
-  const registrarMovimiento = async () => {
+  const programarPago = async () => {
     if (!permissions.manageFinances) return alert("No tenés permiso para modificar finanzas.");
     if (operacion.estado === "FINALIZADA") {
-      alert("La operación está finalizada. No se pueden registrar movimientos.");
+      alert("La operación está finalizada. No se pueden programar pagos.");
       return;
     }
 
     const monto = Number(String(montoInput).replace(",", "."));
     if (!monto || monto <= 0) return alert("Monto inválido");
     if (monto > saldo) return alert("Supera el saldo pendiente");
-    if (!bancoInput.trim()) return alert("Indicá el banco");
+    if (!fechaInput) return alert("Indicá una fecha prevista");
+    if (!motivoInput.trim()) return alert("Indicá el motivo del pago");
 
-    const nuevo = {
+    const nuevoProgramado = {
+      id:
+        typeof crypto !== "undefined" && crypto.randomUUID
+          ? crypto.randomUUID()
+          : `pago_${Date.now()}`,
+      cuotaId: cuotaInput,
       monto,
       moneda,
-      instrumento: instrumentoInput,
-      banco: bancoInput,
-      fecha: fechaInput,
-      estado: "ACTIVO",
+      fechaProgramada: fechaInput,
+      motivo: motivoInput.trim(),
+      estado: "POR_HACER",
+      creadoAt: new Date().toISOString(),
     };
-
-    const campo = tipoPago === "ADELANTO" ? "adelantos" : "pagos";
 
     const updated = {
       ...operacion,
-      [campo]: [...(operacion[campo] || []), nuevo],
+      pagosProgramados: [...pagosProgramados, nuevoProgramado],
       historial: [
         ...(operacion.historial || []),
-        auditEvent(`${tipoPago} registrado`, {
+        auditEvent("Pago programado", {
           area: "finanzas",
+          programadoId: nuevoProgramado.id,
+          cuotaId: cuotaInput,
           monto,
           moneda,
-          instrumento: instrumentoInput,
-          banco: bancoInput,
+          fecha: fechaInput,
+          motivo: motivoInput.trim(),
         }),
       ],
     };
@@ -231,19 +249,74 @@ export default function OperacionDetalle({ modo = "resumen" }) {
     await upsertOperacionLocal(updated);
     setOperacion(updated);
     setMontoInput("");
+    setMotivoInput("");
+  };
+
+  const confirmarPago = async (programado) => {
+    if (!esAdminGeneral) {
+      alert("Solo el administrador general puede confirmar pagos efectivos.");
+      return;
+    }
+    if (!bancoInput.trim()) return alert("Indicá el banco");
+    if (!fechaInput) return alert("Indicá la fecha efectiva");
+
+    const campo = programado.cuotaId === "adelanto" ? "adelantos" : "pagos";
+    const movimiento = {
+      monto: Number(programado.monto || 0),
+      moneda,
+      instrumento: instrumentoInput,
+      banco: bancoInput.trim(),
+      fecha: fechaInput,
+      estado: "ACTIVO",
+      programadoId: programado.id,
+    };
+    const updated = {
+      ...operacion,
+      [campo]: [...(operacion[campo] || []), movimiento],
+      pagosProgramados: pagosProgramados.map((pago) =>
+        pago.id === programado.id
+          ? {
+              ...pago,
+              estado: "PAGADO",
+              pagadoAt: new Date().toISOString(),
+              fechaEfectiva: fechaInput,
+              banco: bancoInput.trim(),
+              instrumento: instrumentoInput,
+              confirmadoPor: user?.email || "",
+            }
+          : pago
+      ),
+      historial: [
+        ...(operacion.historial || []),
+        auditEvent("Pago efectivo confirmado", {
+          area: "finanzas",
+          programadoId: programado.id,
+          monto: movimiento.monto,
+          moneda,
+          banco: movimiento.banco,
+        }),
+      ],
+    };
+    await upsertOperacionLocal(updated);
+    setOperacion(updated);
+    setConfirmandoId("");
     setBancoInput("");
   };
 
-  const actualizarVencimientoPago = async () => {
-    if (!permissions.manageFinances) return;
+  const cancelarPagoProgramado = async (programado) => {
+    if (!permissions.manageFinances || programado.estado === "PAGADO") return;
     const updated = {
       ...operacion,
-      fechaVencimientoPago: vencimientoPago || null,
+      pagosProgramados: pagosProgramados.map((pago) =>
+        pago.id === programado.id ? { ...pago, estado: "CANCELADO" } : pago
+      ),
       historial: [
         ...(operacion.historial || []),
-        auditEvent("Vencimiento de pago actualizado", {
+        auditEvent("Pago programado cancelado", {
           area: "finanzas",
-          fecha: vencimientoPago || null,
+          programadoId: programado.id,
+          monto: programado.monto,
+          moneda,
         }),
       ],
     };
@@ -685,25 +758,6 @@ export default function OperacionDetalle({ modo = "resumen" }) {
           )}
         </div>
 
-        <div className="total-operacion">
-          <span className="mini-label">Vencimiento estimado de pago</span>
-          <div className="total-edit">
-            <input
-              type="date"
-              value={vencimientoPago}
-              disabled={operacion.estado === "FINALIZADA" || !permissions.manageFinances}
-              onChange={(event) => setVencimientoPago(event.target.value)}
-            />
-            <button
-              className="btn-secondary"
-              disabled={operacion.estado === "FINALIZADA" || !permissions.manageFinances}
-              onClick={actualizarVencimientoPago}
-            >
-              Guardar vencimiento
-            </button>
-          </div>
-        </div>
-
         <div className="pago-grid">
           <div>
             <span>Total</span>
@@ -726,62 +780,123 @@ export default function OperacionDetalle({ modo = "resumen" }) {
           <span>{Math.round(progreso)}%</span>
         </div>
 
-        <div className="pago-actions">
-          <select
-            value={tipoPago}
-            disabled={operacion.estado === "FINALIZADA"}
-            onChange={(e) => setTipoPago(e.target.value)}
-          >
-            <option value="ADELANTO">Adelanto</option>
-            <option value="PAGO">Pago parcial</option>
-          </select>
+        <section className="payment-plan-card">
+          <div className="payment-plan-head">
+            <div>
+              <span className="workflow-eyebrow">Condición comercial</span>
+              <h4>Plan de pagos</h4>
+            </div>
+            <small>{planPagos.reduce((sum, cuota) => sum + Number(cuota.porcentaje || 0), 0)}% distribuido</small>
+          </div>
+          <div className="payment-plan-grid">
+            {planPagos.map((cuota) => {
+              const habilitada = condicionCumplida(cuota.condicion, operacion.estado);
+              return (
+                <article className={`payment-installment ${habilitada ? "available" : ""}`} key={cuota.id}>
+                  <div className="installment-percent">{cuota.porcentaje}%</div>
+                  <div>
+                    <strong>{cuota.nombre}</strong>
+                    <span>{condicionLabel(cuota.condicion)}</span>
+                    <small>{cuota.fechaEstimada ? `Estimado: ${new Date(`${cuota.fechaEstimada}T00:00:00`).toLocaleDateString("es-AR")}` : "Sin fecha estimada"}</small>
+                  </div>
+                  <div className="installment-amount">
+                    <strong>{money(importeCuota(cuota, total))}</strong>
+                    <span>{habilitada ? "Condición cumplida" : "Condición pendiente"}</span>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        </section>
 
-          <input
-            type="number"
-            placeholder="Monto"
-            value={montoInput}
-            disabled={operacion.estado === "FINALIZADA"}
-            onChange={(e) => setMontoInput(e.target.value)}
-          />
+        <section className="payment-scheduler">
+          <div className="payment-scheduler-head">
+            <div>
+              <span className="workflow-eyebrow">Agenda financiera</span>
+              <h4>Programar un pago</h4>
+              <p>La programación no modifica el saldo hasta que el administrador confirme el pago.</p>
+            </div>
+            <span className="scheduled-state">POR HACER</span>
+          </div>
+          <div className="payment-scheduler-form">
+            <label>
+              <span>Tramo</span>
+              <select value={cuotaInput} onChange={(e) => setCuotaInput(e.target.value)}>
+                {planPagos.map((cuota) => (
+                  <option key={cuota.id} value={cuota.id}>{cuota.nombre} · {cuota.porcentaje}%</option>
+                ))}
+              </select>
+            </label>
+            <label>
+              <span>Fecha prevista</span>
+              <input type="date" value={fechaInput} onChange={(e) => setFechaInput(e.target.value)} />
+            </label>
+            <label>
+              <span>Monto</span>
+              <input type="number" placeholder="0" value={montoInput} onChange={(e) => setMontoInput(e.target.value)} />
+            </label>
+            <label className="scheduler-reason">
+              <span>Motivo</span>
+              <input type="text" placeholder="Ej. Adelanto solicitado por proveedor" value={motivoInput} onChange={(e) => setMotivoInput(e.target.value)} />
+            </label>
+            <button className="btn-primary" onClick={programarPago} disabled={operacion.estado === "FINALIZADA"}>
+              Programar pago
+            </button>
+          </div>
+        </section>
 
-          <input
-            type="date"
-            value={fechaInput}
-            disabled={operacion.estado === "FINALIZADA"}
-            onChange={(e) => setFechaInput(e.target.value)}
-          />
-
-          <select
-            value={instrumentoInput}
-            disabled={operacion.estado === "FINALIZADA"}
-            onChange={(e) => setInstrumentoInput(e.target.value)}
-          >
-            <option>TRANSFERENCIA</option>
-            <option>EFECTIVO</option>
-            <option>CHEQUE</option>
-          </select>
-
-          <input
-            type="text"
-            placeholder="Banco"
-            value={bancoInput}
-            disabled={operacion.estado === "FINALIZADA"}
-            onChange={(e) => setBancoInput(e.target.value)}
-          />
-
-          <button
-            className="btn-primary"
-            onClick={registrarMovimiento}
-            disabled={operacion.estado === "FINALIZADA"}
-          >
-            Registrar
-          </button>
+        <div className="scheduled-payments">
+          <div className="scheduled-payments-head">
+            <h4>Pagos programados</h4>
+            <span>{pagosProgramados.filter((pago) => pago.estado !== "CANCELADO").length}</span>
+          </div>
+          {pagosProgramados.length === 0 && <p className="empty">No hay pagos programados.</p>}
+          {pagosProgramados.map((programado) => {
+            const status = estadoPagoProgramado(programado);
+            const cuota = planPagos.find((item) => item.id === programado.cuotaId);
+            return (
+              <article className={`scheduled-payment ${status.toLowerCase()}`} key={programado.id}>
+                <div className="scheduled-date">
+                  <strong>{programado.fechaProgramada ? new Date(`${programado.fechaProgramada}T00:00:00`).getDate() : "–"}</strong>
+                  <span>{programado.fechaProgramada ? new Date(`${programado.fechaProgramada}T00:00:00`).toLocaleDateString("es-AR", { month: "short" }) : "Sin fecha"}</span>
+                </div>
+                <div className="scheduled-copy">
+                  <strong>{programado.motivo}</strong>
+                  <span>{cuota?.nombre || "Pago"} · {money(programado.monto)}</span>
+                </div>
+                <span className={`scheduled-badge ${status.toLowerCase()}`}>{status.replaceAll("_", " ")}</span>
+                {programado.estado === "POR_HACER" && (
+                  <div className="scheduled-actions">
+                    {esAdminGeneral && (
+                      <button onClick={() => setConfirmandoId(programado.id)}>Confirmar pago</button>
+                    )}
+                    <button className="danger" onClick={() => cancelarPagoProgramado(programado)}>Cancelar</button>
+                  </div>
+                )}
+                {confirmandoId === programado.id && (
+                  <div className="payment-confirmation">
+                    <strong>Confirmar pago efectivo</strong>
+                    <input type="date" value={fechaInput} onChange={(e) => setFechaInput(e.target.value)} />
+                    <select value={instrumentoInput} onChange={(e) => setInstrumentoInput(e.target.value)}>
+                      <option>TRANSFERENCIA</option>
+                      <option>EFECTIVO</option>
+                      <option>CHEQUE</option>
+                    </select>
+                    <input type="text" placeholder="Banco" value={bancoInput} onChange={(e) => setBancoInput(e.target.value)} />
+                    <button onClick={() => confirmarPago(programado)}>Confirmar efectivo</button>
+                    <button className="cancel" onClick={() => setConfirmandoId("")}>Cerrar</button>
+                  </div>
+                )}
+              </article>
+            );
+          })}
         </div>
 
+        <div className="effective-payments-title">Pagos efectivos confirmados</div>
         {(operacion.adelantos || []).map((a, i) => (
           <div key={i} className="pago-line">
             Adelanto {money(a.monto)} · {a.instrumento} · {a.banco}
-            {a.estado === "ACTIVO" && operacion.estado !== "FINALIZADA" && (
+            {a.estado === "ACTIVO" && operacion.estado !== "FINALIZADA" && esAdminGeneral && (
               <button onClick={() => cancelarMovimiento("adelantos", i)}>
                 Cancelar
               </button>
@@ -792,7 +907,7 @@ export default function OperacionDetalle({ modo = "resumen" }) {
         {(operacion.pagos || []).map((p, i) => (
           <div key={i} className="pago-line">
             Pago {money(p.monto)} · {p.instrumento} · {p.banco}
-            {p.estado === "ACTIVO" && operacion.estado !== "FINALIZADA" && (
+            {p.estado === "ACTIVO" && operacion.estado !== "FINALIZADA" && esAdminGeneral && (
               <button onClick={() => cancelarMovimiento("pagos", i)}>
                 Cancelar
               </button>
