@@ -1,6 +1,10 @@
 export const ESTADOS_PROVEEDOR = ["ACTIVO", "SUSPENDIDO", "BLOQUEADO"];
 
 export function normalizarProveedor(input = {}) {
+  const direccionActual = typeof input.direccion === "object" && input.direccion
+    ? input.direccion
+    : {};
+
   return {
     ...input,
     proveedorId: String(input.proveedorId || "").trim().toUpperCase(),
@@ -8,6 +12,17 @@ export function normalizarProveedor(input = {}) {
     nombreLegal: String(input.nombreLegal || "").trim(),
     pais: String(input.pais || "").trim(),
     identificacionFiscal: String(input.identificacionFiscal || "").trim(),
+    direccion: {
+      ...direccionActual,
+      direccion: String(direccionActual.direccion || input.direccionTexto || "").trim(),
+      codigoPostal: String(direccionActual.codigoPostal || input.codigoPostal || "").trim(),
+    },
+    banco: {
+      ...(input.banco || {}),
+      banco: String(input.banco?.banco || "").trim(),
+      swift: String(input.banco?.swift || input.swift || "").trim().toUpperCase(),
+      numeroCuenta: String(input.banco?.numeroCuenta || input.numeroCuenta || "").trim(),
+    },
     estado: ESTADOS_PROVEEDOR.includes(input.estado) ? input.estado : "ACTIVO",
     activo: input.activo !== false && input.estado !== "BLOQUEADO",
     comercial: {

@@ -13,6 +13,10 @@ export default function NuevoProveedor() {
   const [pais, setPais] = useState("");
   const [moneda, setMoneda] = useState("USD");
   const [identificacionFiscal, setIdentificacionFiscal] = useState("");
+  const [direccion, setDireccion] = useState("");
+  const [codigoPostal, setCodigoPostal] = useState("");
+  const [swift, setSwift] = useState("");
+  const [numeroCuenta, setNumeroCuenta] = useState("");
   const [error, setError] = useState("");
   const [guardando, setGuardando] = useState(false);
 
@@ -25,6 +29,14 @@ export default function NuevoProveedor() {
       nombreLegal,
       pais,
       identificacionFiscal,
+      direccion: {
+        direccion,
+        codigoPostal,
+      },
+      banco: {
+        swift,
+        numeroCuenta,
+      },
 
       comercial: {
         monedaHabitual: moneda,
@@ -105,6 +117,30 @@ export default function NuevoProveedor() {
 
         </div>
 
+        <div className="form-section-label">
+          <span>Domicilio</span>
+          <p>Datos postales del proveedor</p>
+        </div>
+
+        <div className="form-row">
+          <div className="form-group">
+            <label>Dirección</label>
+            <input
+              value={direccion}
+              placeholder="Calle, número, ciudad y provincia"
+              onChange={(e) => setDireccion(e.target.value)}
+            />
+          </div>
+
+          <div className="form-group">
+            <label>Código postal</label>
+            <input
+              value={codigoPostal}
+              onChange={(e) => setCodigoPostal(e.target.value)}
+            />
+          </div>
+        </div>
+
         <div className="form-row">
 
           <div className="form-group">
@@ -119,6 +155,30 @@ export default function NuevoProveedor() {
             </select>
           </div>
 
+        </div>
+
+        <div className="form-section-label">
+          <span>Datos bancarios</span>
+          <p>Información utilizada para transferencias internacionales</p>
+        </div>
+
+        <div className="form-row">
+          <div className="form-group">
+            <label>Código SWIFT / BIC</label>
+            <input
+              value={swift}
+              placeholder="Ej. BOFAUS3N"
+              onChange={(e) => setSwift(e.target.value.toUpperCase())}
+            />
+          </div>
+
+          <div className="form-group">
+            <label>Número de cuenta / IBAN</label>
+            <input
+              value={numeroCuenta}
+              onChange={(e) => setNumeroCuenta(e.target.value)}
+            />
+          </div>
         </div>
 
         <div className="form-actions">

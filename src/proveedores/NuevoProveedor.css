@@ -76,6 +76,26 @@
   gap: 18px;
 }
 
+.form-section-label {
+  margin: 8px 0 16px;
+  padding-top: 17px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.form-section-label span {
+  color: #1e293b;
+  font-size: .78rem;
+  font-weight: 800;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+.form-section-label p {
+  margin: 4px 0 0;
+  color: #94a3b8;
+  font-size: .72rem;
+}
+
 /* ===============================
    Textarea
 ================================ */

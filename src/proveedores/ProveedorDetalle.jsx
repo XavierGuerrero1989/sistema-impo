@@ -31,7 +31,11 @@ export default function ProveedorDetalle() {
     email: "",
     telefono: "",
     contacto: "",
+    direccion: "",
+    codigoPostal: "",
     banco: "",
+    swift: "",
+    numeroCuenta: "",
     condicionPago: "",
     plazoPagoDias: ""
     ,identificacionFiscal: ""
@@ -64,7 +68,11 @@ export default function ProveedorDetalle() {
         email: data?.contacto?.email || "",
         telefono: data?.contacto?.telefono || "",
         contacto: data?.contacto?.nombre || "",
+        direccion: data?.direccion?.direccion || "",
+        codigoPostal: data?.direccion?.codigoPostal || "",
         banco: data?.banco?.banco || "",
+        swift: data?.banco?.swift || "",
+        numeroCuenta: data?.banco?.numeroCuenta || "",
         condicionPago: data?.comercial?.condicionPago || "",
         plazoPagoDias: data?.comercial?.plazoPagoDias || ""
         ,identificacionFiscal: data.identificacionFiscal || ""
@@ -117,8 +125,15 @@ export default function ProveedorDetalle() {
       telefono: form.telefono
     },
 
+    direccion: {
+      direccion: form.direccion,
+      codigoPostal: form.codigoPostal,
+    },
+
     banco: {
-      banco: form.banco
+      banco: form.banco,
+      swift: form.swift,
+      numeroCuenta: form.numeroCuenta,
     },
 
     comercial: {
@@ -263,6 +278,24 @@ export default function ProveedorDetalle() {
             </tr>
 
             <tr>
+              <th>Dirección</th>
+              <td>
+                {editando
+                  ? <input name="direccion" value={form.direccion} onChange={handleChange}/>
+                  : proveedor?.direccion?.direccion || "-"}
+              </td>
+            </tr>
+
+            <tr>
+              <th>Código postal</th>
+              <td>
+                {editando
+                  ? <input name="codigoPostal" value={form.codigoPostal} onChange={handleChange}/>
+                  : proveedor?.direccion?.codigoPostal || "-"}
+              </td>
+            </tr>
+
+            <tr>
               <th>Estado</th>
               <td>
                 {editando
@@ -326,6 +359,24 @@ export default function ProveedorDetalle() {
                 {editando
                   ? <input name="banco" value={form.banco} onChange={handleChange}/>
                   : proveedor?.banco?.banco || "-"}
+              </td>
+            </tr>
+
+            <tr>
+              <th>Código SWIFT / BIC</th>
+              <td>
+                {editando
+                  ? <input name="swift" value={form.swift} onChange={handleChange}/>
+                  : proveedor?.banco?.swift || "-"}
+              </td>
+            </tr>
+
+            <tr>
+              <th>Número de cuenta / IBAN</th>
+              <td>
+                {editando
+                  ? <input name="numeroCuenta" value={form.numeroCuenta} onChange={handleChange}/>
+                  : proveedor?.banco?.numeroCuenta || "-"}
               </td>
             </tr>
 
