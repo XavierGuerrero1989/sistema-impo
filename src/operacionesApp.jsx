@@ -8,6 +8,22 @@ import "./operacionesApp.css";
 import { alertasOperacion } from "./domain/operacion";
 import { useAuth } from "./auth/AuthContext";
 import { countryLabel } from "./domain/paises";
+import { estadoPagoProgramado } from "./domain/pagos";
+
+const money = (amount, currency = "USD") =>
+  new Intl.NumberFormat("es-CL", {
+    style: "currency",
+    currency,
+    maximumFractionDigits: currency === "CLP" ? 0 : 2,
+  }).format(Number(amount || 0));
+
+const shortDate = (date) =>
+  date
+    ? new Date(`${date}T00:00:00`).toLocaleDateString("es-AR", {
+        day: "2-digit",
+        month: "short",
+      })
+    : "Sin fecha";
 
 function OperacionesApp() {
   const [operaciones, setOperaciones] = useState([]);
@@ -74,6 +90,41 @@ function OperacionesApp() {
     return list;
   }, [items, filtro]);
 
+  const agendaPagos = useMemo(
+    () =>
+      items
+        .flatMap((op) =>
+          (op.pagosProgramados || [])
+            .filter((pago) => !["PAGADO", "CANCELADO"].includes(pago.estado))
+            .map((pago) => ({
+              ...pago,
+              operacionId: op.id,
+              proveedor: op.proveedorNombre || op.proveedor || "Sin proveedor",
+              moneda: pago.moneda || op.moneda || "USD",
+              estadoCalculado: estadoPagoProgramado(pago),
+            }))
+        )
+        .sort((a, b) =>
+          String(a.fechaProgramada || "9999-12-31").localeCompare(
+            String(b.fechaProgramada || "9999-12-31")
+          )
+        ),
+    [items]
+  );
+
+  const resumenPagos = useMemo(() => {
+    const totals = agendaPagos.reduce((acc, pago) => {
+      acc[pago.moneda] = (acc[pago.moneda] || 0) + Number(pago.monto || 0);
+      return acc;
+    }, {});
+
+    return {
+      vencidos: agendaPagos.filter((pago) => pago.estadoCalculado === "VENCIDO").length,
+      proximos: agendaPagos.filter((pago) => pago.estadoCalculado === "PROXIMO").length,
+      totals: Object.entries(totals),
+    };
+  }, [agendaPagos]);
+
   /* =========================
      ESTADOS DISPONIBLES
   ========================== */
@@ -109,6 +160,69 @@ function OperacionesApp() {
       </header>
 
       <KPIs operaciones={items} onFilter={setFiltro} />
+
+      {permissions.manageUsers && (
+        <section className="admin-payments-cell">
+          <div className="admin-payments-head">
+            <div>
+              <span className="section-kicker">Agenda financiera</span>
+              <h2>Próximos pagos programados</h2>
+              <p>Compromisos pendientes que requieren seguimiento o confirmación.</p>
+            </div>
+            <button onClick={() => navigate("/finanzas")}>Ver agenda completa →</button>
+          </div>
+
+          <div className="admin-payments-summary">
+            <div className="payment-summary-stat overdue">
+              <span>Vencidos</span>
+              <strong>{resumenPagos.vencidos}</strong>
+            </div>
+            <div className="payment-summary-stat upcoming">
+              <span>Próximos 7 días</span>
+              <strong>{resumenPagos.proximos}</strong>
+            </div>
+            <div className="payment-summary-totals">
+              <span>Total pendiente programado</span>
+              <div>
+                {resumenPagos.totals.map(([currency, amount]) => (
+                  <strong key={currency}>{money(amount, currency)}</strong>
+                ))}
+                {!resumenPagos.totals.length && <strong>Sin compromisos</strong>}
+              </div>
+            </div>
+          </div>
+
+          <div className="admin-payment-list">
+            {agendaPagos.slice(0, 4).map((pago) => (
+              <button
+                className="admin-payment-row"
+                key={`${pago.operacionId}-${pago.id}`}
+                onClick={() => navigate(`/finanzas/${pago.operacionId}`)}
+              >
+                <time className={pago.estadoCalculado.toLowerCase()}>
+                  <span>{shortDate(pago.fechaProgramada)}</span>
+                  <small>{pago.estadoCalculado.replaceAll("_", " ")}</small>
+                </time>
+                <span className="admin-payment-operation">
+                  <strong>{pago.proveedor}</strong>
+                  <small>{pago.operacionId} · {pago.motivo || "Pago programado"}</small>
+                </span>
+                <span className="admin-payment-amount">
+                  <strong>{money(pago.monto, pago.moneda)}</strong>
+                  <small>{pago.moneda}</small>
+                </span>
+                <b aria-hidden="true">→</b>
+              </button>
+            ))}
+            {!agendaPagos.length && (
+              <div className="admin-payments-empty">
+                <span>✓</span>
+                <div><strong>Sin pagos programados pendientes</strong><small>La agenda financiera está al día.</small></div>
+              </div>
+            )}
+          </div>
+        </section>
+      )}
 
       <div className="dashboard-section-head">
         <div><span className="section-kicker">Seguimiento</span><h2>Operaciones prioritarias</h2></div>
