@@ -1166,24 +1166,34 @@ export default function OperacionDetalle({ modo = "resumen" }) {
 
         <div className="effective-payments-title">Pagos efectivos confirmados</div>
         {(operacion.adelantos || []).map((a, i) => (
-          <div key={i} className="pago-line">
-            Adelanto {money(a.monto)} · {a.instrumento} · {a.banco}
-            {a.estado === "ACTIVO" && operacion.estado !== "FINALIZADA" && esAdminGeneral && (
-              <button onClick={() => cancelarMovimiento("adelantos", i)}>
-                Cancelar
-              </button>
-            )}
+          <div key={i} className={`pago-line ${a.estado === "CANCELADO" ? "is-cancelled" : ""}`}>
+            <span className="pago-line-copy">
+              Adelanto {money(a.monto)} · {a.instrumento} · {a.banco}
+            </span>
+            <span className="pago-line-actions">
+              {a.estado === "CANCELADO" && <b className="cancelled-badge">Cancelado</b>}
+              {a.estado === "ACTIVO" && operacion.estado !== "FINALIZADA" && esAdminGeneral && (
+                <button onClick={() => cancelarMovimiento("adelantos", i)}>
+                  Cancelar
+                </button>
+              )}
+            </span>
           </div>
         ))}
 
         {(operacion.pagos || []).map((p, i) => (
-          <div key={i} className="pago-line">
-            Pago {money(p.monto)} · {p.instrumento} · {p.banco}
-            {p.estado === "ACTIVO" && operacion.estado !== "FINALIZADA" && esAdminGeneral && (
-              <button onClick={() => cancelarMovimiento("pagos", i)}>
-                Cancelar
-              </button>
-            )}
+          <div key={i} className={`pago-line ${p.estado === "CANCELADO" ? "is-cancelled" : ""}`}>
+            <span className="pago-line-copy">
+              Pago {money(p.monto)} · {p.instrumento} · {p.banco}
+            </span>
+            <span className="pago-line-actions">
+              {p.estado === "CANCELADO" && <b className="cancelled-badge">Cancelado</b>}
+              {p.estado === "ACTIVO" && operacion.estado !== "FINALIZADA" && esAdminGeneral && (
+                <button onClick={() => cancelarMovimiento("pagos", i)}>
+                  Cancelar
+                </button>
+              )}
+            </span>
           </div>
         ))}
       </section>
