@@ -11,6 +11,7 @@ import { countryLabel } from "../domain/paises";
 
 const ETAPAS = [
   "PLANIFICADA",
+  "PRODUCCION",
   "CARGADA",
   "EN_TRANSITO",
   "ARRIBADA",
@@ -19,7 +20,8 @@ const ETAPAS = [
   "BLOQUEADA",
 ];
 
-const ETAPA_LABEL = (e) => e.replace("_", " ");
+const ETAPA_LABEL = (e) =>
+  e === "PRODUCCION" ? "PRODUCCIÓN" : e.replaceAll("_", " ");
 
 export default function Logistica() {
 

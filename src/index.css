@@ -83,6 +83,7 @@ tbody tr:hover { background: #f8fbff !important; }
 }
 .estado-badge.planificada, .estado-badge.creada { background: #eef2ff; color: #4f46e5; }
 .estado-badge.cargada { background: #ecfeff; color: #0e7490; }
+.estado-badge.produccion { background: #fff7ed; color: #c2410c; }
 .estado-badge.en_transito { background: #dbeafe; color: #1d4ed8; }
 .estado-badge.arribada { background: #fef3c7; color: #b45309; }
 .estado-badge.en_despacho { background: #ffedd5; color: #c2410c; }

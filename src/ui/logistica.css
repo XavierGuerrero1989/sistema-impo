@@ -315,5 +315,6 @@
   font-weight: 800;
 }
 .log-status.bloqueada { background: #ffe4e6; color: #be123c; }
+.log-status.produccion { background: #fff7ed; color: #c2410c; }
 .log-status.entregada { background: #dcfce7; color: #15803d; }
 .log-register { white-space: nowrap; }

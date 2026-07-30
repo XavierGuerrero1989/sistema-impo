@@ -15,6 +15,11 @@ test("normaliza colecciones y valores básicos", () => {
   assert.equal(result.estado, "PLANIFICADA");
 });
 
+test("reconoce producción como etapa logística válida", () => {
+  const result = normalizarOperacion({ id: "OP-2", estado: "PRODUCCION" });
+  assert.equal(result.estado, "PRODUCCION");
+});
+
 test("calcula saldo usando solo movimientos activos", () => {
   const result = calcularFinanzas({
     totalOperacion: 1000,
