@@ -55,6 +55,7 @@ export function condicionCumplida(condicion, estadoOperacion) {
   const estado = String(estadoOperacion || "PLANIFICADA");
   const orden = [
     "PLANIFICADA",
+    "PRODUCCION",
     "CARGADA",
     "EN_TRANSITO",
     "ARRIBADA",
@@ -82,4 +83,3 @@ export function estadoPagoProgramado(pago, today = new Date()) {
   if (days <= 7) return "PROXIMO";
   return "POR_HACER";
 }
-

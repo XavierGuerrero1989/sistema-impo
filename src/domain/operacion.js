@@ -1,5 +1,6 @@
 export const ESTADOS_OPERACION = [
   "PLANIFICADA",
+  "PRODUCCION",
   "CARGADA",
   "EN_TRANSITO",
   "ARRIBADA",

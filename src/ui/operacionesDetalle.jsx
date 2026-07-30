@@ -21,6 +21,7 @@ import {
 
 const ESTADOS = [
   "PLANIFICADA",
+  "PRODUCCION",
   "CARGADA",
   "EN_TRANSITO",
   "ARRIBADA",
@@ -31,8 +32,21 @@ const ESTADOS = [
 
 // “Ruta” / medio de transporte (alineado con Logística)
 const MEDIOS = ["MARÍTIMO", "TERRESTRE", "AÉREO"];
+const TIPOS_CARGA = [
+  "Carga suelta",
+  "Pallet",
+  "Contenedor 20 pies (Dry)",
+  "Contenedor 40 pies (Dry)",
+  "Contenedor 40 pies High Cube",
+  "Contenedor 20 pies refrigerado",
+  "Contenedor 40 pies refrigerado",
+  "Carga aérea",
+  "Carga a granel",
+  "Otro",
+];
 const FLUJO_ESTADOS = [
   "PLANIFICADA",
+  "PRODUCCION",
   "CARGADA",
   "EN_TRANSITO",
   "ARRIBADA",
@@ -40,7 +54,8 @@ const FLUJO_ESTADOS = [
   "ENTREGADA",
 ];
 
-const estadoLabel = (estado) => estado?.replaceAll("_", " ") || "-";
+const estadoLabel = (estado) =>
+  estado === "PRODUCCION" ? "PRODUCCIÓN" : estado?.replaceAll("_", " ") || "-";
 const medioIcon = (value) =>
   value === "AÉREO" ? "✈️" : value === "TERRESTRE" ? "🚚" : "⚓";
 
@@ -99,10 +114,13 @@ export default function OperacionDetalle({ modo = "resumen" }) {
   const destino = "Chile";
   const [medio, setMedio] = useState("MARÍTIMO"); // “ruta”
   const [fechaSalida, setFechaSalida] = useState("");
+  const [fechaFinFabricacion, setFechaFinFabricacion] = useState("");
   const [eta, setEta] = useState("");
   const [fechaArribo, setFechaArribo] = useState("");
   const [deposito, setDeposito] = useState("");
   const [etaLiberacion, setEtaLiberacion] = useState("");
+  const [tipoCarga, setTipoCarga] = useState("");
+  const [cantidadBultos, setCantidadBultos] = useState("");
 
   /* ===== Finanzas ===== */
   const [editandoTotal, setEditandoTotal] = useState(false);
@@ -140,12 +158,17 @@ export default function OperacionDetalle({ modo = "resumen" }) {
       setOrigen(l.origen || "");
       setMedio(l.medio || "MARÍTIMO");
       setFechaSalida(l.fechaSalida ? String(l.fechaSalida).slice(0, 10) : "");
+      setFechaFinFabricacion(
+        l.fechaFinFabricacion ? String(l.fechaFinFabricacion).slice(0, 10) : ""
+      );
       setEta(l.eta ? String(l.eta).slice(0, 10) : "");
       setFechaArribo(l.fechaArribo ? String(l.fechaArribo).slice(0, 10) : "");
       setDeposito(l.deposito || "");
       setEtaLiberacion(
         l.etaLiberacion ? String(l.etaLiberacion).slice(0, 10) : ""
       );
+      setTipoCarga(l.tipoCarga || "");
+      setCantidadBultos(l.cantidadBultos || "");
     }
 
     load().catch(console.error);
@@ -513,10 +536,13 @@ export default function OperacionDetalle({ modo = "resumen" }) {
       destino,
       medio: medio || "MARÍTIMO",
       fechaSalida: fechaSalida || null,
+      fechaFinFabricacion: fechaFinFabricacion || null,
       eta: eta || null,
       fechaArribo: fechaArribo || null,
       deposito: deposito || null,
       etaLiberacion: etaLiberacion || null,
+      tipoCarga: tipoCarga || null,
+      cantidadBultos: cantidadBultos ? Number(cantidadBultos) : null,
     };
 
     const updated = {
@@ -535,6 +561,36 @@ export default function OperacionDetalle({ modo = "resumen" }) {
     await upsertOperacionLocal(updated);
     setOperacion(updated);
     setNuevoEstado(estadoObjetivo);
+  };
+
+  const guardarLogistica = async () => {
+    if (!permissions.manageOperations) return alert("No tenés permiso para modificar operaciones.");
+    if (operacion.estado === "FINALIZADA") return;
+
+    const updated = {
+      ...operacion,
+      logistica: {
+        ...(operacion.logistica || {}),
+        origen: origen || null,
+        destino,
+        medio: medio || "MARÍTIMO",
+        fechaSalida: fechaSalida || null,
+        fechaFinFabricacion: fechaFinFabricacion || null,
+        eta: eta || null,
+        fechaArribo: fechaArribo || null,
+        deposito: deposito || null,
+        etaLiberacion: etaLiberacion || null,
+        tipoCarga: tipoCarga || null,
+        cantidadBultos: cantidadBultos ? Number(cantidadBultos) : null,
+      },
+      historial: [
+        ...(operacion.historial || []),
+        auditEvent("Datos logísticos actualizados", { area: "logistica" }),
+      ],
+    };
+
+    await upsertOperacionLocal(updated);
+    setOperacion(updated);
   };
 
   const actualizarTotalOperacion = async () => {
@@ -934,8 +990,12 @@ export default function OperacionDetalle({ modo = "resumen" }) {
               : Math.round((safeIndex / (FLUJO_ESTADOS.length - 1)) * 100);
           const faltantes = [];
           if (!origen.trim()) faltantes.push("Definir país de origen");
-          if (proximoEstado === "EN_TRANSITO" && !fechaSalida)
-            faltantes.push("Ingresar fecha de salida");
+          if (proximoEstado === "PRODUCCION" && !fechaSalida)
+            faltantes.push("Ingresar salida estimada (ETD)");
+          if (proximoEstado === "PRODUCCION" && !tipoCarga)
+            faltantes.push("Seleccionar el tipo de carga");
+          if (proximoEstado === "CARGADA" && !fechaFinFabricacion)
+            faltantes.push("Ingresar fin estimado de fabricación");
           if (proximoEstado === "EN_TRANSITO" && !eta)
             faltantes.push("Ingresar fecha estimada de arribo");
           if (proximoEstado === "ARRIBADA" && !fechaArribo)
@@ -1043,17 +1103,25 @@ export default function OperacionDetalle({ modo = "resumen" }) {
                       </select>
                     </label>
 
-                    {(proximoEstado === "EN_TRANSITO" || nuevoEstado === "EN_TRANSITO") && (
-                      <>
-                        <label>
-                          <span>Fecha de salida</span>
-                          <input type="date" value={fechaSalida} disabled={estadoActual === "FINALIZADA"} onChange={(e) => setFechaSalida(e.target.value)} />
-                        </label>
+                    {estadoActual === "PLANIFICADA" && (
+                      <label>
+                        <span>Salida estimada (ETD)</span>
+                        <input type="date" value={fechaSalida} disabled={estadoActual === "FINALIZADA"} onChange={(e) => setFechaSalida(e.target.value)} />
+                      </label>
+                    )}
+
+                    {estadoActual === "PRODUCCION" && (
+                      <label>
+                        <span>Fin estimado de fabricación</span>
+                        <input type="date" value={fechaFinFabricacion} disabled={estadoActual === "FINALIZADA"} onChange={(e) => setFechaFinFabricacion(e.target.value)} />
+                      </label>
+                    )}
+
+                    {(estadoActual === "CARGADA" || estadoActual === "EN_TRANSITO") && (
                         <label>
                           <span>Arribo estimado (ETA)</span>
                           <input type="date" value={eta} disabled={estadoActual === "FINALIZADA"} onChange={(e) => setEta(e.target.value)} />
                         </label>
-                      </>
                     )}
 
                     {(proximoEstado === "ARRIBADA" || nuevoEstado === "ARRIBADA") && (
@@ -1073,6 +1141,42 @@ export default function OperacionDetalle({ modo = "resumen" }) {
                       </>
                     )}
                   </div>
+
+                  <div className="cargo-details-cell">
+                    <div className="cargo-details-copy">
+                      <span>DETALLES DEL PRODUCTO / BULTO</span>
+                      <strong>{operacion.activo || "Mercadería sin especificar"}</strong>
+                      <small>Configuración física prevista para el embarque.</small>
+                    </div>
+                    <label>
+                      <span>Tipo de carga</span>
+                      <select
+                        value={tipoCarga}
+                        onChange={(e) => setTipoCarga(e.target.value)}
+                        disabled={estadoActual === "FINALIZADA"}
+                      >
+                        <option value="">Seleccionar tipo</option>
+                        {TIPOS_CARGA.map((tipo) => <option key={tipo} value={tipo}>{tipo}</option>)}
+                      </select>
+                    </label>
+                    <label>
+                      <span>Cantidad de bultos <small>(opcional)</small></span>
+                      <input
+                        type="number"
+                        min="1"
+                        value={cantidadBultos}
+                        disabled={estadoActual === "FINALIZADA"}
+                        onChange={(e) => setCantidadBultos(e.target.value)}
+                        placeholder="Ej. 12"
+                      />
+                    </label>
+                  </div>
+
+                  {estadoActual === "EN_TRANSITO" && (
+                    <button className="save-logistics-button" onClick={guardarLogistica} disabled={!permissions.manageOperations}>
+                      Guardar ETA y datos logísticos
+                    </button>
+                  )}
                 </div>
 
                 {estadoActual !== "FINALIZADA" && proximoEstado && (

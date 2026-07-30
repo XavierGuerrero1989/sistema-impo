@@ -132,6 +132,7 @@ function OperacionesApp() {
   const filtrosEstado = [
     "TODAS",
     "PLANIFICADA",
+    "PRODUCCION",
     "CARGADA",
     "EN_TRANSITO",
     "ARRIBADA",
