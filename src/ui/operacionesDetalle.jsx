@@ -36,6 +36,48 @@ const estadoLabel = (estado) => estado?.replaceAll("_", " ") || "-";
 const medioIcon = (value) =>
   value === "AÉREO" ? "✈️" : value === "TERRESTRE" ? "🚚" : "⚓";
 
+const FINANCIAL_DOCUMENT_TYPES = new Set([
+  "FACTURA",
+  "PROFORMA",
+  "SWIFT",
+  "TRANSFERENCIA",
+]);
+
+const LOGISTICS_DOCUMENT_TYPES = new Set([
+  "BL",
+  "PACKING_LIST",
+  "DECLARACION_IMPORTACION",
+]);
+
+const inferDocumentArea = (documento = {}) => {
+  if (documento.area) return documento.area;
+  if (FINANCIAL_DOCUMENT_TYPES.has(documento.tipo)) return "finanzas";
+  if (LOGISTICS_DOCUMENT_TYPES.has(documento.tipo)) return "logistica";
+  const text = `${documento.nombre || ""} ${documento.referencia || ""}`.toLowerCase();
+  return /(pago|factura|banco|swift|transfer|anticipo|adelanto)/.test(text)
+    ? "finanzas"
+    : "logistica";
+};
+
+const inferHistoryArea = (item = {}, documentos = []) => {
+  if (item.area) return item.area;
+  const event = String(item.evento || "").toLowerCase();
+  if (/(pago|adelanto|monto|moneda|vencimiento|banco|finanz)/.test(event)) {
+    return "finanzas";
+  }
+  if (/(estado|logística|logistica|arribo|tránsito|transito|despacho|entrega|finalizada)/.test(event)) {
+    return "logistica";
+  }
+  if (event.includes("documento")) {
+    const relatedDocument = documentos.find(
+      (documento) => documento.nombre && documento.nombre === item.nombre
+    );
+    if (relatedDocument) return inferDocumentArea(relatedDocument);
+    if (item.tipo) return inferDocumentArea({ tipo: item.tipo, nombre: item.nombre });
+  }
+  return "general";
+};
+
 export default function OperacionDetalle({ modo = "resumen" }) {
   const { permissions } = useAuth();
   const { id } = useParams();
@@ -67,7 +109,7 @@ export default function OperacionDetalle({ modo = "resumen" }) {
 
   /* ===== Documentos ===== */
   const [docNombre, setDocNombre] = useState("");
-  const [docTipo, setDocTipo] = useState("FACTURA");
+  const [docTipo, setDocTipo] = useState(modo === "logistica" ? "BL" : "FACTURA");
   const [docRef, setDocRef] = useState("");
   const [docFile, setDocFile] = useState(null);
   const [subiendoDoc, setSubiendoDoc] = useState(false);
@@ -134,6 +176,19 @@ export default function OperacionDetalle({ modo = "resumen" }) {
   /* ===== Guard ===== */
   if (!operacion) return <p className="loading">Cargando operación...</p>;
 
+  const documentosConIndice = (operacion.documentos || []).map((documento, index) => ({
+    documento,
+    index,
+  }));
+  const documentosVisibles = esResumen
+    ? documentosConIndice
+    : documentosConIndice.filter(({ documento }) => inferDocumentArea(documento) === modo);
+  const historialVisible = esResumen
+    ? operacion.historial || []
+    : (operacion.historial || []).filter(
+        (item) => inferHistoryArea(item, operacion.documentos || []) === modo
+      );
+
   /* ===== Finanzas acciones ===== */
   const registrarMovimiento = async () => {
     if (!permissions.manageFinances) return alert("No tenés permiso para modificar finanzas.");
@@ -164,6 +219,7 @@ export default function OperacionDetalle({ modo = "resumen" }) {
       historial: [
         ...(operacion.historial || []),
         auditEvent(`${tipoPago} registrado`, {
+          area: "finanzas",
           monto,
           moneda,
           instrumento: instrumentoInput,
@@ -186,6 +242,7 @@ export default function OperacionDetalle({ modo = "resumen" }) {
       historial: [
         ...(operacion.historial || []),
         auditEvent("Vencimiento de pago actualizado", {
+          area: "finanzas",
           fecha: vencimientoPago || null,
         }),
       ],
@@ -208,7 +265,9 @@ export default function OperacionDetalle({ modo = "resumen" }) {
       ),
       historial: [
         ...(operacion.historial || []),
-        auditEvent(`${tipo === "adelantos" ? "Adelanto" : "Pago"} cancelado`),
+        auditEvent(`${tipo === "adelantos" ? "Adelanto" : "Pago"} cancelado`, {
+          area: "finanzas",
+        }),
       ],
     };
 
@@ -247,6 +306,7 @@ export default function OperacionDetalle({ modo = "resumen" }) {
       const downloadURL = await getDownloadURL(fileRef);
 
       const nuevoDoc = {
+        area: modo,
         nombre: docNombre,
         tipo: docTipo,
         referencia: docRef || null,
@@ -267,6 +327,7 @@ export default function OperacionDetalle({ modo = "resumen" }) {
         historial: [
           ...(operacion.historial || []),
           auditEvent("Documento agregado", {
+            area: modo,
             nombre: docNombre,
             tipo: docTipo,
           }),
@@ -310,6 +371,7 @@ export default function OperacionDetalle({ modo = "resumen" }) {
         historial: [
           ...(operacion.historial || []),
           auditEvent("Documento eliminado", {
+            area: inferDocumentArea(doc),
             nombre: doc.nombre,
           }),
         ],
@@ -347,6 +409,7 @@ export default function OperacionDetalle({ modo = "resumen" }) {
       historial: [
         ...(operacion.historial || []),
         auditEvent(`Documento ${estado.toLowerCase()}`, {
+          area: inferDocumentArea(documento),
           nombre: documento.nombre,
         }),
       ],
@@ -390,6 +453,7 @@ export default function OperacionDetalle({ modo = "resumen" }) {
       historial: [
         ...(operacion.historial || []),
         auditEvent("Estado cambiado", {
+          area: "logistica",
           estado: estadoObjetivo,
         }),
       ],
@@ -425,6 +489,7 @@ export default function OperacionDetalle({ modo = "resumen" }) {
       historial: [
         ...(operacion.historial || []),
         auditEvent("Monto total actualizado", {
+          area: "finanzas",
           montoAnterior: operacion.totalOperacion || 0,
           montoNuevo: nuevoTotal,
           moneda: operacion.moneda || "USD",
@@ -470,7 +535,7 @@ export default function OperacionDetalle({ modo = "resumen" }) {
       fechaFinalizacion: new Date().toISOString(),
       historial: [
         ...(operacion.historial || []),
-        auditEvent("Operación finalizada"),
+        auditEvent("Operación finalizada", { area: "logistica" }),
       ],
     };
 
@@ -507,7 +572,7 @@ export default function OperacionDetalle({ modo = "resumen" }) {
                   moneda: nuevaMoneda,
                   historial: [
                     ...(operacion.historial || []),
-                    auditEvent("Moneda modificada", { moneda: nuevaMoneda }),
+                    auditEvent("Moneda modificada", { area: "finanzas", moneda: nuevaMoneda }),
                   ],
                 };
                 await upsertOperacionLocal(updated);
@@ -942,16 +1007,22 @@ export default function OperacionDetalle({ modo = "resumen" }) {
       )}
 
       {/* Documentos */}
-      <section className="detalle-card">
-        <h3>Documentos</h3>
+      <details className="detalle-card shared-collapsible" open={esResumen ? true : undefined}>
+        <summary>
+          <span>
+            <small>{esResumen ? "Documentación general" : `Documentación de ${modo}`}</small>
+            <strong>Documentos</strong>
+          </span>
+          <b>{documentosVisibles.length}</b>
+        </summary>
 
         <ul className="docs-list">
-          {(operacion.documentos || []).length === 0 && (
-            <li className="empty">No hay documentos cargados</li>
+          {documentosVisibles.length === 0 && (
+            <li className="empty">No hay documentos de esta área</li>
           )}
 
-          {(operacion.documentos || []).map((d, i) => (
-            <li key={i} className="doc-row">
+          {documentosVisibles.map(({ documento: d, index }) => (
+            <li key={index} className="doc-row">
               <div className="doc-left">
                 <strong>{d.nombre}</strong> – {d.tipo} · {d.estado || "PENDIENTE"}
                 {d.referencia && ` · ${d.referencia}`}
@@ -974,18 +1045,18 @@ export default function OperacionDetalle({ modo = "resumen" }) {
                 {!esResumen && operacion.estado !== "FINALIZADA" && (
                   <>
                     {d.estado !== "VALIDADO" && (
-                      <button className="btn-link" onClick={() => cambiarEstadoDocumento(i, "VALIDADO")}>
+                      <button className="btn-link" onClick={() => cambiarEstadoDocumento(index, "VALIDADO")}>
                         Validar
                       </button>
                     )}
                     {d.estado !== "RECHAZADO" && (
-                      <button className="btn-link" onClick={() => cambiarEstadoDocumento(i, "RECHAZADO")}>
+                      <button className="btn-link" onClick={() => cambiarEstadoDocumento(index, "RECHAZADO")}>
                         Rechazar
                       </button>
                     )}
                     <button
                       className="btn-link danger"
-                      onClick={() => eliminarDocumento(i)}
+                      onClick={() => eliminarDocumento(index)}
                     >
                       Eliminar
                     </button>
@@ -1010,13 +1081,20 @@ export default function OperacionDetalle({ modo = "resumen" }) {
             disabled={operacion.estado === "FINALIZADA"}
             onChange={(e) => setDocTipo(e.target.value)}
           >
-            <option value="FACTURA">Factura comercial</option>
-            <option value="PROFORMA">Factura proforma</option>
-            <option value="BL">B/L</option>
-            <option value="PACKING_LIST">Packing List</option>
-            <option value="SWIFT">Swift</option>
-            <option value="TRANSFERENCIA">Comprobante transferencia</option>
-            <option value="DECLARACION_IMPORTACION">Declaración de importación</option>
+            {esFinanzas ? (
+              <>
+                <option value="FACTURA">Factura comercial</option>
+                <option value="PROFORMA">Factura proforma</option>
+                <option value="SWIFT">Swift</option>
+                <option value="TRANSFERENCIA">Comprobante transferencia</option>
+              </>
+            ) : (
+              <>
+                <option value="BL">B/L</option>
+                <option value="PACKING_LIST">Packing List</option>
+                <option value="DECLARACION_IMPORTACION">Declaración de importación</option>
+              </>
+            )}
             <option value="OTRO">Otro</option>
           </select>
 
@@ -1054,18 +1132,24 @@ export default function OperacionDetalle({ modo = "resumen" }) {
           </button>
         </div>
         )}
-      </section>
+      </details>
 
       {/* Historial */}
-      <section className="detalle-card">
-        <h3>Historial</h3>
+      <details className="detalle-card shared-collapsible" open={esResumen ? true : undefined}>
+        <summary>
+          <span>
+            <small>{esResumen ? "Actividad completa" : `Actividad de ${modo}`}</small>
+            <strong>Historial</strong>
+          </span>
+          <b>{historialVisible.length}</b>
+        </summary>
 
         <ul className="timeline">
-          {(operacion.historial || []).length === 0 && (
-            <li className="empty">Sin movimientos registrados</li>
+          {historialVisible.length === 0 && (
+            <li className="empty">Sin movimientos registrados en esta área</li>
           )}
 
-          {(operacion.historial || []).map((h, i) => (
+          {historialVisible.map((h, i) => (
             <li key={i}>
               <span className="time">{new Date(h.fecha).toLocaleString()}</span>
               <span>
@@ -1079,7 +1163,7 @@ export default function OperacionDetalle({ modo = "resumen" }) {
             </li>
           ))}
         </ul>
-      </section>
+      </details>
     </section>
   );
 }
