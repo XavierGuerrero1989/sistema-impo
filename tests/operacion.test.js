@@ -20,6 +20,18 @@ test("reconoce producción como etapa logística válida", () => {
   assert.equal(result.estado, "PRODUCCION");
 });
 
+test("normaliza cotizaciones e intervinientes logísticos", () => {
+  const result = normalizarOperacion({
+    id: "OP-3",
+    cotizacionesForwarder: [{ id: "COT-1" }],
+    forwarderId: " FWD-1 ",
+    agenteAduanaId: " AG-1 ",
+  });
+  assert.equal(result.cotizacionesForwarder.length, 1);
+  assert.equal(result.forwarderId, "FWD-1");
+  assert.equal(result.agenteAduanaId, "AG-1");
+});
+
 test("calcula saldo usando solo movimientos activos", () => {
   const result = calcularFinanzas({
     totalOperacion: 1000,

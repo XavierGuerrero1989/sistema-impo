@@ -18,6 +18,7 @@ import {
   importeCuota,
   obtenerPlanPagos,
 } from "../domain/pagos";
+import { getEntidadesLocal } from "../entidades/EntidadesRepo";
 
 const ESTADOS = [
   "PLANIFICADA",
@@ -121,6 +122,19 @@ export default function OperacionDetalle({ modo = "resumen" }) {
   const [fechaLlegadaBodega, setFechaLlegadaBodega] = useState("");
   const [tipoCarga, setTipoCarga] = useState("");
   const [cantidadBultos, setCantidadBultos] = useState("");
+  const [forwarders, setForwarders] = useState([]);
+  const [agentesAduana, setAgentesAduana] = useState([]);
+  const [cotizacionForm, setCotizacionForm] = useState({
+    forwarderId: "",
+    monto: "",
+    moneda: "USD",
+    servicio: "",
+    vigenciaHasta: "",
+    tiempoTransitoDias: "",
+    observaciones: "",
+  });
+  const [agenteAduanaId, setAgenteAduanaId] = useState("");
+  const [agenteObservaciones, setAgenteObservaciones] = useState("");
 
   /* ===== Finanzas ===== */
   const [editandoTotal, setEditandoTotal] = useState(false);
@@ -146,10 +160,16 @@ export default function OperacionDetalle({ modo = "resumen" }) {
 
   useEffect(() => {
     async function load() {
-      const ops = await getOperacionesLocal();
+      const [ops, forwardersData, agentesData] = await Promise.all([
+        getOperacionesLocal(),
+        getEntidadesLocal("forwarders"),
+        getEntidadesLocal("agentesAduana"),
+      ]);
       const op = ops.find((o) => o.id === id);
 
       setOperacion(op || null);
+      setForwarders(forwardersData.filter((item) => item.estado !== "BLOQUEADO" && item.activo !== false));
+      setAgentesAduana(agentesData.filter((item) => item.estado !== "BLOQUEADO" && item.activo !== false));
       setNuevoEstado(op?.estado || "");
       setTotalOperacionInput(op?.totalOperacion || "");
 
@@ -171,6 +191,8 @@ export default function OperacionDetalle({ modo = "resumen" }) {
       );
       setTipoCarga(l.tipoCarga || "");
       setCantidadBultos(l.cantidadBultos || "");
+      setAgenteAduanaId(op?.agenteAduanaId || "");
+      setAgenteObservaciones(op?.agenteAduanaObservaciones || "");
     }
 
     load().catch(console.error);
@@ -207,6 +229,8 @@ export default function OperacionDetalle({ modo = "resumen" }) {
   const esFinanzas = modo === "finanzas";
   const esAdminGeneral =
     profile?.role === ROLES.ADMIN || isPrimaryAdmin(user?.email);
+
+  const cotizacionesForwarder = operacion?.cotizacionesForwarder || [];
 
   /* ===== Guard ===== */
   if (!operacion) return <p className="loading">Cargando operación...</p>;
@@ -622,6 +646,132 @@ export default function OperacionDetalle({ modo = "resumen" }) {
     setOperacion(updated);
   };
 
+  const registrarCotizacionForwarder = async () => {
+    if (!permissions.manageOperations) return alert("No tenés permiso para modificar operaciones.");
+    if (operacion.estado === "FINALIZADA") return;
+    const forwarder = forwarders.find((item) => item.entidadId === cotizacionForm.forwarderId);
+    const montoCotizado = Number(String(cotizacionForm.monto).replace(",", "."));
+    if (!forwarder) return alert("Seleccioná un forwarder.");
+    if (!montoCotizado || montoCotizado <= 0) return alert("Ingresá un importe válido.");
+    if (!cotizacionForm.servicio.trim()) return alert("Indicá el servicio cotizado.");
+
+    const cotizacion = {
+      id:
+        typeof crypto !== "undefined" && crypto.randomUUID
+          ? crypto.randomUUID()
+          : `cotizacion_${Date.now()}`,
+      forwarderId: forwarder.entidadId,
+      forwarderNombre: forwarder.nombreComercial,
+      monto: montoCotizado,
+      moneda: cotizacionForm.moneda,
+      servicio: cotizacionForm.servicio.trim(),
+      vigenciaHasta: cotizacionForm.vigenciaHasta || null,
+      tiempoTransitoDias: cotizacionForm.tiempoTransitoDias
+        ? Number(cotizacionForm.tiempoTransitoDias)
+        : null,
+      observaciones: cotizacionForm.observaciones.trim(),
+      estado: "RECIBIDA",
+      createdAt: new Date().toISOString(),
+    };
+    const updated = {
+      ...operacion,
+      cotizacionesForwarder: [...cotizacionesForwarder, cotizacion],
+      historial: [
+        ...(operacion.historial || []),
+        auditEvent("Cotización de forwarder registrada", {
+          area: "logistica",
+          forwarderId: forwarder.entidadId,
+          forwarder: forwarder.nombreComercial,
+          monto: montoCotizado,
+          moneda: cotizacionForm.moneda,
+        }),
+      ],
+    };
+    await upsertOperacionLocal(updated);
+    setOperacion(updated);
+    setCotizacionForm({
+      forwarderId: "",
+      monto: "",
+      moneda: "USD",
+      servicio: "",
+      vigenciaHasta: "",
+      tiempoTransitoDias: "",
+      observaciones: "",
+    });
+  };
+
+  const seleccionarForwarder = async (cotizacion) => {
+    if (!permissions.manageOperations || operacion.estado === "FINALIZADA") return;
+    if (!window.confirm(`¿Adjudicar la operación a ${cotizacion.forwarderNombre}?`)) return;
+    const updated = {
+      ...operacion,
+      forwarderId: cotizacion.forwarderId,
+      forwarderNombre: cotizacion.forwarderNombre,
+      cotizacionSeleccionadaId: cotizacion.id,
+      cotizacionesForwarder: cotizacionesForwarder.map((item) => ({
+        ...item,
+        estado: item.id === cotizacion.id ? "SELECCIONADA" : "NO_SELECCIONADA",
+      })),
+      historial: [
+        ...(operacion.historial || []),
+        auditEvent("Forwarder adjudicado", {
+          area: "logistica",
+          forwarderId: cotizacion.forwarderId,
+          forwarder: cotizacion.forwarderNombre,
+          cotizacionId: cotizacion.id,
+          monto: cotizacion.monto,
+          moneda: cotizacion.moneda,
+        }),
+      ],
+    };
+    await upsertOperacionLocal(updated);
+    setOperacion(updated);
+  };
+
+  const eliminarCotizacionForwarder = async (cotizacion) => {
+    if (!permissions.manageOperations || operacion.estado === "FINALIZADA") return;
+    if (cotizacion.id === operacion.cotizacionSeleccionadaId) {
+      return alert("No se puede eliminar la cotización adjudicada.");
+    }
+    const updated = {
+      ...operacion,
+      cotizacionesForwarder: cotizacionesForwarder.filter((item) => item.id !== cotizacion.id),
+      historial: [
+        ...(operacion.historial || []),
+        auditEvent("Cotización de forwarder eliminada", {
+          area: "logistica",
+          forwarderId: cotizacion.forwarderId,
+          forwarder: cotizacion.forwarderNombre,
+        }),
+      ],
+    };
+    await upsertOperacionLocal(updated);
+    setOperacion(updated);
+  };
+
+  const guardarAgenteAduana = async () => {
+    if (!permissions.manageOperations) return alert("No tenés permiso para modificar operaciones.");
+    if (operacion.estado === "FINALIZADA") return;
+    const agente = agentesAduana.find((item) => item.entidadId === agenteAduanaId);
+    if (!agente) return alert("Seleccioná un agente de aduana.");
+    const updated = {
+      ...operacion,
+      agenteAduanaId: agente.entidadId,
+      agenteAduanaNombre: agente.nombreComercial,
+      agenteAduanaObservaciones: agenteObservaciones.trim(),
+      historial: [
+        ...(operacion.historial || []),
+        auditEvent("Agente de aduana asignado", {
+          area: "logistica",
+          agenteAduanaId: agente.entidadId,
+          agenteAduana: agente.nombreComercial,
+        }),
+      ],
+    };
+    await upsertOperacionLocal(updated);
+    setOperacion(updated);
+  };
+
   const actualizarTotalOperacion = async () => {
     if (!permissions.manageFinances) return alert("No tenés permiso para modificar finanzas.");
     if (operacion.estado === "FINALIZADA") {
@@ -768,6 +918,8 @@ export default function OperacionDetalle({ modo = "resumen" }) {
             <div><span>Ruta</span><strong>{countryLabel(origen, "Origen")} → {countryLabel(destino)}</strong></div>
             <div><span>Total</span><strong>{money(total)}</strong></div>
             <div><span>Saldo pendiente</span><strong>{money(saldo)}</strong></div>
+            <div><span>Forwarder oficial</span><strong>{operacion.forwarderNombre || "Sin adjudicar"}</strong></div>
+            <div><span>Agente de aduana</span><strong>{operacion.agenteAduanaNombre || "Sin asignar"}</strong></div>
           </div>
 
           <div className="overview-actions">
@@ -1267,6 +1419,148 @@ export default function OperacionDetalle({ modo = "resumen" }) {
           );
         })()}
       </section>
+      )}
+
+      {esLogistica && (
+        <section className="detalle-card logistics-partners-card">
+          <div className="partners-card-head">
+            <div>
+              <span className="workflow-eyebrow">Gestión independiente</span>
+              <h3>Intervinientes logísticos</h3>
+              <p>Cotizá, compará y asigná responsables sin depender del estado de la operación.</p>
+            </div>
+            <div className="partners-current">
+              <span>Forwarder oficial</span>
+              <strong>{operacion.forwarderNombre || "Pendiente de adjudicación"}</strong>
+            </div>
+          </div>
+
+          <div className="partners-layout">
+            <div className="forwarder-tender">
+              <div className="partner-section-title">
+                <div><small>Puja de servicios</small><h4>Cotizaciones de forwarders</h4></div>
+                <span>{cotizacionesForwarder.length} propuesta(s)</span>
+              </div>
+
+              {operacion.estado !== "FINALIZADA" && permissions.manageOperations && (
+                <div className="quote-form">
+                  <label>
+                    <span>Forwarder</span>
+                    <select
+                      value={cotizacionForm.forwarderId}
+                      onChange={(e) => setCotizacionForm({ ...cotizacionForm, forwarderId: e.target.value })}
+                    >
+                      <option value="">Seleccionar</option>
+                      {forwarders.map((item) => (
+                        <option key={item.entidadId} value={item.entidadId}>{item.nombreComercial}</option>
+                      ))}
+                    </select>
+                  </label>
+                  <label>
+                    <span>Importe</span>
+                    <input type="number" min="0" value={cotizacionForm.monto}
+                      onChange={(e) => setCotizacionForm({ ...cotizacionForm, monto: e.target.value })} />
+                  </label>
+                  <label>
+                    <span>Moneda</span>
+                    <select value={cotizacionForm.moneda}
+                      onChange={(e) => setCotizacionForm({ ...cotizacionForm, moneda: e.target.value })}>
+                      <option>USD</option><option>EUR</option><option>CLP</option><option>CNY</option>
+                    </select>
+                  </label>
+                  <label className="quote-service">
+                    <span>Servicio cotizado</span>
+                    <input value={cotizacionForm.servicio} placeholder="Ej. Flete marítimo puerta a puerta"
+                      onChange={(e) => setCotizacionForm({ ...cotizacionForm, servicio: e.target.value })} />
+                  </label>
+                  <label>
+                    <span>Vigencia</span>
+                    <input type="date" value={cotizacionForm.vigenciaHasta}
+                      onChange={(e) => setCotizacionForm({ ...cotizacionForm, vigenciaHasta: e.target.value })} />
+                  </label>
+                  <label>
+                    <span>Tránsito estimado <small>(días)</small></span>
+                    <input type="number" min="1" value={cotizacionForm.tiempoTransitoDias}
+                      onChange={(e) => setCotizacionForm({ ...cotizacionForm, tiempoTransitoDias: e.target.value })} />
+                  </label>
+                  <label className="quote-notes">
+                    <span>Observaciones</span>
+                    <input value={cotizacionForm.observaciones} placeholder="Alcance, exclusiones o referencia"
+                      onChange={(e) => setCotizacionForm({ ...cotizacionForm, observaciones: e.target.value })} />
+                  </label>
+                  <button onClick={registrarCotizacionForwarder}>Registrar cotización</button>
+                </div>
+              )}
+
+              <div className="quote-list">
+                {!cotizacionesForwarder.length && (
+                  <div className="partner-empty">Todavía no se registraron cotizaciones.</div>
+                )}
+                {cotizacionesForwarder.map((cotizacion) => (
+                  <article
+                    className={`quote-card ${cotizacion.id === operacion.cotizacionSeleccionadaId ? "selected" : ""}`}
+                    key={cotizacion.id}
+                  >
+                    <div className="quote-main">
+                      <span className={`quote-status ${String(cotizacion.estado || "RECIBIDA").toLowerCase()}`}>
+                        {cotizacion.id === operacion.cotizacionSeleccionadaId ? "ADJUDICADA" : String(cotizacion.estado || "RECIBIDA").replaceAll("_", " ")}
+                      </span>
+                      <strong>{cotizacion.forwarderNombre}</strong>
+                      <small>{cotizacion.servicio}</small>
+                    </div>
+                    <div className="quote-data">
+                      <strong>{new Intl.NumberFormat("es-CL", { style: "currency", currency: cotizacion.moneda }).format(cotizacion.monto)}</strong>
+                      <small>
+                        {cotizacion.tiempoTransitoDias ? `${cotizacion.tiempoTransitoDias} días` : "Tránsito sin informar"}
+                        {cotizacion.vigenciaHasta ? ` · Vigente hasta ${new Date(`${cotizacion.vigenciaHasta}T00:00:00`).toLocaleDateString("es-AR")}` : ""}
+                      </small>
+                      {cotizacion.observaciones && <p>{cotizacion.observaciones}</p>}
+                    </div>
+                    {permissions.manageOperations && operacion.estado !== "FINALIZADA" && (
+                      <div className="quote-actions">
+                        {cotizacion.id !== operacion.cotizacionSeleccionadaId && (
+                          <button onClick={() => seleccionarForwarder(cotizacion)}>Seleccionar</button>
+                        )}
+                        <button className="danger" onClick={() => eliminarCotizacionForwarder(cotizacion)}>Eliminar</button>
+                      </div>
+                    )}
+                  </article>
+                ))}
+              </div>
+            </div>
+
+            <aside className="customs-agent-card">
+              <span className="partner-icon">◇</span>
+              <small>Asignación operativa</small>
+              <h4>Agente de aduana</h4>
+              <p>Seleccioná el agente que intervendrá en esta operación.</p>
+              <label>
+                <span>Agente asignado</span>
+                <select value={agenteAduanaId} disabled={operacion.estado === "FINALIZADA"}
+                  onChange={(e) => setAgenteAduanaId(e.target.value)}>
+                  <option value="">Seleccionar agente</option>
+                  {agentesAduana.map((item) => (
+                    <option key={item.entidadId} value={item.entidadId}>{item.nombreComercial}</option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                <span>Observaciones</span>
+                <textarea value={agenteObservaciones} disabled={operacion.estado === "FINALIZADA"}
+                  onChange={(e) => setAgenteObservaciones(e.target.value)}
+                  placeholder="Criterio de selección o instrucciones" rows="3" />
+              </label>
+              {permissions.manageOperations && operacion.estado !== "FINALIZADA" && (
+                <button onClick={guardarAgenteAduana}>Guardar asignación</button>
+              )}
+              {operacion.agenteAduanaNombre && (
+                <div className="assigned-agent">
+                  <span>Actualmente asignado</span><strong>{operacion.agenteAduanaNombre}</strong>
+                </div>
+              )}
+            </aside>
+          </div>
+        </section>
       )}
 
       {/* Documentos */}
