@@ -8,9 +8,11 @@ import {
 } from "../src/domain/operacion.js";
 
 test("normaliza colecciones y valores básicos", () => {
-  const result = normalizarOperacion({ id: " OP-1 ", moneda: "usd" });
+  const result = normalizarOperacion({ id: " OP-1 ", moneda: "usd", incoterm: "fob" });
   assert.equal(result.id, "OP-1");
   assert.equal(result.moneda, "USD");
+  assert.equal(result.incoterm, "FOB");
+  assert.equal(result.incotermVersion, "2020");
   assert.deepEqual(result.documentos, []);
   assert.equal(result.estado, "PLANIFICADA");
 });
@@ -52,7 +54,7 @@ test("no permite que pagos excedentes produzcan saldo negativo", () => {
 });
 
 test("valida campos obligatorios e importes", () => {
-  assert.equal(validarOperacion({ totalOperacion: -1 }).length, 4);
+  assert.equal(validarOperacion({ totalOperacion: -1 }).length, 5);
 });
 
 test("detecta ETA vencida, documentos y pagos pendientes", () => {

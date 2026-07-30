@@ -20,6 +20,7 @@ import {
   obtenerPlanPagos,
 } from "../domain/pagos";
 import { getEntidadesLocal } from "../entidades/EntidadesRepo";
+import { incotermLabel } from "../domain/incoterms";
 
 const ESTADOS = [
   "PLANIFICADA",
@@ -947,6 +948,7 @@ export default function OperacionDetalle({ modo = "resumen" }) {
           <div className="overview-metrics">
             <div><span>Estado logístico</span><strong>{estadoLabel(operacion.estado)}</strong></div>
             <div><span>Ruta</span><strong>{countryLabel(origen, "Origen")} → {countryLabel(destino)}</strong></div>
+            <div><span>Incoterm® {operacion.incotermVersion || "2020"}</span><strong>{incotermLabel(operacion.incoterm)}</strong></div>
             <div><span>Total</span><strong>{money(total)}</strong></div>
             <div><span>Saldo pendiente</span><strong>{money(saldo)}</strong></div>
             <div><span>Forwarder oficial</span><strong>{operacion.forwarderNombre || "Sin adjudicar"}</strong></div>
