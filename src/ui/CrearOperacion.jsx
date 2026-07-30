@@ -6,6 +6,7 @@ import { auditEvent } from "../auth/audit";
 import "./CrearOperacion.css";
 import { normalizarOperacion, validarOperacion } from "../domain/operacion";
 import { CONDICIONES_PAGO, crearPlanPagos } from "../domain/pagos";
+import { INCOTERMS, INCOTERMS_VERSION } from "../domain/incoterms";
 
 export default function CrearOperacion() {
 
@@ -17,6 +18,7 @@ export default function CrearOperacion() {
     id: "",
     proveedorId: "",
     activo: "",
+    incoterm: "",
     moneda: "USD",
     totalOperacion: "",
     porcentajeAdelanto: "30",
@@ -90,6 +92,8 @@ export default function CrearOperacion() {
       proveedorNombre: proveedorSeleccionado.nombreComercial,
 
       activo: form.activo,
+      incoterm: form.incoterm,
+      incotermVersion: INCOTERMS_VERSION,
 
       moneda: form.moneda,
 
@@ -208,6 +212,19 @@ export default function CrearOperacion() {
             onChange={onChange}
           />
 
+        </div>
+
+        <div className="form-group">
+          <label>Incoterm® {INCOTERMS_VERSION} *</label>
+          <select name="incoterm" value={form.incoterm} onChange={onChange}>
+            <option value="">Seleccionar Incoterm</option>
+            {INCOTERMS.map((item) => (
+              <option key={item.value} value={item.value}>
+                {item.label}
+              </option>
+            ))}
+          </select>
+          <small>Regla comercial acordada para costos, riesgos y entrega.</small>
         </div>
 
         <div className="form-row">

@@ -1,3 +1,5 @@
+import { INCOTERMS_VERSION, isValidIncoterm } from "./incoterms.js";
+
 export const ESTADOS_OPERACION = [
   "PLANIFICADA",
   "PRODUCCION",
@@ -26,6 +28,8 @@ export function normalizarOperacion(input = {}) {
     proveedorId: String(input.proveedorId || "").trim(),
     proveedorNombre: String(input.proveedorNombre || input.proveedor || "").trim(),
     activo: String(input.activo || "").trim(),
+    incoterm: String(input.incoterm || "").trim().toUpperCase(),
+    incotermVersion: String(input.incotermVersion || INCOTERMS_VERSION),
     moneda: String(input.moneda || "USD").toUpperCase(),
     totalOperacion: Number(input.totalOperacion || input.total || 0),
     estado: ESTADOS_OPERACION.includes(input.estado) ? input.estado : "PLANIFICADA",
@@ -50,6 +54,7 @@ export function validarOperacion(input) {
   if (!operacion.id) errors.push("El ID es obligatorio");
   if (!operacion.proveedorId) errors.push("El proveedor es obligatorio");
   if (!operacion.activo) errors.push("La mercadería es obligatoria");
+  if (!isValidIncoterm(operacion.incoterm)) errors.push("El Incoterm es obligatorio");
   if (!Number.isFinite(operacion.totalOperacion) || operacion.totalOperacion < 0) {
     errors.push("El total debe ser un número positivo");
   }
