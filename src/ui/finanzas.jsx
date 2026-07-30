@@ -624,7 +624,7 @@ export default function Finanzas() {
               <th>Vencimiento</th>
               <th>Próximo pago</th>
               <th>Progreso</th>
-              <th></th>
+              <th className="fin-action-column">Acción</th>
             </tr>
           </thead>
 
@@ -657,7 +657,7 @@ export default function Finanzas() {
                       : "-"}
                     {op._vencida ? " · Vencida" : ""}
                   </td>
-                  <td>
+                  <td className="fin-action-column">
                     {(() => {
                       const next = op._programados
                         .filter((pago) => !["PAGADO", "CANCELADO"].includes(pago.estado))
