@@ -116,7 +116,6 @@ export default function OperacionDetalle({ modo = "resumen" }) {
   const [fechaSalida, setFechaSalida] = useState("");
   const [fechaFinFabricacion, setFechaFinFabricacion] = useState("");
   const [eta, setEta] = useState("");
-  const [fechaArribo, setFechaArribo] = useState("");
   const [deposito, setDeposito] = useState("");
   const [etaLiberacion, setEtaLiberacion] = useState("");
   const [tipoCarga, setTipoCarga] = useState("");
@@ -162,7 +161,6 @@ export default function OperacionDetalle({ modo = "resumen" }) {
         l.fechaFinFabricacion ? String(l.fechaFinFabricacion).slice(0, 10) : ""
       );
       setEta(l.eta ? String(l.eta).slice(0, 10) : "");
-      setFechaArribo(l.fechaArribo ? String(l.fechaArribo).slice(0, 10) : "");
       setDeposito(l.deposito || "");
       setEtaLiberacion(
         l.etaLiberacion ? String(l.etaLiberacion).slice(0, 10) : ""
@@ -538,7 +536,6 @@ export default function OperacionDetalle({ modo = "resumen" }) {
       fechaSalida: fechaSalida || null,
       fechaFinFabricacion: fechaFinFabricacion || null,
       eta: eta || null,
-      fechaArribo: fechaArribo || null,
       deposito: deposito || null,
       etaLiberacion: etaLiberacion || null,
       tipoCarga: tipoCarga || null,
@@ -577,7 +574,6 @@ export default function OperacionDetalle({ modo = "resumen" }) {
         fechaSalida: fechaSalida || null,
         fechaFinFabricacion: fechaFinFabricacion || null,
         eta: eta || null,
-        fechaArribo: fechaArribo || null,
         deposito: deposito || null,
         etaLiberacion: etaLiberacion || null,
         tipoCarga: tipoCarga || null,
@@ -998,8 +994,6 @@ export default function OperacionDetalle({ modo = "resumen" }) {
             faltantes.push("Ingresar fin estimado de fabricación");
           if (proximoEstado === "EN_TRANSITO" && !eta)
             faltantes.push("Ingresar fecha estimada de arribo");
-          if (proximoEstado === "ARRIBADA" && !fechaArribo)
-            faltantes.push("Ingresar fecha real de arribo");
 
           const avanzar = () => {
             if (faltantes.length) {
@@ -1126,10 +1120,6 @@ export default function OperacionDetalle({ modo = "resumen" }) {
 
                     {(proximoEstado === "ARRIBADA" || nuevoEstado === "ARRIBADA") && (
                       <>
-                        <label>
-                          <span>Fecha real de arribo</span>
-                          <input type="date" value={fechaArribo} disabled={estadoActual === "FINALIZADA"} onChange={(e) => setFechaArribo(e.target.value)} />
-                        </label>
                         <label>
                           <span>Depósito</span>
                           <input type="text" value={deposito} disabled={estadoActual === "FINALIZADA"} onChange={(e) => setDeposito(e.target.value)} />
