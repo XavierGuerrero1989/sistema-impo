@@ -118,6 +118,7 @@ export default function OperacionDetalle({ modo = "resumen" }) {
   const [eta, setEta] = useState("");
   const [deposito, setDeposito] = useState("");
   const [etaLiberacion, setEtaLiberacion] = useState("");
+  const [fechaLlegadaBodega, setFechaLlegadaBodega] = useState("");
   const [tipoCarga, setTipoCarga] = useState("");
   const [cantidadBultos, setCantidadBultos] = useState("");
 
@@ -164,6 +165,9 @@ export default function OperacionDetalle({ modo = "resumen" }) {
       setDeposito(l.deposito || "");
       setEtaLiberacion(
         l.etaLiberacion ? String(l.etaLiberacion).slice(0, 10) : ""
+      );
+      setFechaLlegadaBodega(
+        l.fechaLlegadaBodega ? String(l.fechaLlegadaBodega).slice(0, 10) : ""
       );
       setTipoCarga(l.tipoCarga || "");
       setCantidadBultos(l.cantidadBultos || "");
@@ -538,6 +542,7 @@ export default function OperacionDetalle({ modo = "resumen" }) {
       eta: eta || null,
       deposito: deposito || null,
       etaLiberacion: etaLiberacion || null,
+      fechaLlegadaBodega: fechaLlegadaBodega || null,
       tipoCarga: tipoCarga || null,
       cantidadBultos: cantidadBultos ? Number(cantidadBultos) : null,
     };
@@ -576,6 +581,7 @@ export default function OperacionDetalle({ modo = "resumen" }) {
         eta: eta || null,
         deposito: deposito || null,
         etaLiberacion: etaLiberacion || null,
+        fechaLlegadaBodega: fechaLlegadaBodega || null,
       },
       historial: [
         ...(operacion.historial || []),
@@ -1021,6 +1027,8 @@ export default function OperacionDetalle({ modo = "resumen" }) {
             faltantes.push("Ingresar fin estimado de fabricación");
           if (proximoEstado === "EN_TRANSITO" && !eta)
             faltantes.push("Ingresar fecha estimada de arribo");
+          if (proximoEstado === "ENTREGADA" && !fechaLlegadaBodega)
+            faltantes.push("Ingresar fecha de llegada a bodega");
 
           const avanzar = () => {
             if (faltantes.length) {
@@ -1156,6 +1164,18 @@ export default function OperacionDetalle({ modo = "resumen" }) {
                           <input type="date" value={etaLiberacion} disabled={estadoActual === "FINALIZADA"} onChange={(e) => setEtaLiberacion(e.target.value)} />
                         </label>
                       </>
+                    )}
+
+                    {estadoActual === "EN_DESPACHO" && (
+                      <label>
+                        <span>Llegada efectiva a bodega</span>
+                        <input
+                          type="date"
+                          value={fechaLlegadaBodega}
+                          disabled={estadoActual === "FINALIZADA"}
+                          onChange={(e) => setFechaLlegadaBodega(e.target.value)}
+                        />
+                      </label>
                     )}
                   </div>
 
