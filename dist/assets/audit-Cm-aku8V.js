@@ -1,1 +1,0 @@
-import{g as r}from"./firebase-CG4d_PQF.js";function o(){const n=r().currentUser;return{uid:n?.uid||"unknown",email:n?.email||"unknown",nombre:n?.displayName||n?.email||"unknown"}}function i(n,e={}){const t=o();return{fecha:new Date().toISOString(),evento:n,actorUid:t.uid,actorEmail:t.email,actorNombre:t.nombre,...e}}export{i as a};

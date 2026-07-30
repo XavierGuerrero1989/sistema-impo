@@ -13,6 +13,8 @@ import {
 import { pushProveedor } from "../sync/PushProveedor";
 import { deleteDoc, doc } from "firebase/firestore";
 import { db } from "../firebase/firebase";
+import { deleteEntidadRemota, pushEntidad } from "../sync/EntidadesSync";
+import { ENTIDADES_CONFIG } from "../entidades/entidadesConfig";
 
 export function useAutoSync() {
   const { user } = useAuth();
@@ -76,6 +78,20 @@ export function useAutoSync() {
 
           if (entityType === "proveedor" && op === "delete") {
             await deleteDoc(doc(db, "proveedores", entityId));
+          }
+
+          const entidadEntry = Object.values(ENTIDADES_CONFIG)
+            .find((config) => config.tipo === entityType);
+          if (entidadEntry && op === "upsert") {
+            const entidad = await dbLocal[entidadEntry.tabla].get(entityId);
+            if (!entidad) {
+              await dbLocal.outbox.delete(job.key);
+              continue;
+            }
+            await pushEntidad(entidadEntry.tabla, entityId, entidad);
+          }
+          if (entidadEntry && op === "delete") {
+            await deleteEntidadRemota(entidadEntry.tabla, entityId);
           }
 
           await dbLocal.outbox.delete(job.key);

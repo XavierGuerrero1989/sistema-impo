@@ -13,6 +13,7 @@ import { useAutoSync } from "../hooks/useAutoSync";
 
 import { listenProveedores } from "../sync/ListenProveedores";
 import { listenOperaciones } from "../sync/ListenOperaciones";
+import { listenEntidades } from "../sync/EntidadesSync";
 
 const OperacionesApp = lazy(() => import("../operacionesApp"));
 const OperacionesListado = lazy(() => import("../ui/operacionesListado"));
@@ -27,6 +28,9 @@ const ProveedorDetalle = lazy(() => import("../proveedores/ProveedorDetalle"));
 const Papelera = lazy(() => import("../ui/Papelera"));
 const Usuarios = lazy(() => import("../ui/Usuarios"));
 const Historial = lazy(() => import("../ui/Historial"));
+const DirectorioEntidades = lazy(() => import("../entidades/DirectorioEntidades"));
+const NuevaEntidad = lazy(() => import("../entidades/NuevaEntidad"));
+const EntidadDetalle = lazy(() => import("../entidades/EntidadDetalle"));
 
 function App() {
   const { user } = useAuth();
@@ -39,6 +43,16 @@ function App() {
     });
 
     return () => unsubscribe();
+  }, [user]);
+
+  useEffect(() => {
+    if (!user) return undefined;
+    const stopForwarders = listenEntidades("forwarders", console.error);
+    const stopAgentes = listenEntidades("agentesAduana", console.error);
+    return () => {
+      stopForwarders();
+      stopAgentes();
+    };
   }, [user]);
 
   useEffect(() => {
@@ -114,6 +128,26 @@ function App() {
                     }
                   />
                   <Route path="/proveedores/:proveedorId" element={<ProveedorDetalle />} />
+                  <Route path="/forwarders" element={<DirectorioEntidades tipo="forwarders" />} />
+                  <Route
+                    path="/forwarders/nuevo"
+                    element={
+                      <PermissionRoute permission="manageProviders">
+                        <NuevaEntidad tipo="forwarders" />
+                      </PermissionRoute>
+                    }
+                  />
+                  <Route path="/forwarders/:entidadId" element={<EntidadDetalle tipo="forwarders" />} />
+                  <Route path="/agentes-aduana" element={<DirectorioEntidades tipo="agentesAduana" />} />
+                  <Route
+                    path="/agentes-aduana/nuevo"
+                    element={
+                      <PermissionRoute permission="manageProviders">
+                        <NuevaEntidad tipo="agentesAduana" />
+                      </PermissionRoute>
+                    }
+                  />
+                  <Route path="/agentes-aduana/:entidadId" element={<EntidadDetalle tipo="agentesAduana" />} />
                   <Route
                     path="/papelera"
                     element={

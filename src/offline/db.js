@@ -21,6 +21,15 @@ function createDatabase(uid) {
     proveedores: "&proveedorId, nombreComercial, pais",
   });
 
+  database.version(3).stores({
+    operaciones: "&id, estado, proveedorId, deleted, updatedAtLocal",
+    outbox: "++key, [entityType+entityId], entityType, entityId, op, createdAt",
+    meta: "key",
+    proveedores: "&proveedorId, nombreComercial, pais",
+    forwarders: "&entidadId, nombreComercial, pais, estado",
+    agentesAduana: "&entidadId, nombreComercial, pais, estado",
+  });
+
   return database;
 }
 

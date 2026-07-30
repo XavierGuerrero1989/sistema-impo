@@ -7,6 +7,8 @@ const navItems = [
   { to: "/", label: "Inicio", icon: "⌂" },
   { to: "/operaciones", label: "Operaciones", icon: "▦" },
   { to: "/proveedores", label: "Proveedores", icon: "◆" },
+  { to: "/forwarders", label: "Forwarders", icon: "◈" },
+  { to: "/agentes-aduana", label: "Agentes de aduana", icon: "◇" },
   { to: "/logistica", label: "Logística", icon: "→" },
   { to: "/documentos", label: "Documentos", icon: "▤" },
   { to: "/finanzas", label: "Finanzas", icon: "$" },

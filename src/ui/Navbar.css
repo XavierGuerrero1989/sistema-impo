@@ -5,6 +5,7 @@
     radial-gradient(circle at 15% 0, rgba(6, 182, 212, .22), transparent 15rem),
     linear-gradient(180deg, #102846, #09182d 70%);
   display: flex; flex-direction: column; box-shadow: 12px 0 34px rgba(9, 24, 45, .12);
+  overflow-y: auto;
 }
 .navbar-brand { display: flex; align-items: center; gap: 11px; padding: 0 8px 25px; color: #fff; text-decoration: none; }
 .navbar-brand > span:last-child { display: flex; flex-direction: column; font-size: 14px; letter-spacing: .05em; line-height: 1.05; }
