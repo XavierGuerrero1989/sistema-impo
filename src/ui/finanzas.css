@@ -566,3 +566,4 @@
   .fin-filters select { flex: 1; }
   .fin-bank-head { align-items: flex-start; flex-direction: column; }
 }
+.fin-register { white-space: nowrap; }

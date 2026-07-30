@@ -148,14 +148,21 @@ export default function OperacionesListado() {
                   </td>
 
                   <td>
-                    <button
-                      className="btn-ver"
-                      onClick={() =>
-                        navigate(`/operaciones/${op.id}`)
-                      }
-                    >
-                      Ver
-                    </button>
+                    <div className="operation-shortcuts">
+                      <button className="btn-ver" onClick={() => navigate(`/operaciones/${op.id}`)}>
+                        Ver resumen
+                      </button>
+                      {permissions.manageOperations && (
+                        <button className="btn-area logistics" onClick={() => navigate(`/logistica/${op.id}`)}>
+                          Logística
+                        </button>
+                      )}
+                      {permissions.manageFinances && (
+                        <button className="btn-area finances" onClick={() => navigate(`/finanzas/${op.id}`)}>
+                          Finanzas
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               );

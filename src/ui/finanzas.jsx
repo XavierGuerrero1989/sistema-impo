@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { getOperacionesLocal } from "../offline/operacionesRepo";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../auth/AuthContext";
 import "./finanzas.css";
 
 const norm = (v, fallback = "") => String(v ?? fallback).trim();
@@ -29,6 +31,8 @@ const getMovimientosFromOp = (op) => {
 
 export default function Finanzas() {
   const [operaciones, setOperaciones] = useState([]);
+  const navigate = useNavigate();
+  const { permissions } = useAuth();
 
   // UI
   const [q, setQ] = useState("");
@@ -562,13 +566,14 @@ export default function Finanzas() {
               <th>Saldo</th>
               <th>Vencimiento</th>
               <th>Progreso</th>
+              <th></th>
             </tr>
           </thead>
 
           <tbody>
             {filtered.length === 0 && (
               <tr>
-                <td colSpan="9" className="fin-empty">
+                <td colSpan="10" className="fin-empty">
                   No hay datos para mostrar con estos filtros.
                 </td>
               </tr>
@@ -604,6 +609,16 @@ export default function Finanzas() {
                       </div>
                       <span className="fin-progress-label">{Math.round(op._progreso)}%</span>
                     </div>
+                  </td>
+                  <td>
+                    {permissions.manageFinances && (
+                      <button
+                        className="fin-btn fin-register"
+                        onClick={() => navigate(`/finanzas/${op._id}`)}
+                      >
+                        Registrar movimientos →
+                      </button>
+                    )}
                   </td>
                 </tr>
               );

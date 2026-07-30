@@ -3,7 +3,6 @@ import { useParams, useNavigate } from "react-router-dom";
 import {
   getOperacionesLocal,
   upsertOperacionLocal,
-  deleteOperacionLocal,
 } from "../offline/operacionesRepo";
 import { storage } from "../firebase/firebase";
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
@@ -37,7 +36,7 @@ const estadoLabel = (estado) => estado?.replaceAll("_", " ") || "-";
 const medioIcon = (value) =>
   value === "AÉREO" ? "✈️" : value === "TERRESTRE" ? "🚚" : "⚓";
 
-export default function OperacionDetalle() {
+export default function OperacionDetalle({ modo = "resumen" }) {
   const { permissions } = useAuth();
   const { id } = useParams();
   const navigate = useNavigate();
@@ -127,6 +126,10 @@ export default function OperacionDetalle() {
       currency: moneda,
       maximumFractionDigits: 2,
     }).format(Number(n || 0));
+
+  const esResumen = modo === "resumen";
+  const esLogistica = modo === "logistica";
+  const esFinanzas = modo === "finanzas";
 
   /* ===== Guard ===== */
   if (!operacion) return <p className="loading">Cargando operación...</p>;
@@ -476,33 +479,6 @@ export default function OperacionDetalle() {
     setNuevoEstado("FINALIZADA");
   };
 
-  /* ===== ELIMINAR OPERACIÓN ===== */
-  const eliminarOperacion = async () => {
-    if (!permissions.manageOperations) return alert("No tenés permiso para eliminar operaciones.");
-    const ok = window.confirm(
-      `⚠️ Vas a eliminar la operación "${operacion.id}".\n` +
-        `Esto la borra del sistema local.\n\n¿Confirmás?`
-    );
-    if (!ok) return;
-
-    try {
-      const updated = {
-        ...operacion,
-        historial: [
-          ...(operacion.historial || []),
-          auditEvent("Operación eliminada"),
-        ],
-      };
-
-      await upsertOperacionLocal(updated);
-      await deleteOperacionLocal(operacion.id);
-      navigate("/operaciones");
-    } catch (e) {
-      console.error(e);
-      alert("Error eliminando la operación");
-    }
-  };
-
   /* ===== Render ===== */
   return (
     <section className="operacion-detalle-page">
@@ -518,45 +494,80 @@ export default function OperacionDetalle() {
           <p className="op-id">Proveedor ID: {operacion.proveedorId || "-"}</p>
         </div>
 
-        <div className="inline-group">
-          <span className="mini-label">Moneda</span>
-          <select
-            value={operacion.moneda || "USD"}
-            disabled={operacion.estado === "FINALIZADA" || !permissions.manageFinances}
-            onChange={async (e) => {
-              if (operacion.estado === "FINALIZADA") {
-                alert("La operación está finalizada. No se puede modificar la moneda.");
-                return;
-              }
-
-              const nuevaMoneda = e.target.value;
-
-              const updated = {
-                ...operacion,
-                moneda: nuevaMoneda,
-                historial: [
-                  ...(operacion.historial || []),
-                  auditEvent("Moneda modificada", {
-                    moneda: nuevaMoneda,
-                  }),
-                ],
-              };
-
-              await upsertOperacionLocal(updated);
-              setOperacion(updated);
-            }}
-          >
-            <option value="USD">USD</option>
-            <option value="EUR">EUR</option>
-          </select>
-        </div>
+        {esFinanzas ? (
+          <div className="inline-group">
+            <span className="mini-label">Moneda</span>
+            <select
+              value={operacion.moneda || "USD"}
+              disabled={operacion.estado === "FINALIZADA" || !permissions.manageFinances}
+              onChange={async (e) => {
+                const nuevaMoneda = e.target.value;
+                const updated = {
+                  ...operacion,
+                  moneda: nuevaMoneda,
+                  historial: [
+                    ...(operacion.historial || []),
+                    auditEvent("Moneda modificada", { moneda: nuevaMoneda }),
+                  ],
+                };
+                await upsertOperacionLocal(updated);
+                setOperacion(updated);
+              }}
+            >
+              <option value="USD">USD</option>
+              <option value="EUR">EUR</option>
+            </select>
+          </div>
+        ) : (
+          <div className="detalle-context">
+            <span>{esLogistica ? "Módulo logístico" : "Resumen general"}</span>
+            <strong>{esLogistica ? `${medioIcon(medio)} ${medio}` : operacion.moneda || "USD"}</strong>
+          </div>
+        )}
 
         <span className={`estado-badge ${String(operacion.estado || "").toLowerCase()}`}>
           {String(operacion.estado || "").replace("_", " ")}
         </span>
       </div>
 
+      {esResumen && (
+        <section className="detalle-card operation-overview">
+          <div className="overview-heading">
+            <div>
+              <span className="workflow-eyebrow">Vista consolidada</span>
+              <h3>Resumen de la operación</h3>
+              <p>Esta pantalla es informativa. Las modificaciones se realizan desde cada área.</p>
+            </div>
+          </div>
+
+          <div className="overview-metrics">
+            <div><span>Estado logístico</span><strong>{estadoLabel(operacion.estado)}</strong></div>
+            <div><span>Ruta</span><strong>{countryLabel(origen, "Origen")} → {countryLabel(destino)}</strong></div>
+            <div><span>Total</span><strong>{money(total)}</strong></div>
+            <div><span>Saldo pendiente</span><strong>{money(saldo)}</strong></div>
+          </div>
+
+          <div className="overview-actions">
+            {permissions.manageOperations && (
+              <button className="area-shortcut logistics" onClick={() => navigate(`/logistica/${operacion.id}`)}>
+                <span className="area-shortcut-icon">→</span>
+                <span><small>Gestión operativa</small><strong>Ir a Logística</strong></span>
+                <b>↗</b>
+              </button>
+            )}
+            {permissions.manageFinances && (
+              <button className="area-shortcut finances" onClick={() => navigate(`/finanzas/${operacion.id}`)}>
+                <span className="area-shortcut-icon">$</span>
+                <span><small>Pagos y movimientos</small><strong>Ir a Finanzas</strong></span>
+                <b>↗</b>
+              </button>
+            )}
+          </div>
+        </section>
+      )}
+
       {/* Finanzas */}
+      {esFinanzas && (
       <section className="detalle-card">
         <h3>Estado financiero</h3>
 
@@ -724,8 +735,10 @@ export default function OperacionDetalle() {
           </div>
         ))}
       </section>
+      )}
 
       {/* ===== ESTADO DE LA OPERACIÓN ===== */}
+      {esLogistica && (
       <section className="detalle-card workflow-card">
         {(() => {
           const estadoActual = operacion.estado;
@@ -926,6 +939,7 @@ export default function OperacionDetalle() {
           );
         })()}
       </section>
+      )}
 
       {/* Documentos */}
       <section className="detalle-card">
@@ -957,7 +971,7 @@ export default function OperacionDetalle() {
               </div>
 
               <div className="doc-right">
-                {operacion.estado !== "FINALIZADA" && (
+                {!esResumen && operacion.estado !== "FINALIZADA" && (
                   <>
                     {d.estado !== "VALIDADO" && (
                       <button className="btn-link" onClick={() => cambiarEstadoDocumento(i, "VALIDADO")}>
@@ -982,6 +996,7 @@ export default function OperacionDetalle() {
           ))}
         </ul>
 
+        {!esResumen && (
         <div className="doc-form">
           <input
             placeholder="Nombre"
@@ -1038,17 +1053,7 @@ export default function OperacionDetalle() {
             {subiendoDoc ? "Subiendo..." : "Agregar documento"}
           </button>
         </div>
-      </section>
-
-      {/* ===== ZONA PELIGROSA (ELIMINAR OPERACIÓN) ===== */}
-      <section className="detalle-card danger-zone">
-        <h3 style={{ color: "#dc2626" }}>Zona peligrosa</h3>
-        <p className="op-id" style={{ marginTop: 0 }}>
-          Esto elimina la operación del almacenamiento local del sistema.
-        </p>
-        <button className="btn-danger" onClick={eliminarOperacion}>
-          🗑 Eliminar operación
-        </button>
+        )}
       </section>
 
       {/* Historial */}
