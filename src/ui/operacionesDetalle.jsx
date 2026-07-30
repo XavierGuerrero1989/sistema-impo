@@ -5,7 +5,7 @@ import {
   upsertOperacionLocal,
 } from "../offline/operacionesRepo";
 import { storage } from "../firebase/firebase";
-import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import "./operacionesDetalle.css";
 import { auditEvent } from "../auth/audit";
 import { useAuth } from "../auth/AuthContext";
@@ -45,6 +45,13 @@ const TIPOS_CARGA = [
   "Carga a granel",
   "Otro",
 ];
+
+const documentStatusClass = (estado = "PENDIENTE") => {
+  if (estado === "ELIMINADO") return "is-deleted";
+  if (estado === "RECHAZADO") return "is-rejected";
+  if (["VALIDADO", "APROBADO"].includes(estado)) return "is-approved";
+  return "is-uploaded";
+};
 const FLUJO_ESTADOS = [
   "PLANIFICADA",
   "PRODUCCION",
@@ -155,8 +162,22 @@ export default function OperacionDetalle({ modo = "resumen" }) {
   const [docRef, setDocRef] = useState("");
   const [docFile, setDocFile] = useState(null);
   const [subiendoDoc, setSubiendoDoc] = useState(false);
+  const [documentoPreview, setDocumentoPreview] = useState(null);
 
   const [totalOperacionInput, setTotalOperacionInput] = useState("");
+
+  useEffect(() => {
+    if (!documentoPreview) return undefined;
+    const cerrarConEscape = (event) => {
+      if (event.key === "Escape") setDocumentoPreview(null);
+    };
+    document.addEventListener("keydown", cerrarConEscape);
+    document.body.classList.add("preview-open");
+    return () => {
+      document.removeEventListener("keydown", cerrarConEscape);
+      document.body.classList.remove("preview-open");
+    };
+  }, [documentoPreview]);
 
   useEffect(() => {
     async function load() {
@@ -486,13 +507,19 @@ export default function OperacionDetalle({ modo = "resumen" }) {
     if (!ok) return;
 
     try {
-      if (doc.archivo?.storagePath) {
-        await deleteObject(ref(storage, doc.archivo.storagePath));
-      }
-
+      const eliminacion = auditEvent("Documento eliminado");
       const updated = {
         ...operacion,
-        documentos: (operacion.documentos || []).filter((_, i) => i !== index),
+        documentos: (operacion.documentos || []).map((item, itemIndex) =>
+          itemIndex === index
+            ? {
+                ...item,
+                estado: "ELIMINADO",
+                eliminadoAt: eliminacion.fecha,
+                eliminadoPor: eliminacion.actorEmail,
+              }
+            : item
+        ),
         historial: [
           ...(operacion.historial || []),
           auditEvent("Documento eliminado", {
@@ -828,7 +855,7 @@ export default function OperacionDetalle({ modo = "resumen" }) {
       return;
     }
     const documentosPendientes = (operacion.documentos || []).filter(
-      (documento) => !["VALIDADO", "APROBADO"].includes(documento.estado)
+      (documento) => !["VALIDADO", "APROBADO", "ELIMINADO"].includes(documento.estado)
     );
     if (documentosPendientes.length > 0) {
       alert("Hay documentos pendientes de validar antes de finalizar.");
@@ -1586,13 +1613,21 @@ export default function OperacionDetalle({ modo = "resumen" }) {
           )}
 
           {documentosVisibles.map(({ documento: d, index }) => (
-            <li key={index} className="doc-row">
+            <li key={index} className={`doc-row ${documentStatusClass(d.estado)}`}>
               <div className="doc-left">
-                <strong>{d.nombre}</strong> – {d.tipo} · {d.estado || "PENDIENTE"}
-                {d.referencia && ` · ${d.referencia}`}
+                <span className="doc-description">
+                  <strong>{d.nombre}</strong> – {d.tipo} · {d.estado || "PENDIENTE"}
+                  {d.referencia && ` · ${d.referencia}`}
+                </span>
                 {d.archivo?.downloadURL && (
-                  <>
-                    {" · "}
+                  <span className="doc-file-actions">
+                    <button
+                      type="button"
+                      className="btn-link preview"
+                      onClick={() => setDocumentoPreview(d)}
+                    >
+                      Vista previa
+                    </button>
                     <a
                       href={d.archivo.downloadURL}
                       target="_blank"
@@ -1601,16 +1636,16 @@ export default function OperacionDetalle({ modo = "resumen" }) {
                     >
                       Descargar
                     </a>
-                  </>
+                  </span>
                 )}
               </div>
 
               <div className="doc-right">
-                {!esResumen && operacion.estado !== "FINALIZADA" && canManageAreaDocuments && (
+                {!esResumen && d.estado !== "ELIMINADO" && operacion.estado !== "FINALIZADA" && canManageAreaDocuments && (
                   <>
-                    {d.estado !== "VALIDADO" && (
-                      <button className="btn-link" onClick={() => cambiarEstadoDocumento(index, "VALIDADO")}>
-                        Validar
+                    {!["VALIDADO", "APROBADO"].includes(d.estado) && (
+                      <button className="btn-link approve" onClick={() => cambiarEstadoDocumento(index, "APROBADO")}>
+                        Aprobar
                       </button>
                     )}
                     {d.estado !== "RECHAZADO" && (
@@ -1697,6 +1732,51 @@ export default function OperacionDetalle({ modo = "resumen" }) {
         </div>
         )}
       </details>
+
+      {documentoPreview?.archivo?.downloadURL && (
+        <div
+          className="document-preview-backdrop"
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) setDocumentoPreview(null);
+          }}
+        >
+          <section
+            className="document-preview-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="document-preview-title"
+          >
+            <header>
+              <div>
+                <small>Vista previa del documento</small>
+                <strong id="document-preview-title">{documentoPreview.nombre}</strong>
+              </div>
+              <button
+                type="button"
+                aria-label="Cerrar vista previa"
+                onClick={() => setDocumentoPreview(null)}
+              >
+                ×
+              </button>
+            </header>
+            <iframe
+              title={`Vista previa de ${documentoPreview.nombre}`}
+              src={documentoPreview.archivo.downloadURL}
+            />
+            <footer>
+              <span>{documentoPreview.archivo.nombre}</span>
+              <a
+                href={documentoPreview.archivo.downloadURL}
+                target="_blank"
+                rel="noreferrer"
+              >
+                Abrir en otra pestaña
+              </a>
+            </footer>
+          </section>
+        </div>
+      )}
 
       {/* Historial */}
       <details className="detalle-card shared-collapsible" open={esResumen ? true : undefined}>
