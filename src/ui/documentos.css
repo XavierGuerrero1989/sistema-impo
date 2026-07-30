@@ -265,12 +265,17 @@
   align-items: center;
   justify-content: center;
   padding: 18px;
-  z-index: 50;
+  box-sizing: border-box;
+  z-index: 99999;
+}
+
+.documents-preview-open {
+  overflow: hidden;
 }
 
 .modal {
   width: min(1100px, 100%);
-  height: min(78vh, 780px);
+  height: min(780px, calc(100dvh - 36px));
   background: #ffffff;
   border-radius: 16px;
   border: 1px solid #e5e7eb;
@@ -340,7 +345,12 @@
 }
 
 @media (max-width: 720px) {
+  .modal-overlay {
+    padding: 10px;
+  }
+
   .modal {
-    height: 86vh;
+    height: calc(100dvh - 20px);
+    border-radius: 12px;
   }
 }

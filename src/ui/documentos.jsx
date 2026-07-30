@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { getOperacionesLocal } from "../offline/operacionesRepo";
 import { useNavigate } from "react-router-dom";
 import "./documentos.css";
@@ -103,6 +104,19 @@ export default function Documentos() {
   };
 
   const closePreview = () => setPreview(null);
+
+  useEffect(() => {
+    if (!preview) return undefined;
+    const closeWithEscape = (event) => {
+      if (event.key === "Escape") setPreview(null);
+    };
+    document.addEventListener("keydown", closeWithEscape);
+    document.body.classList.add("documents-preview-open");
+    return () => {
+      document.removeEventListener("keydown", closeWithEscape);
+      document.body.classList.remove("documents-preview-open");
+    };
+  }, [preview]);
 
   return (
     <section className="documentos-page">
@@ -267,12 +281,18 @@ export default function Documentos() {
       </div>
 
       {/* Modal Preview */}
-      {preview && (
+      {preview && createPortal(
         <div className="modal-overlay" onClick={closePreview}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
+          <div
+            className="modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="global-document-preview-title"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="modal-header">
               <div className="modal-title">
-                <strong>{preview.titulo}</strong>
+                <strong id="global-document-preview-title">{preview.titulo}</strong>
                 <span className="muted">·</span>
                 <span className="muted">{preview.subtitulo}</span>
               </div>
@@ -296,7 +316,8 @@ export default function Documentos() {
               <iframe className="pdf-frame" src={preview.url} title="PDF Preview" />
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </section>
   );
