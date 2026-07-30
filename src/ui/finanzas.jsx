@@ -618,8 +618,6 @@ export default function Finanzas() {
               <th>Proveedor</th>
               <th>Moneda</th>
               <th>Total</th>
-              <th>Adelantos</th>
-              <th>Pagado</th>
               <th>Saldo</th>
               <th>Vencimiento</th>
               <th>Próximo pago</th>
@@ -631,7 +629,7 @@ export default function Finanzas() {
           <tbody>
             {filtered.length === 0 && (
               <tr>
-                <td colSpan="11" className="fin-empty">
+                <td colSpan="9" className="fin-empty">
                   No hay datos para mostrar con estos filtros.
                 </td>
               </tr>
@@ -646,8 +644,6 @@ export default function Finanzas() {
                   <td>{op._proveedor || "-"}</td>
                   <td className="mono">{op._moneda}</td>
                   <td>{money(op._total, op._moneda)}</td>
-                  <td>{money(op._adelantos, op._moneda)}</td>
-                  <td>{money(op._pagado, op._moneda)}</td>
                   <td className={saldoOk ? "fin-saldo ok" : "fin-saldo warn"}>
                     {money(op._saldo, op._moneda)}
                   </td>
@@ -657,7 +653,7 @@ export default function Finanzas() {
                       : "-"}
                     {op._vencida ? " · Vencida" : ""}
                   </td>
-                  <td className="fin-action-column">
+                  <td>
                     {(() => {
                       const next = op._programados
                         .filter((pago) => !["PAGADO", "CANCELADO"].includes(pago.estado))
@@ -681,7 +677,7 @@ export default function Finanzas() {
                       <span className="fin-progress-label">{Math.round(op._progreso)}%</span>
                     </div>
                   </td>
-                  <td>
+                  <td className="fin-action-column">
                     {permissions.manageFinances && (
                       <button
                         className="fin-btn fin-register"
