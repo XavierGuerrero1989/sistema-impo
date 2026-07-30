@@ -621,14 +621,15 @@
 }
 .cargo-details-cell {
   display: grid;
-  grid-template-columns: minmax(210px, 1.3fr) minmax(190px, 1fr) minmax(150px, .7fr);
+  grid-template-columns: minmax(210px, 1.3fr) minmax(190px, 1fr) minmax(150px, .7fr) auto;
   gap: 14px;
   align-items: end;
-  margin-top: 18px;
-  padding: 17px;
+  margin-top: 20px;
+  padding: 19px;
   border: 1px solid #dce7f3;
   border-radius: 16px;
   background: linear-gradient(135deg, #f8fbff, #f5f3ff);
+  box-shadow: 0 8px 24px rgba(65, 75, 130, .06);
 }
 .cargo-details-copy > span, .cargo-details-copy > strong, .cargo-details-copy > small { display: block; }
 .cargo-details-copy > span { color: #6366f1; font-size: .62rem; font-weight: 850; letter-spacing: .1em; }
@@ -645,6 +646,19 @@
   color: #26344a;
   background: #fff;
 }
+.save-cargo-button {
+  min-height: 42px;
+  padding: 10px 15px;
+  border: 0;
+  border-radius: 11px;
+  color: #fff;
+  background: linear-gradient(135deg, #4f46e5, #7c3aed);
+  font-size: .75rem;
+  font-weight: 800;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.save-cargo-button:disabled { opacity: .5; cursor: not-allowed; }
 .save-logistics-button {
   margin-top: 14px;
   padding: 11px 16px;
@@ -749,6 +763,7 @@
   .workflow-body { grid-template-columns: 1fr; }
   .cargo-details-cell { grid-template-columns: 1fr 1fr; }
   .cargo-details-copy { grid-column: 1 / -1; }
+  .save-cargo-button { grid-column: 1 / -1; }
   .workflow-timeline {
     overflow-x: auto; grid-template-columns: repeat(7,minmax(92px,1fr));
     padding-bottom: 8px;
@@ -762,6 +777,7 @@
   .workflow-summary, .workflow-form-grid { grid-template-columns: 1fr; }
   .cargo-details-cell { grid-template-columns: 1fr; }
   .cargo-details-copy { grid-column: auto; }
+  .save-cargo-button { grid-column: auto; width: 100%; }
   .workflow-more-content { align-items: stretch; flex-direction: column; }
   .workflow-more-content label { min-width: 0; }
   .btn-finalize { margin-left: 0; }

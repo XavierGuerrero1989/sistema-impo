@@ -576,12 +576,39 @@ export default function OperacionDetalle({ modo = "resumen" }) {
         eta: eta || null,
         deposito: deposito || null,
         etaLiberacion: etaLiberacion || null,
-        tipoCarga: tipoCarga || null,
-        cantidadBultos: cantidadBultos ? Number(cantidadBultos) : null,
       },
       historial: [
         ...(operacion.historial || []),
         auditEvent("Datos logísticos actualizados", { area: "logistica" }),
+      ],
+    };
+
+    await upsertOperacionLocal(updated);
+    setOperacion(updated);
+  };
+
+  const guardarDetallesCarga = async () => {
+    if (!permissions.manageOperations) return alert("No tenés permiso para modificar operaciones.");
+    if (operacion.estado === "FINALIZADA") return;
+    if (!tipoCarga) return alert("Seleccioná el tipo de carga.");
+    if (cantidadBultos && Number(cantidadBultos) < 1) {
+      return alert("La cantidad de bultos debe ser mayor a cero.");
+    }
+
+    const updated = {
+      ...operacion,
+      logistica: {
+        ...(operacion.logistica || {}),
+        tipoCarga,
+        cantidadBultos: cantidadBultos ? Number(cantidadBultos) : null,
+      },
+      historial: [
+        ...(operacion.historial || []),
+        auditEvent("Detalles de carga actualizados", {
+          area: "logistica",
+          tipoCarga,
+          cantidadBultos: cantidadBultos ? Number(cantidadBultos) : null,
+        }),
       ],
     };
 
@@ -1132,36 +1159,6 @@ export default function OperacionDetalle({ modo = "resumen" }) {
                     )}
                   </div>
 
-                  <div className="cargo-details-cell">
-                    <div className="cargo-details-copy">
-                      <span>DETALLES DEL PRODUCTO / BULTO</span>
-                      <strong>{operacion.activo || "Mercadería sin especificar"}</strong>
-                      <small>Configuración física prevista para el embarque.</small>
-                    </div>
-                    <label>
-                      <span>Tipo de carga</span>
-                      <select
-                        value={tipoCarga}
-                        onChange={(e) => setTipoCarga(e.target.value)}
-                        disabled={estadoActual === "FINALIZADA"}
-                      >
-                        <option value="">Seleccionar tipo</option>
-                        {TIPOS_CARGA.map((tipo) => <option key={tipo} value={tipo}>{tipo}</option>)}
-                      </select>
-                    </label>
-                    <label>
-                      <span>Cantidad de bultos <small>(opcional)</small></span>
-                      <input
-                        type="number"
-                        min="1"
-                        value={cantidadBultos}
-                        disabled={estadoActual === "FINALIZADA"}
-                        onChange={(e) => setCantidadBultos(e.target.value)}
-                        placeholder="Ej. 12"
-                      />
-                    </label>
-                  </div>
-
                   {estadoActual === "EN_TRANSITO" && (
                     <button className="save-logistics-button" onClick={guardarLogistica} disabled={!permissions.manageOperations}>
                       Guardar ETA y datos logísticos
@@ -1187,6 +1184,43 @@ export default function OperacionDetalle({ modo = "resumen" }) {
                     </button>
                   </aside>
                 )}
+              </div>
+
+              <div className="cargo-details-cell">
+                <div className="cargo-details-copy">
+                  <span>DETALLES DEL PRODUCTO / BULTO</span>
+                  <strong>{operacion.activo || "Mercadería sin especificar"}</strong>
+                  <small>Configuración física prevista para el embarque.</small>
+                </div>
+                <label>
+                  <span>Tipo de carga</span>
+                  <select
+                    value={tipoCarga}
+                    onChange={(e) => setTipoCarga(e.target.value)}
+                    disabled={estadoActual === "FINALIZADA"}
+                  >
+                    <option value="">Seleccionar tipo</option>
+                    {TIPOS_CARGA.map((tipo) => <option key={tipo} value={tipo}>{tipo}</option>)}
+                  </select>
+                </label>
+                <label>
+                  <span>Cantidad de bultos <small>(opcional)</small></span>
+                  <input
+                    type="number"
+                    min="1"
+                    value={cantidadBultos}
+                    disabled={estadoActual === "FINALIZADA"}
+                    onChange={(e) => setCantidadBultos(e.target.value)}
+                    placeholder="Ej. 12"
+                  />
+                </label>
+                <button
+                  className="save-cargo-button"
+                  onClick={guardarDetallesCarga}
+                  disabled={estadoActual === "FINALIZADA" || !permissions.manageOperations}
+                >
+                  Guardar detalles
+                </button>
               </div>
 
               {estadoActual !== "FINALIZADA" && (
