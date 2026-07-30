@@ -156,6 +156,33 @@
   cursor: pointer;
 }
 
+.pago-line-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pago-line.is-cancelled {
+  color: #94a3b8;
+  background: linear-gradient(90deg, rgba(254,242,242,.7), transparent);
+}
+
+.pago-line.is-cancelled .pago-line-copy {
+  text-decoration: line-through;
+  text-decoration-thickness: 1.5px;
+}
+
+.cancelled-badge {
+  padding: 5px 8px;
+  border-radius: 7px;
+  color: #b91c1c;
+  background: #fee2e2;
+  font-size: .62rem;
+  font-weight: 850;
+  letter-spacing: .03em;
+  text-transform: uppercase;
+}
+
 /* ===============================
    Estado operación / Logística
 ================================ */
