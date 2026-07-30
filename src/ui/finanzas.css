@@ -460,12 +460,16 @@
   border-radius: 16px;
   border: 1px solid var(--border-soft);
   background: var(--bg-card);
-  overflow: hidden;
+  overflow-x: auto;
+  overflow-y: hidden;
   box-shadow: 0 10px 24px rgba(0,0,0,0.18);
+  scrollbar-width: thin;
+  scrollbar-color: rgba(100,116,139,.45) transparent;
 }
 
 .fin-table {
   width: 100%;
+  min-width: 1420px;
   border-collapse: collapse;
 }
 
@@ -485,6 +489,31 @@
 
 .fin-table tbody tr:hover td {
   background: rgba(255,255,255,0.05);
+}
+
+.fin-table .fin-action-column {
+  position: sticky;
+  right: 0;
+  z-index: 2;
+  width: 190px;
+  min-width: 190px;
+  box-sizing: border-box;
+  background: var(--bg-card);
+  box-shadow: -14px 0 20px -18px rgba(15,23,42,.75);
+}
+
+.fin-table thead .fin-action-column {
+  z-index: 3;
+  background: linear-gradient(90deg, #eef8fb, #f1eafd);
+}
+
+.fin-table tbody tr:hover .fin-action-column {
+  background: var(--bg-card);
+}
+
+.fin-table .fin-register {
+  width: 100%;
+  justify-content: center;
 }
 
 .fin-empty {
