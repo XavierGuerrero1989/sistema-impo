@@ -39,6 +39,16 @@ service cloud.firestore {
       allow write: if primaryAdmin() || hasRole(["admin", "operaciones"]);
     }
 
+    match /forwarders/{forwarderId} {
+      allow read: if signedIn();
+      allow write: if primaryAdmin() || hasRole(["admin", "operaciones"]);
+    }
+
+    match /agentesAduana/{agenteId} {
+      allow read: if signedIn();
+      allow write: if primaryAdmin() || hasRole(["admin", "operaciones"]);
+    }
+
     match /usuarios/{userId} {
       allow read: if canManageUsers() || (signedIn() && request.auth.uid == userId);
       allow create: if canManageUsers() || (

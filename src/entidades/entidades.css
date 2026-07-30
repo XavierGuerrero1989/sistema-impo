@@ -1,0 +1,16 @@
+.entity-detail-actions { display: flex; gap: 10px; }
+.entity-operations-card { margin-top: 24px; }
+.entity-card-heading { padding: 16px 20px; border-bottom: 1px solid #e2e8f0; }
+.entity-card-heading h3 { margin: 0; font-size: 1rem; }
+.entity-danger-zone {
+  margin-top: 24px; padding: 20px; border: 1px solid #fecaca;
+  border-radius: 12px; background: #fff;
+}
+.entity-danger-zone h3 { margin: 0 0 10px; color: #b91c1c; }
+.entity-danger-zone button {
+  padding: 10px 18px; border: 0; border-radius: 7px;
+  color: #fff; background: #dc2626; cursor: pointer;
+}
+@media (max-width: 640px) {
+  .entity-detail-actions { width: 100%; flex-wrap: wrap; }
+}
