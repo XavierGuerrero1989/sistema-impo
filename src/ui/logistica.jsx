@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { getOperacionesLocal, upsertOperacionLocal } from "../offline/operacionesRepo";
+import { getOperacionesLocal } from "../offline/operacionesRepo";
 import { useNavigate } from "react-router-dom";
 import "./logistica.css";
 import { useAuth } from "../auth/AuthContext";
@@ -49,7 +49,7 @@ export default function Logistica() {
     .filter(op => op.estado !== "FINALIZADA")  
     .map((op) => {
       
-      const etapa = op.logistica?.etapa || "PLANIFICADA";
+      const etapa = op.estado || op.logistica?.etapa || "PLANIFICADA";
 
       const eta = op.logistica?.eta
         ? new Date(
@@ -143,48 +143,6 @@ export default function Logistica() {
       });
 
   }, [items, filtroEtapa, filtroEta, search]);
-
-  /* =========================
-     CAMBIAR ETAPA
-  ========================== */
-
-  const cambiarEtapa = async (opId, nuevaEtapa) => {
-    if (!permissions.manageOperations) return;
-
-    const op = operaciones.find(
-      (o) => o.id === opId
-    );
-
-    if (!op) return;
-
-    const updated = {
-
-      ...op,
-
-      logistica: {
-        ...(op.logistica || {}),
-        etapa: nuevaEtapa,
-      },
-
-      historial: [
-        ...(op.historial || []),
-        {
-          fecha: new Date().toISOString(),
-          evento: `Logística: etapa cambiada a ${ETAPA_LABEL(nuevaEtapa)}`,
-        },
-      ],
-
-    };
-
-    await upsertOperacionLocal(updated);
-
-    setOperaciones((prev) =>
-      prev.map((o) =>
-        o.id === opId ? updated : o
-      )
-    );
-
-  };
 
   return (
     <section className="log-page">
@@ -316,26 +274,9 @@ export default function Logistica() {
 
                 <td>
 
-                  <select
-                    disabled={!permissions.manageOperations}
-                    value={i.etapa}
-                    onChange={(e) =>
-                      cambiarEtapa(i.id, e.target.value)
-                    }
-                  >
-
-                    {ETAPAS.map((e) => (
-
-                      <option
-                        key={e}
-                        value={e}
-                      >
-                        {ETAPA_LABEL(e)}
-                      </option>
-
-                    ))}
-
-                  </select>
+                  <span className={`log-status ${i.etapa.toLowerCase()}`}>
+                    {ETAPA_LABEL(i.etapa)}
+                  </span>
 
                 </td>
 
@@ -357,14 +298,14 @@ export default function Logistica() {
 
                 <td>
 
-                  <button
-                    className="log-link"
-                    onClick={() =>
-                      navigate(`/operaciones/${i.id}`)
-                    }
-                  >
-                    Ver
-                  </button>
+                  {permissions.manageOperations && (
+                    <button
+                      className="log-link log-register"
+                      onClick={() => navigate(`/logistica/${i.id}`)}
+                    >
+                      Registrar movimientos →
+                    </button>
+                  )}
 
                 </td>
 

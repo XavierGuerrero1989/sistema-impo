@@ -83,11 +83,27 @@ function App() {
                   />
                   <Route
                     path="/operaciones/:id"
-                    element={<OperacionDetalle />}
+                    element={<OperacionDetalle modo="resumen" />}
                   />
                   <Route path="/finanzas" element={<Finanzas />} />
+                  <Route
+                    path="/finanzas/:id"
+                    element={
+                      <PermissionRoute permission="manageFinances">
+                        <OperacionDetalle modo="finanzas" />
+                      </PermissionRoute>
+                    }
+                  />
                   <Route path="/documentos" element={<Documentos />} />
                   <Route path="/logistica" element={<Logistica />} />
+                  <Route
+                    path="/logistica/:id"
+                    element={
+                      <PermissionRoute permission="manageOperations">
+                        <OperacionDetalle modo="logistica" />
+                      </PermissionRoute>
+                    }
+                  />
                   <Route path="/proveedores" element={<Proveedores />} />
                   <Route
                     path="/proveedores/nuevo"
