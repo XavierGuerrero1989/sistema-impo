@@ -10,6 +10,7 @@ import "./entidades.css";
 
 const EMPTY_FORM = {
   entidadId: "", nombreComercial: "", nombreLegal: "", pais: "",
+  direccion: "",
   identificacionFiscal: "", estado: "ACTIVO", monedaHabitual: "USD",
   contacto: "", email: "", telefono: "", banco: "", condicionPago: "", plazoPagoDias: "",
 };
@@ -35,6 +36,7 @@ export default function EntidadDetalle({ tipo }) {
         nombreComercial: data.nombreComercial || "",
         nombreLegal: data.nombreLegal || "",
         pais: data.pais || "",
+        direccion: data.direccion || "",
         identificacionFiscal: data.identificacionFiscal || "",
         estado: data.estado || (data.activo === false ? "BLOQUEADO" : "ACTIVO"),
         monedaHabitual: data.comercial?.monedaHabitual || "USD",
@@ -60,6 +62,7 @@ export default function EntidadDetalle({ tipo }) {
       nombreComercial: form.nombreComercial,
       nombreLegal: form.nombreLegal,
       pais: form.pais,
+      direccion: tipo === "forwarders" ? form.direccion : "",
       identificacionFiscal: form.identificacionFiscal,
       estado: form.estado,
       activo: form.estado !== "BLOQUEADO",
@@ -117,6 +120,7 @@ export default function EntidadDetalle({ tipo }) {
           {row("Nombre comercial", "nombreComercial", entidad.nombreComercial)}
           {row("Nombre legal", "nombreLegal", entidad.nombreLegal)}
           {row("País", "pais", countryLabel(entidad.pais, "-"))}
+          {tipo === "forwarders" && row("Dirección", "direccion", entidad.direccion)}
           {row("Identificación fiscal", "identificacionFiscal", entidad.identificacionFiscal)}
           {row("Estado", "estado", entidad.estado, "estado")}
           {row("Moneda habitual", "monedaHabitual", entidad.comercial?.monedaHabitual, "moneda")}

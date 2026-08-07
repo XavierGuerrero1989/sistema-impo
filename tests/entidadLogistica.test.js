@@ -6,9 +6,11 @@ test("normaliza una entidad logística", () => {
   const entidad = normalizarEntidad({
     entidadId: " fwd-01 ",
     nombreComercial: "  Transporte Global ",
+    direccion: "  Av. Central 123, Santiago ",
   });
   assert.equal(entidad.entidadId, "FWD-01");
   assert.equal(entidad.nombreComercial, "Transporte Global");
+  assert.equal(entidad.direccion, "Av. Central 123, Santiago");
   assert.equal(entidad.estado, "ACTIVO");
   assert.equal(entidad.comercial.monedaHabitual, "USD");
 });

@@ -12,6 +12,7 @@ export default function NuevaEntidad({ tipo }) {
     nombreComercial: "",
     nombreLegal: "",
     pais: "",
+    direccion: "",
     identificacionFiscal: "",
     monedaHabitual: "USD",
   });
@@ -30,6 +31,7 @@ export default function NuevaEntidad({ tipo }) {
         nombreComercial: form.nombreComercial,
         nombreLegal: form.nombreLegal,
         pais: form.pais,
+        direccion: tipo === "forwarders" ? form.direccion : "",
         identificacionFiscal: form.identificacionFiscal,
         comercial: { monedaHabitual: form.monedaHabitual },
         estado: "ACTIVO",
@@ -75,6 +77,17 @@ export default function NuevaEntidad({ tipo }) {
             <input name="pais" value={form.pais} onChange={onChange} />
           </div>
         </div>
+        {tipo === "forwarders" && (
+          <div className="form-group">
+            <label>Dirección</label>
+            <input
+              name="direccion"
+              value={form.direccion}
+              placeholder="Calle, número, ciudad y provincia"
+              onChange={onChange}
+            />
+          </div>
+        )}
         <div className="form-row">
           <div className="form-group">
             <label>Moneda habitual</label>
