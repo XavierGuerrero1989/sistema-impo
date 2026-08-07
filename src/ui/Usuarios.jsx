@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { initializeApp, deleteApp } from "firebase/app";
 import {
   createUserWithEmailAndPassword,
@@ -74,6 +75,23 @@ export default function Usuarios() {
   useEffect(() => {
     load();
   }, []);
+
+  useEffect(() => {
+    if (!mostrarFormulario) return undefined;
+
+    const previousOverflow = document.body.style.overflow;
+    const closeOnEscape = (event) => {
+      if (event.key === "Escape" && !creando) setMostrarFormulario(false);
+    };
+
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", closeOnEscape);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [mostrarFormulario, creando]);
 
   const cambiarRol = async (usuario, role) => {
     setGuardando(usuario.uid);
@@ -267,9 +285,15 @@ export default function Usuarios() {
         </div>
       </section>
 
-      {mostrarFormulario && (
-        <div className="user-modal-backdrop" role="presentation">
-          <form className="user-modal" onSubmit={crearUsuario}>
+      {mostrarFormulario && createPortal(
+        <div
+          className="user-modal-backdrop"
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget && !creando) setMostrarFormulario(false);
+          }}
+        >
+          <form className="user-modal" onSubmit={crearUsuario} role="dialog" aria-modal="true" aria-labelledby="create-user-title">
             <button
               type="button"
               className="user-modal-close"
@@ -279,7 +303,7 @@ export default function Usuarios() {
               ×
             </button>
             <span className="usuarios-eyebrow">Nuevo acceso</span>
-            <h2>Crear usuario</h2>
+            <h2 id="create-user-title">Crear usuario</h2>
             <p>La persona ingresará con su correo y esta contraseña inicial.</p>
 
             <label>
@@ -336,7 +360,8 @@ export default function Usuarios() {
               </button>
             </div>
           </form>
-        </div>
+        </div>,
+        document.body,
       )}
     </section>
   );
