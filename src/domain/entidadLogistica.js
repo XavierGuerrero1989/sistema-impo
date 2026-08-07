@@ -7,6 +7,7 @@ export function normalizarEntidad(input = {}) {
     nombreComercial: String(input.nombreComercial || "").trim(),
     nombreLegal: String(input.nombreLegal || "").trim(),
     pais: String(input.pais || "").trim(),
+    direccion: String(input.direccion || "").trim(),
     identificacionFiscal: String(input.identificacionFiscal || "").trim(),
     estado: ESTADOS_ENTIDAD.includes(input.estado) ? input.estado : "ACTIVO",
     activo: input.activo !== false && input.estado !== "BLOQUEADO",
