@@ -36,17 +36,24 @@ const ESTADOS = [
 // “Ruta” / medio de transporte (alineado con Logística)
 const MEDIOS = ["MARÍTIMO", "TERRESTRE", "AÉREO"];
 const TIPOS_CARGA = [
-  "Carga suelta",
-  "Pallet",
-  "Contenedor 20 pies (Dry)",
-  "Contenedor 40 pies (Dry)",
-  "Contenedor 40 pies High Cube",
-  "Contenedor 20 pies refrigerado",
-  "Contenedor 40 pies refrigerado",
-  "Carga aérea",
-  "Carga a granel",
-  "Otro",
+  "FCL · Full Container Load · 20 pies",
+  "FCL · Full Container Load · 40 pies",
+  "FCL · Full Container Load · 40HC",
+  "LCL · Less than Container Load",
+  "FTL · Full Truck Load",
+  "LTL · Less than Truck Load",
+  "AWB · Aéreo",
 ];
+
+const TIPOS_CARGA_ANTERIORES = {
+  "Carga suelta": "LCL · Less than Container Load",
+  "Contenedor 20 pies (Dry)": "FCL · Full Container Load · 20 pies",
+  "Contenedor 40 pies (Dry)": "FCL · Full Container Load · 40 pies",
+  "Contenedor 40 pies High Cube": "FCL · Full Container Load · 40HC",
+  "Carga aérea": "AWB · Aéreo",
+};
+
+const normalizarTipoCarga = (tipo = "") => TIPOS_CARGA_ANTERIORES[tipo] || tipo;
 
 const documentStatusClass = (estado = "PENDIENTE") => {
   if (estado === "ELIMINADO") return "is-deleted";
@@ -212,7 +219,7 @@ export default function OperacionDetalle({ modo = "resumen" }) {
       setFechaLlegadaBodega(
         l.fechaLlegadaBodega ? String(l.fechaLlegadaBodega).slice(0, 10) : ""
       );
-      setTipoCarga(l.tipoCarga || "");
+      setTipoCarga(normalizarTipoCarga(l.tipoCarga));
       setCantidadBultos(l.cantidadBultos || "");
       setAgenteAduanaId(op?.agenteAduanaId || "");
       setAgenteObservaciones(op?.agenteAduanaObservaciones || "");
