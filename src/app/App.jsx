@@ -8,6 +8,7 @@ import ProtectedRoute from "../auth/ProtectedRoute";
 import AdminRoute from "../auth/AdminRoute";
 import PermissionRoute from "../auth/PermissionRoute";
 import Loader from "../ui/Loader";
+import AssistantMascot from "../assistant/AssistantMascot";
 
 import { useAutoSync } from "../hooks/useAutoSync";
 
@@ -164,6 +165,7 @@ function App() {
                   </Routes>
                 </Suspense>
               </main>
+              <AssistantMascot />
             </div>
           </ProtectedRoute>
         }
