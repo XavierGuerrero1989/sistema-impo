@@ -8,6 +8,9 @@ test("Importaciones crea operaciones y solo modifica logística", () => {
   assert.equal(permissions.manageOperations, true);
   assert.equal(permissions.manageFinances, false);
   assert.equal(permissions.manageUsers, false);
+  assert.equal(permissions.viewFinances, true);
+  assert.equal(permissions.uploadDocuments, true);
+  assert.equal(permissions.manageFinanceDocuments, false);
 });
 
 test("Finanzas solo modifica el área financiera", () => {
@@ -16,7 +19,9 @@ test("Finanzas solo modifica el área financiera", () => {
   assert.equal(permissions.manageOperations, false);
   assert.equal(permissions.manageFinances, true);
   assert.equal(permissions.confirmPayments, true);
-  assert.equal(permissions.viewLogistics, false);
+  assert.equal(permissions.viewLogistics, true);
+  assert.equal(permissions.uploadDocuments, true);
+  assert.equal(permissions.manageDocuments, false);
 });
 
 test("Solo lectura ve todas las áreas sin editar", () => {
@@ -25,6 +30,7 @@ test("Solo lectura ve todas las áreas sin editar", () => {
   assert.equal(permissions.viewFinances, true);
   assert.equal(permissions.manageOperations, false);
   assert.equal(permissions.manageFinances, false);
+  assert.equal(permissions.uploadDocuments, false);
 });
 
 test("Administrador conserva control total", () => {

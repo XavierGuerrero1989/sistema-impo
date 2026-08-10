@@ -27,9 +27,10 @@ export function permissionsFor(role) {
     manageProviders: isAdmin || isImports,
     manageDocuments: isAdmin || isImports,
     manageFinanceDocuments: isAdmin || isFinance,
+    uploadDocuments: isAdmin || isImports || isFinance,
     manageFinances: isAdmin || isFinance,
     confirmPayments: isAdmin || isFinance,
-    viewLogistics: isAdmin || isImports || isReadOnly,
+    viewLogistics: isAdmin || isImports || isFinance || isReadOnly,
     viewFinances: isAdmin || isImports || isFinance || isReadOnly,
     viewDirectories: isAdmin || isImports || isReadOnly,
   };

@@ -300,12 +300,12 @@ export default function Logistica() {
 
                 <td>
 
-                  {permissions.manageOperations && (
+                  {permissions.viewLogistics && (
                     <button
                       className="log-link log-register"
                       onClick={() => navigate(`/logistica/${i.id}`)}
                     >
-                      Registrar movimientos →
+                      {permissions.manageOperations ? "Registrar movimientos" : "Ver detalle"} →
                     </button>
                   )}
 

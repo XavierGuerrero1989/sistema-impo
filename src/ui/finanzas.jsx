@@ -678,12 +678,12 @@ export default function Finanzas() {
                     </div>
                   </td>
                   <td className="fin-action-column">
-                    {permissions.manageFinances && (
+                    {permissions.viewFinances && (
                       <button
                         className="fin-btn fin-register"
                         onClick={() => navigate(`/finanzas/${op._id}`)}
                       >
-                        Registrar movimientos →
+                        {permissions.manageFinances ? "Registrar movimientos" : "Ver detalle"} →
                       </button>
                     )}
                   </td>
