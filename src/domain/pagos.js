@@ -73,8 +73,17 @@ export function condicionCumplida(condicion, estadoOperacion) {
   return false;
 }
 
+export function estadoFlujoPago(pago = {}) {
+  const estado = String(pago.estado || "PROGRAMADO").toUpperCase();
+  if (["PAGADO", "CONFIRMADO"].includes(estado)) return "CONFIRMADO";
+  if (estado === "APROBADO") return "APROBADO";
+  if (estado === "CANCELADO") return "CANCELADO";
+  return "PROGRAMADO";
+}
+
 export function estadoPagoProgramado(pago, today = new Date()) {
-  if (pago?.estado === "PAGADO" || pago?.estado === "CANCELADO") return pago.estado;
+  const flujo = estadoFlujoPago(pago);
+  if (["CONFIRMADO", "CANCELADO"].includes(flujo)) return flujo;
   if (!pago?.fechaProgramada) return "POR_HACER";
   const due = new Date(`${pago.fechaProgramada}T23:59:59`);
   const now = new Date(today);

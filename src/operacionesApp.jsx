@@ -95,7 +95,7 @@ function OperacionesApp() {
       items
         .flatMap((op) =>
           (op.pagosProgramados || [])
-            .filter((pago) => !["PAGADO", "CANCELADO"].includes(pago.estado))
+            .filter((pago) => !["PAGADO", "CONFIRMADO", "CANCELADO"].includes(pago.estado))
             .map((pago) => ({
               ...pago,
               operacionId: op.id,

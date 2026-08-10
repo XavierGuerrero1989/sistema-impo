@@ -162,7 +162,7 @@ export default function Finanzas() {
     return rows
       .flatMap((row) =>
         row._programados
-          .filter((pago) => !["PAGADO", "CANCELADO"].includes(pago.estado))
+          .filter((pago) => !["PAGADO", "CONFIRMADO", "CANCELADO"].includes(pago.estado))
           .map((pago) => ({
             ...pago,
             operacionId: row._id,
@@ -656,7 +656,7 @@ export default function Finanzas() {
                   <td>
                     {(() => {
                       const next = op._programados
-                        .filter((pago) => !["PAGADO", "CANCELADO"].includes(pago.estado))
+                        .filter((pago) => !["PAGADO", "CONFIRMADO", "CANCELADO"].includes(pago.estado))
                         .sort((a, b) => String(a.fechaProgramada || "9999").localeCompare(String(b.fechaProgramada || "9999")))[0];
                       return next ? (
                         <span className="next-payment-cell">

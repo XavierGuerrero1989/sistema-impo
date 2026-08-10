@@ -28,6 +28,7 @@ export function permissionsFor(role) {
     manageDocuments: isAdmin || isImports,
     manageFinanceDocuments: isAdmin || isFinance,
     manageFinances: isAdmin || isFinance,
+    confirmPayments: isAdmin || isFinance,
     viewLogistics: isAdmin || isImports || isReadOnly,
     viewFinances: isAdmin || isImports || isFinance || isReadOnly,
     viewDirectories: isAdmin || isImports || isReadOnly,

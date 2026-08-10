@@ -15,6 +15,7 @@ test("Finanzas solo modifica el área financiera", () => {
   assert.equal(permissions.createOperations, false);
   assert.equal(permissions.manageOperations, false);
   assert.equal(permissions.manageFinances, true);
+  assert.equal(permissions.confirmPayments, true);
   assert.equal(permissions.viewLogistics, false);
 });
 

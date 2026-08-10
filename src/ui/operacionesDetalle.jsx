@@ -15,6 +15,7 @@ import { countryFlag, countryLabel } from "../domain/paises";
 import {
   condicionCumplida,
   condicionLabel,
+  estadoFlujoPago,
   estadoPagoProgramado,
   importeCuota,
   obtenerPlanPagos,
@@ -257,6 +258,7 @@ export default function OperacionDetalle({ modo = "resumen" }) {
   const esResumen = modo === "resumen";
   const esLogistica = modo === "logistica";
   const esFinanzas = modo === "finanzas";
+  const areaVisible = esFinanzas ? "Finanzas" : "Importaciones";
   const esAdminGeneral =
     profile?.role === ROLES.ADMIN || isPrimaryAdmin(user?.email);
   const canManageAreaDocuments = esFinanzas
@@ -307,7 +309,7 @@ export default function OperacionDetalle({ modo = "resumen" }) {
       moneda,
       fechaProgramada: fechaInput,
       motivo: motivoInput.trim(),
-      estado: "POR_HACER",
+      estado: "PROGRAMADO",
       creadoAt: new Date().toISOString(),
     };
 
@@ -334,9 +336,43 @@ export default function OperacionDetalle({ modo = "resumen" }) {
     setMotivoInput("");
   };
 
+  const aprobarPago = async (programado) => {
+    if (!permissions.manageFinances || estadoFlujoPago(programado) !== "PROGRAMADO") return;
+
+    const updated = {
+      ...operacion,
+      pagosProgramados: pagosProgramados.map((pago) =>
+        pago.id === programado.id
+          ? {
+              ...pago,
+              estado: "APROBADO",
+              aprobadoAt: new Date().toISOString(),
+              aprobadoPor: user?.email || "",
+            }
+          : pago
+      ),
+      historial: [
+        ...(operacion.historial || []),
+        auditEvent("Pago programado aprobado", {
+          area: "finanzas",
+          programadoId: programado.id,
+          monto: programado.monto,
+          moneda,
+        }),
+      ],
+    };
+
+    await upsertOperacionLocal(updated);
+    setOperacion(updated);
+  };
+
   const confirmarPago = async (programado) => {
-    if (!esAdminGeneral) {
-      alert("Solo el administrador general puede confirmar pagos efectivos.");
+    if (!permissions.confirmPayments) {
+      alert("No tenés permiso para confirmar pagos efectivos.");
+      return;
+    }
+    if (estadoFlujoPago(programado) !== "APROBADO") {
+      alert("El pago debe estar aprobado antes de confirmarse.");
       return;
     }
     if (!bancoInput.trim()) return alert("Indicá el banco");
@@ -359,7 +395,7 @@ export default function OperacionDetalle({ modo = "resumen" }) {
         pago.id === programado.id
           ? {
               ...pago,
-              estado: "PAGADO",
+              estado: "CONFIRMADO",
               pagadoAt: new Date().toISOString(),
               fechaEfectiva: fechaInput,
               banco: bancoInput.trim(),
@@ -386,7 +422,7 @@ export default function OperacionDetalle({ modo = "resumen" }) {
   };
 
   const cancelarPagoProgramado = async (programado) => {
-    if (!permissions.manageFinances || programado.estado === "PAGADO") return;
+    if (!permissions.manageFinances || estadoFlujoPago(programado) === "CONFIRMADO") return;
     const updated = {
       ...operacion,
       pagosProgramados: pagosProgramados.map((pago) =>
@@ -966,7 +1002,7 @@ export default function OperacionDetalle({ modo = "resumen" }) {
             {permissions.manageOperations && (
               <button className="area-shortcut logistics" onClick={() => navigate(`/logistica/${operacion.id}`)}>
                 <span className="area-shortcut-icon">→</span>
-                <span><small>Gestión operativa</small><strong>Ir a Logística</strong></span>
+                <span><small>Gestión operativa</small><strong>Ir a Importaciones</strong></span>
                 <b>↗</b>
               </button>
             )}
@@ -1091,9 +1127,9 @@ export default function OperacionDetalle({ modo = "resumen" }) {
             <div>
               <span className="workflow-eyebrow">Agenda financiera</span>
               <h4>Programar un pago</h4>
-              <p>La programación no modifica el saldo hasta que el administrador confirme el pago.</p>
+              <p>El pago pasa por Programado, Aprobado y Confirmado. El saldo cambia únicamente al confirmarlo.</p>
             </div>
-            <span className="scheduled-state">POR HACER</span>
+            <span className="scheduled-state">PROGRAMADO</span>
           </div>
           {permissions.manageFinances ? (
           <div className="payment-scheduler-form">
@@ -1134,9 +1170,10 @@ export default function OperacionDetalle({ modo = "resumen" }) {
           {pagosProgramados.length === 0 && <p className="empty">No hay pagos programados.</p>}
           {pagosProgramados.map((programado) => {
             const status = estadoPagoProgramado(programado);
+            const workflowStatus = estadoFlujoPago(programado);
             const cuota = planPagos.find((item) => item.id === programado.cuotaId);
             return (
-              <article className={`scheduled-payment ${status.toLowerCase()}`} key={programado.id}>
+              <article className={`scheduled-payment ${status.toLowerCase()} ${workflowStatus.toLowerCase()}`} key={programado.id}>
                 <div className="scheduled-date">
                   <strong>{programado.fechaProgramada ? new Date(`${programado.fechaProgramada}T00:00:00`).getDate() : "–"}</strong>
                   <span>{programado.fechaProgramada ? new Date(`${programado.fechaProgramada}T00:00:00`).toLocaleDateString("es-AR", { month: "short" }) : "Sin fecha"}</span>
@@ -1145,16 +1182,22 @@ export default function OperacionDetalle({ modo = "resumen" }) {
                   <strong>{programado.motivo}</strong>
                   <span>{cuota?.nombre || "Pago"} · {money(programado.monto)}</span>
                 </div>
-                <span className={`scheduled-badge ${status.toLowerCase()}`}>{status.replaceAll("_", " ")}</span>
-                {programado.estado === "POR_HACER" && (
+                <span className={`scheduled-badge ${workflowStatus.toLowerCase()}`}>{workflowStatus}</span>
+                {workflowStatus === "PROGRAMADO" && permissions.manageFinances && (
                   <div className="scheduled-actions">
-                    {esAdminGeneral && (
+                    <button onClick={() => aprobarPago(programado)}>Aprobar pago</button>
+                    <button className="danger" onClick={() => cancelarPagoProgramado(programado)}>Cancelar</button>
+                  </div>
+                )}
+                {workflowStatus === "APROBADO" && permissions.manageFinances && (
+                  <div className="scheduled-actions">
+                    {permissions.confirmPayments && (
                       <button onClick={() => setConfirmandoId(programado.id)}>Confirmar pago</button>
                     )}
                     <button className="danger" onClick={() => cancelarPagoProgramado(programado)}>Cancelar</button>
                   </div>
                 )}
-                {confirmandoId === programado.id && (
+                {workflowStatus === "APROBADO" && permissions.confirmPayments && confirmandoId === programado.id && (
                   <div className="payment-confirmation">
                     <strong>Confirmar pago efectivo</strong>
                     <input type="date" value={fechaInput} onChange={(e) => setFechaInput(e.target.value)} />
@@ -1621,7 +1664,7 @@ export default function OperacionDetalle({ modo = "resumen" }) {
       <details className="detalle-card shared-collapsible" open={esResumen ? true : undefined}>
         <summary>
           <span>
-            <small>{esResumen ? "Documentación general" : `Documentación de ${modo}`}</small>
+            <small>{esResumen ? "Documentación general" : `Documentación de ${areaVisible}`}</small>
             <strong>Documentos</strong>
           </span>
           <b>{documentosVisibles.length}</b>
@@ -1803,7 +1846,7 @@ export default function OperacionDetalle({ modo = "resumen" }) {
       <details className="detalle-card shared-collapsible" open={esResumen ? true : undefined}>
         <summary>
           <span>
-            <small>{esResumen ? "Actividad completa" : `Actividad de ${modo}`}</small>
+            <small>{esResumen ? "Actividad completa" : `Actividad de ${areaVisible}`}</small>
             <strong>Historial</strong>
           </span>
           <b>{historialVisible.length}</b>
