@@ -52,7 +52,7 @@ export default function KPIs({ operaciones }) {
   const proximosPagos = operaciones
     .flatMap((op) =>
       (op.pagosProgramados || [])
-        .filter((pago) => !["PAGADO", "CANCELADO"].includes(pago.estado))
+        .filter((pago) => !["PAGADO", "CONFIRMADO", "CANCELADO"].includes(pago.estado))
         .map((pago) => ({ ...pago, operacionId: op.id }))
     )
     .sort((a, b) => String(a.fechaProgramada || "9999").localeCompare(String(b.fechaProgramada || "9999")));

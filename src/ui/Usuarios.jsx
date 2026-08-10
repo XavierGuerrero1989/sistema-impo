@@ -23,7 +23,7 @@ const ACCESS_LEVELS = [
   {
     role: ROLES.OPERACIONES,
     label: "Importaciones",
-    description: "Crea operaciones y gestiona Logística, sin modificar Finanzas.",
+    description: "Crea operaciones y gestiona Importaciones, sin modificar Finanzas.",
     icon: "→",
   },
   {

@@ -154,7 +154,7 @@ export default function OperacionesListado() {
                       </button>
                       {permissions.viewLogistics && (
                         <button className="btn-area logistics" onClick={() => navigate(`/logistica/${op.id}`)}>
-                          Logística
+                          Importaciones
                         </button>
                       )}
                       {permissions.viewFinances && (

@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {
   condicionCumplida,
   crearPlanPagos,
+  estadoFlujoPago,
   estadoPagoProgramado,
   importeCuota,
 } from "../src/domain/pagos.js";
@@ -33,4 +34,11 @@ test("clasifica pagos próximos y vencidos", () => {
     estadoPagoProgramado({ fechaProgramada: "2026-07-20", estado: "POR_HACER" }, new Date("2026-07-30")),
     "VENCIDO"
   );
+});
+
+test("normaliza el flujo programado, aprobado y confirmado", () => {
+  assert.equal(estadoFlujoPago({ estado: "POR_HACER" }), "PROGRAMADO");
+  assert.equal(estadoFlujoPago({ estado: "APROBADO" }), "APROBADO");
+  assert.equal(estadoFlujoPago({ estado: "PAGADO" }), "CONFIRMADO");
+  assert.equal(estadoFlujoPago({ estado: "CONFIRMADO" }), "CONFIRMADO");
 });

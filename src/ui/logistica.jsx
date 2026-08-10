@@ -153,7 +153,7 @@ export default function Logistica() {
 
       <header className="log-header">
         <div>
-          <h1>Logística</h1>
+          <h1>Importaciones</h1>
           <p>Seguimiento físico y operativo de las operaciones</p>
         </div>
       </header>
@@ -253,7 +253,7 @@ export default function Logistica() {
             {visibles.length === 0 && (
               <tr>
                 <td colSpan="6" className="log-empty">
-                  No hay operaciones logísticas
+                  No hay operaciones de importación
                 </td>
               </tr>
             )}

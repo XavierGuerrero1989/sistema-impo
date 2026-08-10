@@ -9,7 +9,7 @@ const navItems = [
   { to: "/proveedores", label: "Proveedores", icon: "◆", permission: "viewDirectories" },
   { to: "/forwarders", label: "Forwarders", icon: "◈", permission: "viewDirectories" },
   { to: "/agentes-aduana", label: "Agentes de aduana", icon: "◇", permission: "viewDirectories" },
-  { to: "/logistica", label: "Logística", icon: "→", permission: "viewLogistics" },
+  { to: "/logistica", label: "Importaciones", icon: "→", permission: "viewLogistics" },
   { to: "/documentos", label: "Documentos", icon: "▤" },
   { to: "/finanzas", label: "Finanzas", icon: "$", permission: "viewFinances" },
   { to: "/historial", label: "Historial", icon: "↺" },
