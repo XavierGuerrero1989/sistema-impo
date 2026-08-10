@@ -18,6 +18,7 @@ import {
   estadoFlujoPago,
   estadoPagoProgramado,
   importeCuota,
+  montoSugeridoCuota,
   obtenerPlanPagos,
 } from "../domain/pagos";
 import { getEntidadesLocal } from "../entidades/EntidadesRepo";
@@ -204,6 +205,13 @@ export default function OperacionDetalle({ modo = "resumen" }) {
       setNuevoEstado(op?.estado || "");
       setTotalOperacionInput(op?.totalOperacion || "");
 
+      const cuotaInicial = obtenerPlanPagos(op || {})[0];
+      if (cuotaInicial) {
+        setCuotaInput(cuotaInicial.id);
+        setMontoInput(String(Number(montoSugeridoCuota(op, cuotaInicial.id).toFixed(2))));
+        if (cuotaInicial.fechaEstimada) setFechaInput(cuotaInicial.fechaEstimada);
+      }
+
       // hidratar logística (si existe)
       const l = op?.logistica || {};
       setOrigen(l.origen || "");
@@ -284,6 +292,14 @@ export default function OperacionDetalle({ modo = "resumen" }) {
       );
   const planPagos = obtenerPlanPagos(operacion);
   const pagosProgramados = operacion.pagosProgramados || [];
+
+  const seleccionarCuota = (cuotaId) => {
+    const cuota = planPagos.find((item) => item.id === cuotaId);
+    setCuotaInput(cuotaId);
+    if (!cuota) return;
+    setMontoInput(String(Number(montoSugeridoCuota(operacion, cuotaId).toFixed(2))));
+    if (cuota.fechaEstimada) setFechaInput(cuota.fechaEstimada);
+  };
 
   /* ===== Finanzas acciones ===== */
   const programarPago = async () => {
@@ -1135,7 +1151,7 @@ export default function OperacionDetalle({ modo = "resumen" }) {
           <div className="payment-scheduler-form">
             <label>
               <span>Tramo</span>
-              <select value={cuotaInput} onChange={(e) => setCuotaInput(e.target.value)}>
+              <select value={cuotaInput} onChange={(e) => seleccionarCuota(e.target.value)}>
                 {planPagos.map((cuota) => (
                   <option key={cuota.id} value={cuota.id}>{cuota.nombre} · {cuota.porcentaje}%</option>
                 ))}
