@@ -272,6 +272,7 @@ export default function OperacionDetalle({ modo = "resumen" }) {
   const canManageAreaDocuments = esFinanzas
     ? permissions.manageFinanceDocuments
     : permissions.manageDocuments;
+  const canUploadAreaDocuments = permissions.uploadDocuments;
 
   const cotizacionesForwarder = operacion?.cotizacionesForwarder || [];
 
@@ -484,7 +485,7 @@ export default function OperacionDetalle({ modo = "resumen" }) {
 
   /* ===== Documentos (sube a Storage + guarda URL) ===== */
   const agregarDocumento = async () => {
-    if (!canManageAreaDocuments) return alert("No tenés permiso para modificar documentos.");
+    if (!canUploadAreaDocuments) return alert("No tenés permiso para subir documentos.");
     if (operacion.estado === "FINALIZADA") {
       alert("La operación está finalizada. No se pueden agregar documentos.");
       return;
@@ -1015,17 +1016,17 @@ export default function OperacionDetalle({ modo = "resumen" }) {
           </div>
 
           <div className="overview-actions">
-            {permissions.manageOperations && (
+            {permissions.viewLogistics && (
               <button className="area-shortcut logistics" onClick={() => navigate(`/logistica/${operacion.id}`)}>
                 <span className="area-shortcut-icon">→</span>
-                <span><small>Gestión operativa</small><strong>Ir a Importaciones</strong></span>
+                <span><small>{permissions.manageOperations ? "Gestión operativa" : "Modo consulta"}</small><strong>Ir a Importaciones</strong></span>
                 <b>↗</b>
               </button>
             )}
-            {permissions.manageFinances && (
+            {permissions.viewFinances && (
               <button className="area-shortcut finances" onClick={() => navigate(`/finanzas/${operacion.id}`)}>
                 <span className="area-shortcut-icon">$</span>
-                <span><small>Pagos y movimientos</small><strong>Ir a Finanzas</strong></span>
+                <span><small>{permissions.manageFinances ? "Pagos y movimientos" : "Modo consulta"}</small><strong>Ir a Finanzas</strong></span>
                 <b>↗</b>
               </button>
             )}
@@ -1444,14 +1445,14 @@ export default function OperacionDetalle({ modo = "resumen" }) {
                     )}
                   </div>
 
-                  {estadoActual === "EN_TRANSITO" && (
-                    <button className="save-logistics-button" onClick={guardarLogistica} disabled={!permissions.manageOperations}>
+                  {estadoActual === "EN_TRANSITO" && permissions.manageOperations && (
+                    <button className="save-logistics-button" onClick={guardarLogistica}>
                       Guardar ETA y datos logísticos
                     </button>
                   )}
                 </div>
 
-                {estadoActual !== "FINALIZADA" && proximoEstado && (
+                {estadoActual !== "FINALIZADA" && proximoEstado && permissions.manageOperations && (
                   <aside className="next-action-card">
                     <span>PRÓXIMO PASO</span>
                     <div className="next-action-icon">→</div>
@@ -1464,7 +1465,7 @@ export default function OperacionDetalle({ modo = "resumen" }) {
                     ) : (
                       <p className="ready-message">✓ Todo listo para avanzar.</p>
                     )}
-                    <button onClick={avanzar} disabled={!permissions.manageOperations}>
+                    <button onClick={avanzar}>
                       Avanzar a {estadoLabel(proximoEstado)}
                     </button>
                   </aside>
@@ -1499,13 +1500,15 @@ export default function OperacionDetalle({ modo = "resumen" }) {
                     placeholder="Ej. 12"
                   />
                 </label>
-                <button
-                  className="save-cargo-button"
-                  onClick={guardarDetallesCarga}
-                  disabled={estadoActual === "FINALIZADA" || !permissions.manageOperations}
-                >
-                  Guardar detalles
-                </button>
+                {permissions.manageOperations && (
+                  <button
+                    className="save-cargo-button"
+                    onClick={guardarDetallesCarga}
+                    disabled={estadoActual === "FINALIZADA"}
+                  >
+                    Guardar detalles
+                  </button>
+                )}
               </div>
 
               {estadoActual !== "FINALIZADA" && permissions.manageOperations && (
@@ -1745,7 +1748,7 @@ export default function OperacionDetalle({ modo = "resumen" }) {
           ))}
         </ul>
 
-        {!esResumen && canManageAreaDocuments && (
+        {!esResumen && canUploadAreaDocuments && (
         <div className="doc-form">
           <input
             placeholder="Nombre"
