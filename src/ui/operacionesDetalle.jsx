@@ -157,7 +157,7 @@ export default function OperacionDetalle({ modo = "resumen" }) {
   const [editandoTotal, setEditandoTotal] = useState(false);
 
   const [montoInput, setMontoInput] = useState("");
-  const [instrumentoInput, setInstrumentoInput] = useState("TRANSFERENCIA");
+  const [instrumentoInput, setInstrumentoInput] = useState("TRANSFERENCIA PROPIA");
   const [bancoInput, setBancoInput] = useState("");
   const [fechaInput, setFechaInput] = useState(
     new Date().toISOString().slice(0, 10)
@@ -1202,9 +1202,9 @@ export default function OperacionDetalle({ modo = "resumen" }) {
                     <strong>Confirmar pago efectivo</strong>
                     <input type="date" value={fechaInput} onChange={(e) => setFechaInput(e.target.value)} />
                     <select value={instrumentoInput} onChange={(e) => setInstrumentoInput(e.target.value)}>
-                      <option>TRANSFERENCIA</option>
-                      <option>EFECTIVO</option>
-                      <option>CHEQUE</option>
+                      <option value="TRANSFERENCIA PROPIA">Transferencia propia</option>
+                      <option value="CRÉDITO SANTANDER">Crédito Santander</option>
+                      <option value="CRÉDITO BCI">Crédito BCI</option>
                     </select>
                     <input type="text" placeholder="Banco" value={bancoInput} onChange={(e) => setBancoInput(e.target.value)} />
                     <button onClick={() => confirmarPago(programado)}>Confirmar efectivo</button>
