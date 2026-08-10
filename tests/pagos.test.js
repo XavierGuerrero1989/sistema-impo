@@ -6,6 +6,8 @@ import {
   estadoFlujoPago,
   estadoPagoProgramado,
   importeCuota,
+  montoSugeridoCuota,
+  obtenerPlanPagos,
 } from "../src/domain/pagos.js";
 
 test("crea un plan de pagos de dos tramos", () => {
@@ -41,4 +43,21 @@ test("normaliza el flujo programado, aprobado y confirmado", () => {
   assert.equal(estadoFlujoPago({ estado: "APROBADO" }), "APROBADO");
   assert.equal(estadoFlujoPago({ estado: "PAGADO" }), "CONFIRMADO");
   assert.equal(estadoFlujoPago({ estado: "CONFIRMADO" }), "CONFIRMADO");
+});
+
+test("admite planes variables y sugiere el importe de cada cuota", () => {
+  const operacion = {
+    totalOperacion: 20000,
+    condicionVenta: {
+      cuotas: [
+        { id: "cuota_1", nombre: "Adelanto", porcentaje: 50 },
+        { id: "cuota_2", nombre: "Segundo pago", porcentaje: 30 },
+        { id: "cuota_3", nombre: "Pago final", porcentaje: 20 },
+      ],
+    },
+  };
+
+  assert.equal(obtenerPlanPagos(operacion).length, 3);
+  assert.equal(montoSugeridoCuota(operacion, "cuota_2"), 6000);
+  assert.equal(montoSugeridoCuota(operacion, "cuota_3"), 4000);
 });

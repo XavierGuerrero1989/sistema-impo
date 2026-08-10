@@ -5,7 +5,7 @@ import { getProveedoresLocal } from "../proveedores/ProveedoresRepo";
 import { auditEvent } from "../auth/audit";
 import "./CrearOperacion.css";
 import { normalizarOperacion, validarOperacion } from "../domain/operacion";
-import { CONDICIONES_PAGO, crearPlanPagos } from "../domain/pagos";
+import { CONDICIONES_PAGO, importeCuota } from "../domain/pagos";
 import { INCOTERMS, INCOTERMS_VERSION } from "../domain/incoterms";
 
 export default function CrearOperacion() {
@@ -21,13 +21,24 @@ export default function CrearOperacion() {
     incoterm: "",
     moneda: "USD",
     totalOperacion: "",
-    porcentajeAdelanto: "30",
-    porcentajeSaldo: "70",
-    condicionSaldo: "ARRIBO_CHILE",
-    fechaAdelanto: "",
-    fechaSaldo: "",
     observaciones: "",
   });
+  const [cuotas, setCuotas] = useState([
+    {
+      id: "cuota_1",
+      nombre: "Adelanto",
+      porcentaje: "30",
+      condicion: "AL_CREAR",
+      fechaEstimada: "",
+    },
+    {
+      id: "cuota_2",
+      nombre: "Saldo",
+      porcentaje: "70",
+      condicion: "ARRIBO_CHILE",
+      fechaEstimada: "",
+    },
+  ]);
 
   useEffect(() => {
 
@@ -52,6 +63,48 @@ export default function CrearOperacion() {
 
   };
 
+  const nuevaCuota = (index) => ({
+    id: `cuota_${Date.now()}_${index}`,
+    nombre: `Pago ${index}`,
+    porcentaje: "0",
+    condicion: "SOLICITUD_PROVEEDOR",
+    fechaEstimada: "",
+  });
+
+  const actualizarCuota = (id, field, value) => {
+    setCuotas((current) => current.map((cuota) =>
+      cuota.id === id ? { ...cuota, [field]: value } : cuota
+    ));
+  };
+
+  const ajustarCantidadCuotas = (cantidadSolicitada) => {
+    const cantidad = Math.max(1, Math.trunc(Number(cantidadSolicitada || 1)));
+    setCuotas((current) => {
+      if (cantidad <= current.length) return current.slice(0, cantidad);
+      const adicionales = Array.from(
+        { length: cantidad - current.length },
+        (_, offset) => nuevaCuota(current.length + offset + 1)
+      );
+      return [...current, ...adicionales];
+    });
+  };
+
+  const eliminarCuota = (id) => {
+    if (cuotas.length === 1) return;
+    setCuotas((current) => current.filter((cuota) => cuota.id !== id));
+  };
+
+  const totalDistribuido = cuotas.reduce(
+    (sum, cuota) => sum + Number(cuota.porcentaje || 0),
+    0
+  );
+
+  const money = (amount) => new Intl.NumberFormat("es-CL", {
+    style: "currency",
+    currency: form.moneda,
+    maximumFractionDigits: form.moneda === "CLP" ? 0 : 2,
+  }).format(Number(amount || 0));
+
   const crearOperacion = async () => {
 
     const proveedorSeleccionado = proveedores.find(
@@ -73,14 +126,16 @@ export default function CrearOperacion() {
       return;
     }
 
-    const porcentajeAdelanto = Number(form.porcentajeAdelanto || 0);
-    const porcentajeSaldo = Number(form.porcentajeSaldo || 0);
-    if (porcentajeAdelanto < 0 || porcentajeSaldo < 0) {
-      alert("Los porcentajes no pueden ser negativos");
+    if (cuotas.some((cuota) => !cuota.nombre.trim())) {
+      alert("Todos los pagos deben tener un nombre");
       return;
     }
-    if (porcentajeAdelanto + porcentajeSaldo !== 100) {
-      alert("El adelanto y el saldo deben sumar 100%");
+    if (cuotas.some((cuota) => Number(cuota.porcentaje || 0) <= 0)) {
+      alert("Todos los pagos deben tener un porcentaje mayor a 0%");
+      return;
+    }
+    if (Math.abs(totalDistribuido - 100) > 0.001) {
+      alert("El plan de pagos debe sumar exactamente 100%");
       return;
     }
 
@@ -99,13 +154,13 @@ export default function CrearOperacion() {
 
       totalOperacion: Number(form.totalOperacion || 0),
       condicionVenta: {
-        cuotas: crearPlanPagos({
-          porcentajeAdelanto,
-          porcentajeSaldo,
-          condicionSaldo: form.condicionSaldo,
-          fechaAdelanto: form.fechaAdelanto,
-          fechaSaldo: form.fechaSaldo,
-        }),
+        cuotas: cuotas.map((cuota, index) => ({
+          id: cuota.id || `cuota_${index + 1}`,
+          nombre: cuota.nombre.trim(),
+          porcentaje: Number(cuota.porcentaje || 0),
+          condicion: cuota.condicion,
+          fechaEstimada: cuota.fechaEstimada || null,
+        })),
       },
       pagosProgramados: [],
 
@@ -262,74 +317,92 @@ export default function CrearOperacion() {
 
         <section className="sale-condition">
           <div className="sale-condition-head">
-            <span>Condición comercial</span>
-            <h2>Plan de pagos</h2>
-            <p>Definí cómo se distribuirá el valor de esta operación.</p>
+            <div>
+              <span>Condición comercial</span>
+              <h2>Plan de pagos</h2>
+              <p>Definí cuántos pagos tendrá la operación y cómo se distribuirá su valor.</p>
+            </div>
+            <label className="installment-count">
+              <span>Cantidad de pagos</span>
+              <input
+                type="number"
+                min="1"
+                value={cuotas.length}
+                onChange={(event) => ajustarCantidadCuotas(event.target.value)}
+              />
+            </label>
           </div>
 
           <div className="payment-split">
-            <div className="payment-part advance">
-              <span>Primer tramo</span>
-              <strong>Adelanto</strong>
-              <label>Porcentaje</label>
-              <div className="percent-input">
-                <input
-                  name="porcentajeAdelanto"
-                  type="number"
-                  min="0"
-                  max="100"
-                  value={form.porcentajeAdelanto}
-                  onChange={onChange}
-                />
-                <b>%</b>
-              </div>
-              <label>Fecha estimada</label>
-              <input
-                name="fechaAdelanto"
-                type="date"
-                value={form.fechaAdelanto}
-                onChange={onChange}
-              />
-            </div>
+            {cuotas.map((cuota, index) => (
+              <div className="payment-part" key={cuota.id}>
+                <div className="payment-part-head">
+                  <span>Pago {index + 1} de {cuotas.length}</span>
+                  {cuotas.length > 1 && (
+                    <button type="button" onClick={() => eliminarCuota(cuota.id)}>Eliminar</button>
+                  )}
+                </div>
 
-            <div className="payment-part balance">
-              <span>Segundo tramo</span>
-              <strong>Saldo</strong>
-              <label>Porcentaje</label>
-              <div className="percent-input">
+                <label>Nombre del pago</label>
                 <input
-                  name="porcentajeSaldo"
-                  type="number"
-                  min="0"
-                  max="100"
-                  value={form.porcentajeSaldo}
-                  onChange={onChange}
+                  value={cuota.nombre}
+                  placeholder={`Ej. ${index === 0 ? "Adelanto" : `Pago ${index + 1}`}`}
+                  onChange={(event) => actualizarCuota(cuota.id, "nombre", event.target.value)}
                 />
-                <b>%</b>
+
+                <label>Porcentaje</label>
+                <div className="percent-input">
+                  <input
+                    type="number"
+                    min="0.01"
+                    max="100"
+                    step="0.01"
+                    value={cuota.porcentaje}
+                    onChange={(event) => actualizarCuota(cuota.id, "porcentaje", event.target.value)}
+                  />
+                  <b>%</b>
+                </div>
+
+                <div className="installment-value">
+                  <span>Importe correspondiente</span>
+                  <strong>{money(importeCuota(cuota, form.totalOperacion))}</strong>
+                </div>
+
+                <label>Condición de pago</label>
+                <select
+                  value={cuota.condicion}
+                  onChange={(event) => actualizarCuota(cuota.id, "condicion", event.target.value)}
+                >
+                  {CONDICIONES_PAGO.map((item) => (
+                    <option key={item.value} value={item.value}>{item.label}</option>
+                  ))}
+                </select>
+
+                <label>Fecha estimada, si corresponde</label>
+                <input
+                  type="date"
+                  value={cuota.fechaEstimada}
+                  onChange={(event) => actualizarCuota(cuota.id, "fechaEstimada", event.target.value)}
+                />
               </div>
-              <label>Condición de pago</label>
-              <select name="condicionSaldo" value={form.condicionSaldo} onChange={onChange}>
-                {CONDICIONES_PAGO.filter((item) => item.value !== "AL_CREAR").map((item) => (
-                  <option key={item.value} value={item.value}>{item.label}</option>
-                ))}
-              </select>
-              <label>Fecha estimada, si corresponde</label>
-              <input
-                name="fechaSaldo"
-                type="date"
-                value={form.fechaSaldo}
-                onChange={onChange}
-              />
-            </div>
+            ))}
           </div>
 
+          <button
+            type="button"
+            className="add-installment"
+            onClick={() => ajustarCantidadCuotas(cuotas.length + 1)}
+          >
+            ＋ Agregar otro pago
+          </button>
+
           <div className={`payment-total ${
-            Number(form.porcentajeAdelanto || 0) + Number(form.porcentajeSaldo || 0) === 100
+            Math.abs(totalDistribuido - 100) < 0.001
               ? "valid"
               : "invalid"
           }`}>
             <span>Total distribuido</span>
-            <strong>{Number(form.porcentajeAdelanto || 0) + Number(form.porcentajeSaldo || 0)}%</strong>
+            <strong>{totalDistribuido}%</strong>
             <small>Debe sumar exactamente 100%</small>
           </div>
         </section>

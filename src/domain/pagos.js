@@ -51,6 +51,11 @@ export function importeCuota(cuota, total) {
   return Math.max(0, Number(total || 0) * Number(cuota?.porcentaje || 0) / 100);
 }
 
+export function montoSugeridoCuota(operacion = {}, cuotaId) {
+  const cuota = obtenerPlanPagos(operacion).find((item) => item.id === cuotaId);
+  return cuota ? importeCuota(cuota, operacion.totalOperacion) : 0;
+}
+
 export function condicionCumplida(condicion, estadoOperacion) {
   const estado = String(estadoOperacion || "PLANIFICADA");
   const orden = [
