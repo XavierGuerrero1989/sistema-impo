@@ -486,6 +486,47 @@ body.preview-open { overflow: hidden; }
   border-top: 1px solid #edf0f5;
 }
 
+.document-storage-meter {
+  margin: 18px 22px 0;
+  padding: 13px 15px;
+  border: 1px solid #dfe7f1;
+  border-radius: 13px;
+  background: #f8fafc;
+}
+
+.document-storage-copy {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 9px;
+  color: #64748b;
+  font-size: .76rem;
+}
+
+.document-storage-copy strong { color: #26344a; }
+.document-storage-track {
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e2e8f0;
+}
+.document-storage-track span {
+  display: block;
+  height: 100%;
+  min-width: 2px;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #2563eb, #06b6d4);
+  transition: width .25s ease;
+}
+.document-storage-meter.warning .document-storage-track span { background: #f59e0b; }
+.document-storage-meter.danger .document-storage-track span { background: #ef4444; }
+.document-storage-meter > small {
+  display: block;
+  margin-top: 7px;
+  color: #8491a4;
+  font-size: .68rem;
+}
+
 .shared-collapsible > .doc-form {
   margin: 0 22px 22px;
 }
@@ -548,6 +589,22 @@ body.preview-open { overflow: hidden; }
 
 .file-input{
   max-width:220px;
+}
+
+.doc-file-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.doc-file-field small {
+  color: #64748b;
+  font-size: .7rem;
+  font-weight: 600;
+}
+
+@media (max-width: 640px) {
+  .document-storage-copy { flex-direction: column; gap: 3px; }
 }
 
 .total-operacion {
