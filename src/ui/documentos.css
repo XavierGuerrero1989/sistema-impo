@@ -255,72 +255,6 @@
 }
 
 /* =========================
-   MODAL PREVIEW
-========================= */
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(15, 23, 42, 0.55);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 18px;
-  box-sizing: border-box;
-  z-index: 99999;
-}
-
-.documents-preview-open {
-  overflow: hidden;
-}
-
-.modal {
-  width: min(1100px, 100%);
-  height: min(780px, calc(100dvh - 36px));
-  background: #ffffff;
-  border-radius: 16px;
-  border: 1px solid #e5e7eb;
-  overflow: hidden;
-  box-shadow: 0 20px 60px rgba(2, 6, 23, 0.25);
-  display: flex;
-  flex-direction: column;
-}
-
-.modal-header {
-  padding: 14px 16px;
-  background: #f8fafc;
-  border-bottom: 1px solid #e5e7eb;
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  align-items: center;
-}
-
-.modal-title {
-  display: flex;
-  gap: 8px;
-  align-items: baseline;
-  flex-wrap: wrap;
-  color: #0f172a;
-}
-
-.modal-actions {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-.modal-body {
-  flex: 1;
-  background: #ffffff;
-}
-
-.pdf-frame {
-  width: 100%;
-  height: 100%;
-  border: none;
-}
-
-/* =========================
    RESPONSIVE
    Orden actual de columnas:
    1 Documento | 2 Operación | 3 Tipo | 4 Fecha | 5 Acciones
@@ -341,16 +275,5 @@
   .documentos-table th:nth-child(2),
   .documentos-table td:nth-child(2) {
     display: none;
-  }
-}
-
-@media (max-width: 720px) {
-  .modal-overlay {
-    padding: 10px;
-  }
-
-  .modal {
-    height: calc(100dvh - 20px);
-    border-radius: 12px;
   }
 }

@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import { createPortal } from "react-dom";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   getOperacionesLocal,
@@ -177,22 +176,8 @@ export default function OperacionDetalle({ modo = "resumen" }) {
   const [docRef, setDocRef] = useState("");
   const [docFile, setDocFile] = useState(null);
   const [subiendoDoc, setSubiendoDoc] = useState(false);
-  const [documentoPreview, setDocumentoPreview] = useState(null);
 
   const [totalOperacionInput, setTotalOperacionInput] = useState("");
-
-  useEffect(() => {
-    if (!documentoPreview) return undefined;
-    const cerrarConEscape = (event) => {
-      if (event.key === "Escape") setDocumentoPreview(null);
-    };
-    document.addEventListener("keydown", cerrarConEscape);
-    document.body.classList.add("preview-open");
-    return () => {
-      document.removeEventListener("keydown", cerrarConEscape);
-      document.body.classList.remove("preview-open");
-    };
-  }, [documentoPreview]);
 
   useEffect(() => {
     async function load() {
@@ -1765,13 +1750,6 @@ export default function OperacionDetalle({ modo = "resumen" }) {
                 </span>
                 {d.archivo?.downloadURL && (
                   <span className="doc-file-actions">
-                    <button
-                      type="button"
-                      className="btn-link preview"
-                      onClick={() => setDocumentoPreview(d)}
-                    >
-                      Vista previa
-                    </button>
                     <a
                       href={d.archivo.downloadURL}
                       target="_blank"
@@ -1889,52 +1867,6 @@ export default function OperacionDetalle({ modo = "resumen" }) {
         </div>
         )}
       </details>
-
-      {documentoPreview?.archivo?.downloadURL && createPortal(
-        <div
-          className="document-preview-backdrop"
-          role="presentation"
-          onMouseDown={(event) => {
-            if (event.target === event.currentTarget) setDocumentoPreview(null);
-          }}
-        >
-          <section
-            className="document-preview-modal"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="document-preview-title"
-          >
-            <header>
-              <div>
-                <small>Vista previa del documento</small>
-                <strong id="document-preview-title">{documentoPreview.nombre}</strong>
-              </div>
-              <button
-                type="button"
-                aria-label="Cerrar vista previa"
-                onClick={() => setDocumentoPreview(null)}
-              >
-                ×
-              </button>
-            </header>
-            <iframe
-              title={`Vista previa de ${documentoPreview.nombre}`}
-              src={documentoPreview.archivo.downloadURL}
-            />
-            <footer>
-              <span>{documentoPreview.archivo.nombre}</span>
-              <a
-                href={documentoPreview.archivo.downloadURL}
-                target="_blank"
-                rel="noreferrer"
-              >
-                Abrir en otra pestaña
-              </a>
-            </footer>
-          </section>
-        </div>,
-        document.body
-      )}
 
       {/* Historial */}
       <details className="detalle-card shared-collapsible" open={esResumen ? true : undefined}>

@@ -47,8 +47,8 @@ export const assistantTopics = [
   {
     id: "documentos",
     title: "Subir un documento",
-    keywords: ["subir documento", "cargar documento", "documentos", "archivo", "adjuntar", "preview", "vista previa"],
-    answer: "Abrí la sección correspondiente de la operación, desplegá Documentos, elegí el tipo y subí el archivo. Podés usar “Preview” para revisarlo. Un documento cargado se ve negro, aprobado verde, rechazado rojo y eliminado tachado.",
+    keywords: ["subir documento", "cargar documento", "documentos", "archivo", "adjuntar", "descargar documento"],
+    answer: "Abrí la sección correspondiente de la operación, desplegá Documentos, elegí el tipo y subí el archivo. Podés descargarlo desde su enlace. Un documento cargado se ve negro, aprobado verde, rechazado rojo y eliminado tachado.",
   },
   {
     id: "permisos-documentos",
@@ -152,4 +152,3 @@ export function findAssistantAnswer(question, permissions = {}, pathname = "/") 
 
   return bestScore >= 2 ? best : null;
 }
-

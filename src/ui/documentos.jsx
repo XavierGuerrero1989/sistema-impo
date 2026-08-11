@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import { createPortal } from "react-dom";
 import { getOperacionesLocal } from "../offline/operacionesRepo";
 import { useNavigate } from "react-router-dom";
 import "./documentos.css";
@@ -20,9 +19,6 @@ export default function Documentos() {
   const [filtroTipo, setFiltroTipo] = useState("TODOS");
   const [search, setSearch] = useState("");
   const [filtroEstado, setFiltroEstado] = useState("TODOS");
-
-  // Modal preview
-  const [preview, setPreview] = useState(null); // { url, titulo, subtitulo }
 
   const navigate = useNavigate();
 
@@ -93,30 +89,6 @@ export default function Documentos() {
       ].some((value) => String(value || "").toLowerCase().includes(query));
     });
   }, [documentos, filtroTipo, filtroEstado, search]);
-
-  const openPreview = (doc) => {
-    if (!doc.downloadURL) return;
-    setPreview({
-      url: doc.downloadURL,
-      titulo: doc.nombre,
-      subtitulo: `${doc.proveedor} · ${doc.operacionId}`,
-    });
-  };
-
-  const closePreview = () => setPreview(null);
-
-  useEffect(() => {
-    if (!preview) return undefined;
-    const closeWithEscape = (event) => {
-      if (event.key === "Escape") setPreview(null);
-    };
-    document.addEventListener("keydown", closeWithEscape);
-    document.body.classList.add("documents-preview-open");
-    return () => {
-      document.removeEventListener("keydown", closeWithEscape);
-      document.body.classList.remove("documents-preview-open");
-    };
-  }, [preview]);
 
   return (
     <section className="documentos-page">
@@ -241,15 +213,6 @@ export default function Documentos() {
                   {/* Acciones */}
                   <td>
                     <div className="doc-actions">
-                      <button
-                        className={`btn-pill ${hasFile ? "" : "disabled"}`}
-                        onClick={() => openPreview(doc)}
-                        disabled={!hasFile}
-                        title={!hasFile ? "No hay archivo para previsualizar" : "Previsualizar PDF"}
-                      >
-                        Preview
-                      </button>
-
                       {hasFile ? (
                         <a
                           className="btn-pill ghost"
@@ -280,45 +243,6 @@ export default function Documentos() {
         </table>
       </div>
 
-      {/* Modal Preview */}
-      {preview && createPortal(
-        <div className="modal-overlay" onClick={closePreview}>
-          <div
-            className="modal"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="global-document-preview-title"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="modal-header">
-              <div className="modal-title">
-                <strong id="global-document-preview-title">{preview.titulo}</strong>
-                <span className="muted">·</span>
-                <span className="muted">{preview.subtitulo}</span>
-              </div>
-
-              <div className="modal-actions">
-                <a
-                  className="btn-pill ghost"
-                  href={preview.url}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  Descargar
-                </a>
-                <button className="btn-pill" onClick={closePreview}>
-                  Cerrar
-                </button>
-              </div>
-            </div>
-
-            <div className="modal-body">
-              <iframe className="pdf-frame" src={preview.url} title="PDF Preview" />
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
     </section>
   );
 }
