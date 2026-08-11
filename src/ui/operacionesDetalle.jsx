@@ -6,7 +6,7 @@ import {
   upsertOperacionLocal,
 } from "../offline/operacionesRepo";
 import { storage } from "../firebase/firebase";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import "./operacionesDetalle.css";
 import { auditEvent } from "../auth/audit";
 import { useAuth } from "../auth/AuthContext";
@@ -46,6 +46,10 @@ const TIPOS_CARGA = [
   "LTL · Less than Truck Load",
   "AWB · Aéreo",
 ];
+
+const MAX_DOCUMENTOS_POR_OPERACION = 20;
+const MAX_DOCUMENTO_BYTES = 3 * 1024 * 1024;
+const MAX_DOCUMENTOS_BYTES = 60 * 1024 * 1024;
 
 const TIPOS_CARGA_ANTERIORES = {
   "Carga suelta": "LCL · Less than Container Load",
@@ -283,6 +287,24 @@ export default function OperacionDetalle({ modo = "resumen" }) {
     documento,
     index,
   }));
+  const documentosAlmacenados = documentosConIndice.filter(
+    ({ documento }) => documento.estado !== "ELIMINADO"
+      && (documento.archivo?.storagePath || documento.archivo?.downloadURL)
+  );
+  const espacioDocumentosBytes = documentosAlmacenados.reduce(
+    (totalBytes, { documento }) => totalBytes + Number(documento.archivo?.size || 0),
+    0
+  );
+  const espacioDocumentosMb = espacioDocumentosBytes / (1024 * 1024);
+  const porcentajeEspacioDocumentos = Math.min(
+    100,
+    (espacioDocumentosBytes / MAX_DOCUMENTOS_BYTES) * 100
+  );
+  const nivelEspacioDocumentos = porcentajeEspacioDocumentos >= 90
+    ? "danger"
+    : porcentajeEspacioDocumentos >= 70
+      ? "warning"
+      : "ok";
   const documentosVisibles = esResumen
     ? documentosConIndice
     : documentosConIndice.filter(({ documento }) => inferDocumentArea(documento) === modo);
@@ -495,8 +517,12 @@ export default function OperacionDetalle({ modo = "resumen" }) {
     if (!docFile) return alert("Adjuntá el PDF del documento");
     if (docFile.type !== "application/pdf")
       return alert("Solo se permiten archivos PDF");
-    if (docFile.size > 10 * 1024 * 1024)
-      return alert("El archivo no puede superar los 10 MB");
+    if (docFile.size > MAX_DOCUMENTO_BYTES)
+      return alert("El archivo no puede superar los 3 MB");
+    if (documentosAlmacenados.length >= MAX_DOCUMENTOS_POR_OPERACION)
+      return alert("La operación ya alcanzó el máximo de 20 documentos");
+    if (espacioDocumentosBytes + docFile.size > MAX_DOCUMENTOS_BYTES)
+      return alert("La operación superaría el máximo de 60 MB en documentos");
 
     setSubiendoDoc(true);
 
@@ -570,6 +596,14 @@ export default function OperacionDetalle({ modo = "resumen" }) {
 
     try {
       const eliminacion = auditEvent("Documento eliminado");
+      const referenciaArchivo = doc.archivo?.storagePath || doc.archivo?.downloadURL;
+      if (referenciaArchivo) {
+        try {
+          await deleteObject(ref(storage, referenciaArchivo));
+        } catch (storageError) {
+          if (storageError?.code !== "storage/object-not-found") throw storageError;
+        }
+      }
       const updated = {
         ...operacion,
         documentos: (operacion.documentos || []).map((item, itemIndex) =>
@@ -579,6 +613,14 @@ export default function OperacionDetalle({ modo = "resumen" }) {
                 estado: "ELIMINADO",
                 eliminadoAt: eliminacion.fecha,
                 eliminadoPor: eliminacion.actorEmail,
+                archivo: item.archivo
+                  ? {
+                      ...item.archivo,
+                      downloadURL: null,
+                      eliminadoDeStorage: true,
+                      eliminadoDeStorageAt: eliminacion.fecha,
+                    }
+                  : item.archivo,
               }
             : item
         ),
@@ -595,7 +637,7 @@ export default function OperacionDetalle({ modo = "resumen" }) {
       setOperacion(updated);
     } catch (e) {
       console.error(e);
-      alert("Error eliminando documento");
+      alert("No se pudo borrar el archivo de Firebase. El documento no fue eliminado.");
     }
   };
 
@@ -1689,6 +1731,26 @@ export default function OperacionDetalle({ modo = "resumen" }) {
           <b>{documentosVisibles.length}</b>
         </summary>
 
+        <div className={`document-storage-meter ${nivelEspacioDocumentos}`}>
+          <div className="document-storage-copy">
+            <span>Espacio utilizado en documentos</span>
+            <strong>
+              {espacioDocumentosMb.toLocaleString("es-AR", { maximumFractionDigits: 1 })} MB de 60 MB · {Math.round(porcentajeEspacioDocumentos)}%
+            </strong>
+          </div>
+          <div
+            className="document-storage-track"
+            role="progressbar"
+            aria-label="Espacio utilizado por documentos en la operación"
+            aria-valuemin="0"
+            aria-valuemax="60"
+            aria-valuenow={Number(espacioDocumentosMb.toFixed(1))}
+          >
+            <span style={{ width: `${porcentajeEspacioDocumentos}%` }} />
+          </div>
+          <small>{documentosAlmacenados.length} de 20 archivos almacenados</small>
+        </div>
+
         <ul className="docs-list">
           {documentosVisibles.length === 0 && (
             <li className="empty">No hay documentos de esta área</li>
@@ -1796,13 +1858,26 @@ export default function OperacionDetalle({ modo = "resumen" }) {
             onChange={(e) => setDocRef(e.target.value)}
           />
 
-          <input
-            className="file-input"
-            type="file"
-            accept="application/pdf"
-            disabled={operacion.estado === "FINALIZADA"}
-            onChange={(e) => setDocFile(e.target.files[0] || null)}
-          />
+          <div className="doc-file-field">
+            <input
+              className="file-input"
+              type="file"
+              accept="application/pdf"
+              disabled={operacion.estado === "FINALIZADA"}
+              aria-describedby="document-file-help"
+              onChange={(e) => {
+                const archivo = e.target.files[0] || null;
+                if (archivo && archivo.size > MAX_DOCUMENTO_BYTES) {
+                  alert("El archivo no puede superar los 3 MB");
+                  e.target.value = "";
+                  setDocFile(null);
+                  return;
+                }
+                setDocFile(archivo);
+              }}
+            />
+            <small id="document-file-help">Solo archivos PDF · Máximo 3 MB por archivo · 20 archivos por operación</small>
+          </div>
 
           <button
             className="btn-secondary"
