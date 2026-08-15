@@ -4,6 +4,7 @@ import "./operacionesListado.css";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 import { calcularFinanzas, ESTADOS_OPERACION } from "../domain/operacion";
+import { confirmAction } from "./sweetAlerts";
 
 const ESTADOS = ESTADOS_OPERACION;
 
@@ -45,9 +46,12 @@ export default function OperacionesListado() {
     }).format(Number(n || 0));
 
   const enviarAPapelera = async (operacion) => {
-    const confirmar = window.confirm(
-      `¿Enviar la operación "${operacion.id}" a la papelera? Podrás restaurarla más adelante.`
-    );
+    const confirmar = await confirmAction({
+      title: "Enviar operación a la papelera",
+      text: `La operación ${operacion.id} dejará de aparecer en los listados, pero podrás restaurarla.`,
+      confirmText: "Enviar a papelera",
+      danger: true,
+    });
     if (!confirmar) return;
 
     setEnviandoPapelera(operacion.id);

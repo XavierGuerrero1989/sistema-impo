@@ -22,6 +22,7 @@ import {
 } from "../domain/pagos";
 import { getEntidadesLocal } from "../entidades/EntidadesRepo";
 import { incotermLabel } from "../domain/incoterms";
+import { confirmAction } from "./sweetAlerts";
 
 const ESTADOS = [
   "PLANIFICADA",
@@ -576,7 +577,12 @@ export default function OperacionDetalle({ modo = "resumen" }) {
     const doc = (operacion.documentos || [])[index];
     if (!doc) return;
 
-    const ok = window.confirm(`Eliminar documento "${doc.nombre}"?`);
+    const ok = await confirmAction({
+      title: "Eliminar documento",
+      text: `¿Querés eliminar “${doc.nombre}”? El archivo también se borrará de Firebase.`,
+      confirmText: "Eliminar documento",
+      danger: true,
+    });
     if (!ok) return;
 
     try {
@@ -821,7 +827,12 @@ export default function OperacionDetalle({ modo = "resumen" }) {
 
   const seleccionarForwarder = async (cotizacion) => {
     if (!permissions.manageOperations || operacion.estado === "FINALIZADA") return;
-    if (!window.confirm(`¿Adjudicar la operación a ${cotizacion.forwarderNombre}?`)) return;
+    const confirmado = await confirmAction({
+      title: "Adjudicar forwarder",
+      text: `${cotizacion.forwarderNombre} quedará como forwarder oficial de la operación.`,
+      confirmText: "Adjudicar",
+    });
+    if (!confirmado) return;
     const updated = {
       ...operacion,
       forwarderId: cotizacion.forwarderId,
@@ -951,9 +962,12 @@ export default function OperacionDetalle({ modo = "resumen" }) {
       return;
     }
 
-    const confirmar = window.confirm(
-      "¿Seguro que deseas finalizar esta operación?"
-    );
+    const confirmar = await confirmAction({
+      title: "Finalizar operación",
+      text: "La operación quedará cerrada y ya no admitirá nuevas modificaciones.",
+      confirmText: "Finalizar operación",
+      danger: true,
+    });
     if (!confirmar) return;
 
     const updated = {

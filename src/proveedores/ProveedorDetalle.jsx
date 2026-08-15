@@ -10,6 +10,7 @@ import { pushProveedor } from "../sync/PushProveedor";
 import "./proveedores.css";
 import { useAuth } from "../auth/AuthContext";
 import { countryLabel } from "../domain/paises";
+import { confirmAction } from "../ui/sweetAlerts";
 
 export default function ProveedorDetalle() {
 
@@ -159,9 +160,12 @@ export default function ProveedorDetalle() {
   async function handleEliminar() {
     if (!permissions.manageProviders) return;
 
-    const confirmar = window.confirm(
-      "¿Seguro que quieres eliminar este proveedor?"
-    );
+    const confirmar = await confirmAction({
+      title: "Eliminar proveedor",
+      text: "Esta acción quitará el proveedor del directorio.",
+      confirmText: "Eliminar",
+      danger: true,
+    });
 
     if (!confirmar) return;
 
