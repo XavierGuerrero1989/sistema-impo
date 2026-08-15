@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { getOperacionesLocal } from "../offline/operacionesRepo";
+import { deleteOperacionLocal, getOperacionesLocal } from "../offline/operacionesRepo";
 import "./operacionesListado.css";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
@@ -11,8 +11,9 @@ export default function OperacionesListado() {
   const [operaciones, setOperaciones] = useState([]);
   const [estadoFiltro, setEstadoFiltro] = useState("ALL");
   const [search, setSearch] = useState("");
+  const [enviandoPapelera, setEnviandoPapelera] = useState("");
   const navigate = useNavigate();
-  const { permissions } = useAuth();
+  const { permissions, user } = useAuth();
 
   useEffect(() => {
     const load = () => getOperacionesLocal().then(setOperaciones).catch(console.error);
@@ -42,6 +43,26 @@ export default function OperacionesListado() {
       currency: moneda,
       maximumFractionDigits: 0,
     }).format(Number(n || 0));
+
+  const enviarAPapelera = async (operacion) => {
+    const confirmar = window.confirm(
+      `¿Enviar la operación "${operacion.id}" a la papelera? Podrás restaurarla más adelante.`
+    );
+    if (!confirmar) return;
+
+    setEnviandoPapelera(operacion.id);
+    try {
+      await deleteOperacionLocal(operacion.id, {
+        deletedAt: new Date().toISOString(),
+        deletedBy: user?.email || null,
+      });
+    } catch (error) {
+      console.error(error);
+      alert("No se pudo enviar la operación a la papelera.");
+    } finally {
+      setEnviandoPapelera("");
+    }
+  };
 
   return (
     <section className="operaciones-listado-page">
@@ -160,6 +181,15 @@ export default function OperacionesListado() {
                       {permissions.viewFinances && (
                         <button className="btn-area finances" onClick={() => navigate(`/finanzas/${op.id}`)}>
                           Finanzas
+                        </button>
+                      )}
+                      {permissions.deleteOperations && (
+                        <button
+                          className="btn-ver danger"
+                          disabled={enviandoPapelera === op.id}
+                          onClick={() => enviarAPapelera(op)}
+                        >
+                          {enviandoPapelera === op.id ? "Enviando…" : "Enviar a papelera"}
                         </button>
                       )}
                     </div>

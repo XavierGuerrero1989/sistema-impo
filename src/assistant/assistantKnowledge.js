@@ -15,6 +15,13 @@ export const assistantTopics = [
     permission: "createOperations",
   },
   {
+    id: "eliminar-operacion",
+    title: "Eliminar una operación",
+    keywords: ["eliminar operacion", "borrar operacion", "papelera", "restaurar operacion", "eliminar definitivamente"],
+    answer: "Como Admin, entrá en Operaciones y elegí “Enviar a papelera”. Desde Papelera podés restaurarla o eliminarla definitivamente. La eliminación definitiva exige escribir el ID exacto y también borra sus archivos de Firebase.",
+    permission: "deleteOperations",
+  },
+  {
     id: "plan-pagos",
     title: "Armar el plan de pagos",
     keywords: ["plan de pagos", "tramos", "porcentaje", "adelanto", "cuotas", "condicion comercial"],
@@ -91,7 +98,7 @@ export const assistantTopics = [
 
 const routeContext = [
   { match: /^\/operaciones\/nueva/, label: "la creación de una operación", topicIds: ["crear-operacion", "plan-pagos"] },
-  { match: /^\/operaciones/, label: "Operaciones", topicIds: ["crear-operacion", "plan-pagos", "forwarder"] },
+  { match: /^\/operaciones/, label: "Operaciones", topicIds: ["crear-operacion", "eliminar-operacion", "plan-pagos", "forwarder"] },
   { match: /^\/finanzas/, label: "Finanzas", topicIds: ["programar-pago", "plan-pagos", "medios-pago", "documentos"] },
   { match: /^\/logistica/, label: "Importaciones", topicIds: ["importaciones", "carga", "forwarder", "agente-aduana"] },
   { match: /^\/documentos/, label: "Documentos", topicIds: ["documentos", "permisos-documentos"] },

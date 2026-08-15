@@ -64,7 +64,7 @@ export async function getOperacionByIdLocal(id) {
 /* ======================================================
    MARCAR OPERACIÓN COMO ELIMINADA (SOFT DELETE)
 ====================================================== */
-export async function deleteOperacionLocal(id) {
+export async function deleteOperacionLocal(id, metadata = {}) {
   const now = Date.now();
 
   const op = await dbLocal.operaciones.get(id);
@@ -72,6 +72,7 @@ export async function deleteOperacionLocal(id) {
 
   const deletedOp = {
     ...op,
+    ...metadata,
     deleted: true,
     dirty: true,
     updatedAtLocal: now,
@@ -85,6 +86,20 @@ export async function deleteOperacionLocal(id) {
       op: "delete",
       createdAt: now,
     });
+  });
+
+  window.dispatchEvent(new CustomEvent("data:changed", {
+    detail: { entityType: "operacion", entityId: id },
+  }));
+}
+
+export async function deleteOperacionPermanenteLocal(id) {
+  await dbLocal.transaction("rw", dbLocal.operaciones, dbLocal.outbox, async () => {
+    await dbLocal.operaciones.delete(id);
+    await dbLocal.outbox
+      .where("[entityType+entityId]")
+      .equals(["operacion", id])
+      .delete();
   });
 
   window.dispatchEvent(new CustomEvent("data:changed", {
