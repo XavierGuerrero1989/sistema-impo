@@ -179,6 +179,22 @@
   background: #f1f5f9;
 }
 
+.btn-ver.danger {
+  border-color: #fecaca;
+  color: #b91c1c;
+  background: #fff5f5;
+}
+
+.btn-ver.danger:hover:not(:disabled) {
+  border-color: #fca5a5;
+  background: #fee2e2;
+}
+
+.btn-ver:disabled {
+  cursor: wait;
+  opacity: .55;
+}
+
 .operation-shortcuts {
   display: flex;
   align-items: center;
