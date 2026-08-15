@@ -138,3 +138,41 @@ tbody tr:hover { background: #f8fbff !important; }
 @media(max-width:760px){
   .operaciones-listado-page, .proveedores-page, .documentos-page, .fin-page, .log-page, .crear-operacion-page { padding:18px 14px 40px !important; }
 }
+/* Alertas y confirmaciones alineadas con la identidad visual del sistema. */
+.swal2-container { z-index: 30000 !important; padding: 20px !important; }
+.impi-swal-popup {
+  width: min(460px, calc(100vw - 32px)) !important;
+  border: 1px solid #dfe7f4 !important;
+  border-radius: 26px !important;
+  padding: 30px 28px 25px !important;
+  box-shadow: 0 30px 80px rgba(17, 38, 73, .24) !important;
+  font-family: inherit !important;
+}
+.impi-swal-title { color: #142746 !important; font-size: 1.5rem !important; font-weight: 850 !important; }
+.impi-swal-copy { color: #66758d !important; font-size: .96rem !important; line-height: 1.55 !important; }
+.impi-swal-actions { gap: 10px !important; margin-top: 24px !important; }
+.impi-swal-confirm,
+.impi-swal-cancel {
+  min-height: 46px;
+  border: 0;
+  border-radius: 13px;
+  padding: 0 20px;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+.impi-swal-confirm { background: linear-gradient(135deg, #2468ed, #6c3bea); color: #fff; box-shadow: 0 10px 24px rgba(73, 72, 229, .24); }
+.impi-swal-confirm.is-danger { background: linear-gradient(135deg, #ef4444, #dc2626); box-shadow: 0 10px 24px rgba(220, 38, 38, .2); }
+.impi-swal-cancel { background: #eef3fa; color: #53647d; }
+.impi-swal-confirm:hover,
+.impi-swal-cancel:hover { transform: translateY(-1px); filter: brightness(.98); }
+.impi-swal-input {
+  width: calc(100% - 4px) !important;
+  margin: 18px 2px 0 !important;
+  border: 1px solid #d8e2f0 !important;
+  border-radius: 13px !important;
+  box-shadow: none !important;
+  color: #142746 !important;
+  font: inherit !important;
+}
+.impi-swal-input:focus { border-color: #6c5ce7 !important; box-shadow: 0 0 0 4px rgba(108, 92, 231, .12) !important; }

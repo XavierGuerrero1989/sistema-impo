@@ -18,6 +18,7 @@ import {
 import { app, db } from "../firebase/firebase";
 import { isPrimaryAdmin, ROLES } from "../auth/roles";
 import "./Usuarios.css";
+import { confirmAction } from "./sweetAlerts";
 
 const ACCESS_LEVELS = [
   {
@@ -116,7 +117,13 @@ export default function Usuarios() {
   const cambiarEstadoUsuario = async (usuario, activo) => {
     if (isPrimaryAdmin(usuario.email)) return;
     const action = activo ? "reactivar" : "eliminar el acceso de";
-    if (!window.confirm(`¿Confirmás que querés ${action} ${usuario.email}?`)) return;
+    const confirmado = await confirmAction({
+      title: activo ? "Reactivar acceso" : "Eliminar acceso",
+      text: `¿Confirmás que querés ${action} ${usuario.email}?`,
+      confirmText: activo ? "Reactivar" : "Eliminar acceso",
+      danger: !activo,
+    });
+    if (!confirmado) return;
     setGuardando(usuario.uid);
     setError("");
     setMensaje("");

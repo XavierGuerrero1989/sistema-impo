@@ -7,6 +7,7 @@ import { actualizarEntidad, eliminarEntidad, getEntidadById } from "./EntidadesR
 import { entidadConfig } from "./entidadesConfig";
 import "../proveedores/proveedores.css";
 import "./entidades.css";
+import { confirmAction } from "../ui/sweetAlerts";
 
 const EMPTY_FORM = {
   entidadId: "", nombreComercial: "", nombreLegal: "", pais: "",
@@ -80,7 +81,13 @@ export default function EntidadDetalle({ tipo }) {
 
   async function eliminar() {
     if (!permissions.manageProviders) return;
-    if (!window.confirm(`¿Seguro que quieres eliminar este ${config.singular}?`)) return;
+    const confirmado = await confirmAction({
+      title: `Eliminar ${config.singular}`,
+      text: "Esta acción quitará el registro del directorio.",
+      confirmText: "Eliminar",
+      danger: true,
+    });
+    if (!confirmado) return;
     await eliminarEntidad(tipo, entidadId);
     navigate(config.ruta);
   }

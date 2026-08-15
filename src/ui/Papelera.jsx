@@ -6,6 +6,7 @@ import {
 } from "../offline/operacionesRepo";
 import { deleteOperacionPermanenteFirestore } from "../services/operacionesServices";
 import { useAuth } from "../auth/AuthContext";
+import { confirmAction, requestExactValue } from "./sweetAlerts";
 import "./operacionesListado.css";
 
 export default function Papelera() {
@@ -35,18 +36,21 @@ export default function Papelera() {
   };
 
   const eliminarDefinitivamente = async (operacion) => {
-    const primeraConfirmacion = window.confirm(
-      `Vas a eliminar definitivamente la operación "${operacion.id}", incluyendo sus archivos de Firebase. Esta acción no se puede deshacer. ¿Continuar?`
-    );
+    const primeraConfirmacion = await confirmAction({
+      icon: "warning",
+      title: "Eliminar operación definitivamente",
+      text: `Se eliminará la operación ${operacion.id} y todos sus archivos de Firebase. Esta acción no se puede deshacer.`,
+      confirmText: "Continuar",
+      danger: true,
+    });
     if (!primeraConfirmacion) return;
 
-    const confirmacionId = window.prompt(
-      `Para confirmar, escribí exactamente el ID de la operación: ${operacion.id}`
-    );
-    if (confirmacionId !== operacion.id) {
-      if (confirmacionId !== null) alert("El ID ingresado no coincide. No se eliminó la operación.");
-      return;
-    }
+    const confirmacionId = await requestExactValue({
+      title: "Confirmación final",
+      text: `Escribí el ID ${operacion.id} para confirmar la eliminación.`,
+      expectedValue: operacion.id,
+    });
+    if (!confirmacionId) return;
 
     setEliminando(operacion.id);
     try {
