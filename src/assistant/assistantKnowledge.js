@@ -11,7 +11,7 @@ export const assistantTopics = [
     id: "crear-operacion",
     title: "Crear una operación",
     keywords: ["crear operacion", "nueva operacion", "iniciar operacion", "alta operacion"],
-    answer: "Entrá en Operaciones y elegí “Nueva operación”. Completá proveedor, moneda, valor, Incoterm y el plan de pagos. Los tramos pueden ser tantos como necesites, pero sus porcentajes deben sumar exactamente 100%.",
+    answer: "Entrá en Operaciones y elegí “Nueva operación”. Completá proveedor, moneda, valor y el plan de pagos. El Incoterm es opcional al inicio y podés definirlo o modificarlo luego desde Importaciones. Los tramos pueden ser tantos como necesites, pero sus porcentajes deben sumar exactamente 100%.",
     permission: "createOperations",
   },
   {

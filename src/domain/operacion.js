@@ -54,7 +54,9 @@ export function validarOperacion(input) {
   if (!operacion.id) errors.push("El ID es obligatorio");
   if (!operacion.proveedorId) errors.push("El proveedor es obligatorio");
   if (!operacion.activo) errors.push("La mercadería es obligatoria");
-  if (!isValidIncoterm(operacion.incoterm)) errors.push("El Incoterm es obligatorio");
+  if (operacion.incoterm && !isValidIncoterm(operacion.incoterm)) {
+    errors.push("El Incoterm seleccionado no es válido");
+  }
   if (!Number.isFinite(operacion.totalOperacion) || operacion.totalOperacion < 0) {
     errors.push("El total debe ser un número positivo");
   }

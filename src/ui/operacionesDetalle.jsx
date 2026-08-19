@@ -21,7 +21,12 @@ import {
   obtenerPlanPagos,
 } from "../domain/pagos";
 import { getEntidadesLocal } from "../entidades/EntidadesRepo";
-import { incotermLabel } from "../domain/incoterms";
+import {
+  INCOTERMS,
+  INCOTERMS_VERSION,
+  incotermLabel,
+  isValidIncoterm,
+} from "../domain/incoterms";
 import { confirmAction } from "./sweetAlerts";
 
 const ESTADOS = [
@@ -172,6 +177,9 @@ export default function OperacionDetalle({ modo = "resumen" }) {
   const [motivoInput, setMotivoInput] = useState("");
   const [confirmandoId, setConfirmandoId] = useState("");
   const [ocNumeroInput, setOcNumeroInput] = useState("");
+  const [editandoOc, setEditandoOc] = useState(false);
+  const [incotermInput, setIncotermInput] = useState("");
+  const [editandoIncoterm, setEditandoIncoterm] = useState(false);
 
   /* ===== Documentos ===== */
   const [docNombre, setDocNombre] = useState("");
@@ -197,6 +205,9 @@ export default function OperacionDetalle({ modo = "resumen" }) {
       setNuevoEstado(op?.estado || "");
       setTotalOperacionInput(op?.totalOperacion || "");
       setOcNumeroInput(op?.ordenCompraNumero || "");
+      setEditandoOc(false);
+      setIncotermInput(op?.incoterm || "");
+      setEditandoIncoterm(false);
 
       const cuotaInicial = obtenerPlanPagos(op || {})[0];
       if (cuotaInicial) {
@@ -401,6 +412,7 @@ export default function OperacionDetalle({ modo = "resumen" }) {
     if (!permissions.manageFinances) return alert("No tenés permiso para modificar finanzas.");
     if (operacion.estado === "FINALIZADA") return;
     const numeroOc = ocNumeroInput.trim();
+    if (!numeroOc) return alert("Ingresá el número de OC.");
     const updated = {
       ...operacion,
       ordenCompraNumero: numeroOc || null,
@@ -414,6 +426,37 @@ export default function OperacionDetalle({ modo = "resumen" }) {
     };
     await upsertOperacionLocal(updated);
     setOperacion(updated);
+    setOcNumeroInput(numeroOc);
+    setEditandoOc(false);
+    alert("Número de OC guardado correctamente.");
+  };
+
+  const guardarIncoterm = async () => {
+    if (!permissions.manageOperations) {
+      return alert("No tenés permiso para modificar Importaciones.");
+    }
+    if (operacion.estado === "FINALIZADA") return;
+    const incoterm = incotermInput.trim().toUpperCase();
+    if (incoterm && !isValidIncoterm(incoterm)) {
+      return alert("Seleccioná un Incoterm válido.");
+    }
+    const updated = {
+      ...operacion,
+      incoterm: incoterm || null,
+      incotermVersion: INCOTERMS_VERSION,
+      historial: [
+        ...(operacion.historial || []),
+        auditEvent("Incoterm actualizado", {
+          area: "logistica",
+          incoterm: incoterm || null,
+        }),
+      ],
+    };
+    await upsertOperacionLocal(updated);
+    setOperacion(updated);
+    setIncotermInput(incoterm);
+    setEditandoIncoterm(false);
+    alert(incoterm ? "Incoterm guardado correctamente." : "Incoterm dejado sin definir.");
   };
 
   const confirmarPago = async (programado) => {
@@ -1184,18 +1227,39 @@ export default function OperacionDetalle({ modo = "resumen" }) {
             <h4>OC de la operación</h4>
             <p>Referencia general enviada al proveedor, independiente del plan de pagos.</p>
           </div>
-          <label>
-            <span>Número de OC</span>
-            <input
-              type="text"
-              placeholder="Ej. OC-2026-001"
-              value={ocNumeroInput}
-              disabled={!permissions.manageFinances || operacion.estado === "FINALIZADA"}
-              onChange={(event) => setOcNumeroInput(event.target.value)}
-            />
-          </label>
+          {!editandoOc ? (
+            <div className="operation-data-value">
+              <span>Número de OC</span>
+              <strong>{operacion.ordenCompraNumero || "Sin definir"}</strong>
+            </div>
+          ) : (
+            <label>
+              <span>Número de OC</span>
+              <input
+                type="text"
+                autoFocus
+                placeholder="Ej. OC-2026-001"
+                value={ocNumeroInput}
+                onChange={(event) => setOcNumeroInput(event.target.value)}
+              />
+            </label>
+          )}
           {permissions.manageFinances && operacion.estado !== "FINALIZADA" && (
-            <button onClick={guardarNumeroOrdenCompra}>Guardar OC</button>
+            <div className="operation-data-actions">
+              {editandoOc ? (
+                <>
+                  <button onClick={guardarNumeroOrdenCompra}>Guardar OC</button>
+                  <button className="secondary" onClick={() => {
+                    setOcNumeroInput(operacion.ordenCompraNumero || "");
+                    setEditandoOc(false);
+                  }}>Cancelar</button>
+                </>
+              ) : (
+                <button onClick={() => setEditandoOc(true)}>
+                  {operacion.ordenCompraNumero ? "Editar OC" : "Agregar OC"}
+                </button>
+              )}
+            </div>
           )}
         </section>
 
@@ -1355,6 +1419,50 @@ export default function OperacionDetalle({ modo = "resumen" }) {
           </div>
         ))}
       </section>
+      )}
+
+      {/* ===== INCOTERM DE LA IMPORTACIÓN ===== */}
+      {esLogistica && (
+        <section className="operation-incoterm-card">
+          <div>
+            <span className="workflow-eyebrow">Condición comercial</span>
+            <h4>Incoterm® {INCOTERMS_VERSION}</h4>
+            <p>Podés definirlo o modificarlo en cualquier momento del proceso de importación.</p>
+          </div>
+          {!editandoIncoterm ? (
+            <div className="operation-data-value">
+              <span>Incoterm vigente</span>
+              <strong>{incotermLabel(operacion.incoterm)}</strong>
+            </div>
+          ) : (
+            <label>
+              <span>Incoterm</span>
+              <select value={incotermInput} onChange={(event) => setIncotermInput(event.target.value)}>
+                <option value="">Sin definir</option>
+                {INCOTERMS.map((item) => (
+                  <option key={item.value} value={item.value}>{item.label}</option>
+                ))}
+              </select>
+            </label>
+          )}
+          {permissions.manageOperations && operacion.estado !== "FINALIZADA" && (
+            <div className="operation-data-actions">
+              {editandoIncoterm ? (
+                <>
+                  <button onClick={guardarIncoterm}>Guardar Incoterm</button>
+                  <button className="secondary" onClick={() => {
+                    setIncotermInput(operacion.incoterm || "");
+                    setEditandoIncoterm(false);
+                  }}>Cancelar</button>
+                </>
+              ) : (
+                <button onClick={() => setEditandoIncoterm(true)}>
+                  {operacion.incoterm ? "Modificar Incoterm" : "Agregar Incoterm"}
+                </button>
+              )}
+            </div>
+          )}
+        </section>
       )}
 
       {/* ===== ESTADO DE LA OPERACIÓN ===== */}
