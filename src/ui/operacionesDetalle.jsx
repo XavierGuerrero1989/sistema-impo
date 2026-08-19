@@ -171,6 +171,7 @@ export default function OperacionDetalle({ modo = "resumen" }) {
   const [cuotaInput, setCuotaInput] = useState("adelanto");
   const [motivoInput, setMotivoInput] = useState("");
   const [confirmandoId, setConfirmandoId] = useState("");
+  const [ocNumeroInput, setOcNumeroInput] = useState("");
 
   /* ===== Documentos ===== */
   const [docNombre, setDocNombre] = useState("");
@@ -195,6 +196,7 @@ export default function OperacionDetalle({ modo = "resumen" }) {
       setAgentesAduana(agentesData.filter((item) => item.estado !== "BLOQUEADO" && item.activo !== false));
       setNuevoEstado(op?.estado || "");
       setTotalOperacionInput(op?.totalOperacion || "");
+      setOcNumeroInput(op?.ordenCompraNumero || "");
 
       const cuotaInicial = obtenerPlanPagos(op || {})[0];
       if (cuotaInicial) {
@@ -391,6 +393,25 @@ export default function OperacionDetalle({ modo = "resumen" }) {
       ],
     };
 
+    await upsertOperacionLocal(updated);
+    setOperacion(updated);
+  };
+
+  const guardarNumeroOrdenCompra = async () => {
+    if (!permissions.manageFinances) return alert("No tenés permiso para modificar finanzas.");
+    if (operacion.estado === "FINALIZADA") return;
+    const numeroOc = ocNumeroInput.trim();
+    const updated = {
+      ...operacion,
+      ordenCompraNumero: numeroOc || null,
+      historial: [
+        ...(operacion.historial || []),
+        auditEvent("Número de orden de compra actualizado", {
+          area: "finanzas",
+          numeroOc: numeroOc || null,
+        }),
+      ],
+    };
     await upsertOperacionLocal(updated);
     setOperacion(updated);
   };
@@ -1156,6 +1177,27 @@ export default function OperacionDetalle({ modo = "resumen" }) {
           </div>
           <span>{Math.round(progreso)}%</span>
         </div>
+
+        <section className="operation-purchase-order">
+          <div>
+            <span className="workflow-eyebrow">Orden de compra</span>
+            <h4>OC de la operación</h4>
+            <p>Referencia general enviada al proveedor, independiente del plan de pagos.</p>
+          </div>
+          <label>
+            <span>Número de OC</span>
+            <input
+              type="text"
+              placeholder="Ej. OC-2026-001"
+              value={ocNumeroInput}
+              disabled={!permissions.manageFinances || operacion.estado === "FINALIZADA"}
+              onChange={(event) => setOcNumeroInput(event.target.value)}
+            />
+          </label>
+          {permissions.manageFinances && operacion.estado !== "FINALIZADA" && (
+            <button onClick={guardarNumeroOrdenCompra}>Guardar OC</button>
+          )}
+        </section>
 
         <section className="payment-plan-card">
           <div className="payment-plan-head">
