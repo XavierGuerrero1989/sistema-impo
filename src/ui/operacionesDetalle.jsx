@@ -28,6 +28,7 @@ import {
   isValidIncoterm,
 } from "../domain/incoterms";
 import { confirmAction } from "./sweetAlerts";
+import { referenciaOperacion, referenciaOperacionDuplicada } from "../domain/operacion";
 
 const ESTADOS = [
   "PLANIFICADA",
@@ -180,6 +181,8 @@ export default function OperacionDetalle({ modo = "resumen" }) {
   const [editandoOc, setEditandoOc] = useState(false);
   const [incotermInput, setIncotermInput] = useState("");
   const [editandoIncoterm, setEditandoIncoterm] = useState(false);
+  const [referenciaInput, setReferenciaInput] = useState("");
+  const [editandoReferencia, setEditandoReferencia] = useState(false);
 
   /* ===== Documentos ===== */
   const [docNombre, setDocNombre] = useState("");
@@ -208,6 +211,8 @@ export default function OperacionDetalle({ modo = "resumen" }) {
       setEditandoOc(false);
       setIncotermInput(op?.incoterm || "");
       setEditandoIncoterm(false);
+      setReferenciaInput(op?.referenciaOperacion || "");
+      setEditandoReferencia(false);
 
       const cuotaInicial = obtenerPlanPagos(op || {})[0];
       if (cuotaInicial) {
@@ -457,6 +462,31 @@ export default function OperacionDetalle({ modo = "resumen" }) {
     setIncotermInput(incoterm);
     setEditandoIncoterm(false);
     alert(incoterm ? "Incoterm guardado correctamente." : "Incoterm dejado sin definir.");
+  };
+
+  const guardarReferenciaOperacion = async () => {
+    if (!permissions.manageOperations) return alert("No tenés permiso para modificar la operación.");
+    if (operacion.estado === "FINALIZADA") return;
+    const referencia = referenciaInput.trim();
+    const operaciones = await getOperacionesLocal();
+    if (referenciaOperacionDuplicada(operaciones, referencia, operacion.id)) {
+      return alert("La referencia de operación ya está siendo utilizada.");
+    }
+    const updated = {
+      ...operacion,
+      referenciaOperacion: referencia || null,
+      historial: [
+        ...(operacion.historial || []),
+        auditEvent("Referencia de operación actualizada", {
+          referenciaOperacion: referencia || null,
+        }),
+      ],
+    };
+    await upsertOperacionLocal(updated);
+    setOperacion(updated);
+    setReferenciaInput(referencia);
+    setEditandoReferencia(false);
+    alert("Referencia de operación guardada correctamente.");
   };
 
   const confirmarPago = async (programado) => {
@@ -1068,7 +1098,31 @@ export default function OperacionDetalle({ modo = "resumen" }) {
 
         <div>
           <h1>{operacion.proveedorNombre || operacion.proveedor || "-"}</h1>
-          <p className="op-id">ID {operacion.id}</p>
+          <div className="operation-reference-editor">
+            {editandoReferencia ? (
+              <>
+                <input
+                  autoFocus
+                  value={referenciaInput}
+                  placeholder="Ej. IMP-2026-045"
+                  onChange={(event) => setReferenciaInput(event.target.value)}
+                />
+                <button onClick={guardarReferenciaOperacion}>Guardar</button>
+                <button className="secondary" onClick={() => {
+                  setReferenciaInput(operacion.referenciaOperacion || "");
+                  setEditandoReferencia(false);
+                }}>Cancelar</button>
+              </>
+            ) : (
+              <>
+                <strong>{referenciaOperacion(operacion)}</strong>
+                {permissions.manageOperations && operacion.estado !== "FINALIZADA" && (
+                  <button onClick={() => setEditandoReferencia(true)}>Editar referencia</button>
+                )}
+              </>
+            )}
+          </div>
+          <p className="op-id">ID interno: {operacion.id}</p>
           <p className="op-id">Proveedor ID: {operacion.proveedorId || "-"}</p>
         </div>
 

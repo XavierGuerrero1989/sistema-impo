@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import "./logistica.css";
 import { useAuth } from "../auth/AuthContext";
 import { countryLabel } from "../domain/paises";
+import { referenciaOperacion } from "../domain/operacion";
 
 /* =========================
    ETAPAS NORMALIZADAS
@@ -66,6 +67,7 @@ export default function Logistica() {
 
       return {
         id: op.id,
+        referencia: referenciaOperacion(op),
         proveedor: op.proveedorNombre || op.proveedor || "-",
         activo: op.activo,
         origen: op.logistica?.origen || "-",
@@ -133,6 +135,7 @@ export default function Logistica() {
       })
       .filter((item) => !query || [
         item.id,
+        item.referencia,
         item.proveedor,
         item.activo,
         item.origen,
@@ -263,7 +266,7 @@ export default function Logistica() {
               <tr key={i.id}>
 
                 <td className="mono">
-                  {i.id}
+                  {i.referencia}
                 </td>
 
                 <td>

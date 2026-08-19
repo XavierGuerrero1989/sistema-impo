@@ -3,7 +3,7 @@ import { deleteOperacionLocal, getOperacionesLocal } from "../offline/operacione
 import "./operacionesListado.css";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
-import { calcularFinanzas, ESTADOS_OPERACION } from "../domain/operacion";
+import { calcularFinanzas, ESTADOS_OPERACION, referenciaOperacion } from "../domain/operacion";
 import { confirmAction } from "./sweetAlerts";
 
 const ESTADOS = ESTADOS_OPERACION;
@@ -31,6 +31,7 @@ export default function OperacionesListado() {
       const q = search.toLowerCase();
       const matchSearch =
         String(op.id || "").toLowerCase().includes(q) ||
+        String(op.referenciaOperacion || "").toLowerCase().includes(q) ||
         String(op.proveedorNombre || op.proveedor || "").toLowerCase().includes(q) ||
         String(op.activo || "").toLowerCase().includes(q);
 
@@ -48,7 +49,7 @@ export default function OperacionesListado() {
   const enviarAPapelera = async (operacion) => {
     const confirmar = await confirmAction({
       title: "Enviar operación a la papelera",
-      text: `La operación ${operacion.id} dejará de aparecer en los listados, pero podrás restaurarla.`,
+      text: `La operación ${referenciaOperacion(operacion)} dejará de aparecer en los listados, pero podrás restaurarla.`,
       confirmText: "Enviar a papelera",
       danger: true,
     });
@@ -90,7 +91,7 @@ export default function OperacionesListado() {
       <div className="filtros-bar">
         <input
           type="text"
-          placeholder="Buscar por ID, proveedor o activo..."
+          placeholder="Buscar por referencia, ID, proveedor o activo..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
@@ -113,7 +114,7 @@ export default function OperacionesListado() {
         <table className="operaciones-table">
           <thead>
             <tr>
-              <th>ID</th>
+              <th>Referencia</th>
               <th>Proveedor</th>
               <th>Activo</th>
               <th>Estado</th>
@@ -145,7 +146,7 @@ export default function OperacionesListado() {
 
               return (
                 <tr key={op.id}>
-                  <td className="mono">{op.id}</td>
+                  <td><strong className="mono">{referenciaOperacion(op)}</strong><small className="operation-internal-id">ID: {op.id}</small></td>
                   <td>{op.proveedorNombre}</td>
                   <td>{op.activo}</td>
 

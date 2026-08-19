@@ -5,7 +5,7 @@ import {
 } from "./offline/operacionesRepo";
 import KPIs from "./ui/KPIS";
 import "./operacionesApp.css";
-import { alertasOperacion } from "./domain/operacion";
+import { alertasOperacion, referenciaOperacion } from "./domain/operacion";
 import { useAuth } from "./auth/AuthContext";
 import { countryLabel } from "./domain/paises";
 import { estadoPagoProgramado } from "./domain/pagos";
@@ -99,6 +99,7 @@ function OperacionesApp() {
             .map((pago) => ({
               ...pago,
               operacionId: op.id,
+              operacionReferencia: referenciaOperacion(op),
               proveedor: op.proveedorNombre || op.proveedor || "Sin proveedor",
               moneda: pago.moneda || op.moneda || "USD",
               estadoCalculado: estadoPagoProgramado(pago),
@@ -206,7 +207,7 @@ function OperacionesApp() {
                 </time>
                 <span className="admin-payment-operation">
                   <strong>{pago.proveedor}</strong>
-                  <small>{pago.operacionId} · {pago.motivo || "Pago programado"}</small>
+                  <small>{pago.operacionReferencia} · {pago.motivo || "Pago programado"}</small>
                 </span>
                 <span className="admin-payment-amount">
                   <strong>{money(pago.monto, pago.moneda)}</strong>
@@ -249,7 +250,7 @@ function OperacionesApp() {
           >
             <div className="card-accent" />
             <div className="card-header">
-              <span className="card-id">{op.id}</span>
+              <span className="card-id">{referenciaOperacion(op)}</span>
               <span className={`estado-badge ${op.estado.toLowerCase()}`}>
                 {op.estado.replaceAll("_", " ")}
               </span>

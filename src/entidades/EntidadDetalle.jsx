@@ -8,6 +8,7 @@ import { entidadConfig } from "./entidadesConfig";
 import "../proveedores/proveedores.css";
 import "./entidades.css";
 import { confirmAction } from "../ui/sweetAlerts";
+import { referenciaOperacion } from "../domain/operacion";
 
 const EMPTY_FORM = {
   entidadId: "", nombreComercial: "", nombreLegal: "", pais: "",
@@ -147,7 +148,7 @@ export default function EntidadDetalle({ tipo }) {
             {!operaciones.length && <tr><td colSpan="4" className="no-data">No hay operaciones asociadas</td></tr>}
             {operaciones.map((op) => (
               <tr key={op.id} className="proveedores-row" onClick={() => navigate(`/operaciones/${op.id}`)}>
-                <td className="proveedor-id">{op.id}</td><td>{op.moneda}</td>
+                <td className="proveedor-id">{referenciaOperacion(op)}</td><td>{op.moneda}</td>
                 <td>{op.totalOperacion || "-"}</td><td>{op.estado || "-"}</td>
               </tr>
             ))}
