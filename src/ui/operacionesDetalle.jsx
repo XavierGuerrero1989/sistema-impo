@@ -136,6 +136,7 @@ export default function OperacionDetalle({ modo = "resumen" }) {
   const [origen, setOrigen] = useState("");
   const destino = "Chile";
   const [medio, setMedio] = useState("MARÍTIMO"); // “ruta”
+  const [fechaPedidoProveedor, setFechaPedidoProveedor] = useState("");
   const [fechaSalida, setFechaSalida] = useState("");
   const [fechaFinFabricacion, setFechaFinFabricacion] = useState("");
   const [eta, setEta] = useState("");
@@ -206,6 +207,9 @@ export default function OperacionDetalle({ modo = "resumen" }) {
       const l = op?.logistica || {};
       setOrigen(l.origen || "");
       setMedio(l.medio || "MARÍTIMO");
+      setFechaPedidoProveedor(
+        l.fechaPedidoProveedor ? String(l.fechaPedidoProveedor).slice(0, 10) : ""
+      );
       setFechaSalida(l.fechaSalida ? String(l.fechaSalida).slice(0, 10) : "");
       setFechaFinFabricacion(
         l.fechaFinFabricacion ? String(l.fechaFinFabricacion).slice(0, 10) : ""
@@ -686,6 +690,7 @@ export default function OperacionDetalle({ modo = "resumen" }) {
       origen: origen || null,
       destino,
       medio: medio || "MARÍTIMO",
+      fechaPedidoProveedor: fechaPedidoProveedor || null,
       fechaSalida: fechaSalida || null,
       fechaFinFabricacion: fechaFinFabricacion || null,
       eta: eta || null,
@@ -725,6 +730,7 @@ export default function OperacionDetalle({ modo = "resumen" }) {
         origen: origen || null,
         destino,
         medio: medio || "MARÍTIMO",
+        fechaPedidoProveedor: fechaPedidoProveedor || null,
         fechaSalida: fechaSalida || null,
         fechaFinFabricacion: fechaFinFabricacion || null,
         eta: eta || null,
@@ -1326,6 +1332,8 @@ export default function OperacionDetalle({ modo = "resumen" }) {
               : Math.round((safeIndex / (FLUJO_ESTADOS.length - 1)) * 100);
           const faltantes = [];
           if (!origen.trim()) faltantes.push("Definir país de origen");
+          if (proximoEstado === "PRODUCCION" && !fechaPedidoProveedor)
+            faltantes.push("Ingresar fecha de pedido al proveedor");
           if (proximoEstado === "PRODUCCION" && !fechaSalida)
             faltantes.push("Ingresar salida estimada (ETD)");
           if (proximoEstado === "PRODUCCION" && !tipoCarga)
@@ -1440,10 +1448,21 @@ export default function OperacionDetalle({ modo = "resumen" }) {
                     </label>
 
                     {estadoActual === "PLANIFICADA" && (
-                      <label>
-                        <span>Salida estimada (ETD)</span>
-                        <input type="date" value={fechaSalida} disabled={estadoActual === "FINALIZADA" || !permissions.manageOperations} onChange={(e) => setFechaSalida(e.target.value)} />
-                      </label>
+                      <>
+                        <label>
+                          <span>Fecha de pedido al proveedor</span>
+                          <input
+                            type="date"
+                            value={fechaPedidoProveedor}
+                            disabled={estadoActual === "FINALIZADA" || !permissions.manageOperations}
+                            onChange={(e) => setFechaPedidoProveedor(e.target.value)}
+                          />
+                        </label>
+                        <label>
+                          <span>Salida estimada (ETD)</span>
+                          <input type="date" value={fechaSalida} disabled={estadoActual === "FINALIZADA" || !permissions.manageOperations} onChange={(e) => setFechaSalida(e.target.value)} />
+                        </label>
+                      </>
                     )}
 
                     {estadoActual === "PRODUCCION" && (
