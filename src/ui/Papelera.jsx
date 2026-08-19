@@ -8,6 +8,7 @@ import { deleteOperacionPermanenteFirestore } from "../services/operacionesServi
 import { useAuth } from "../auth/AuthContext";
 import { confirmAction, requestExactValue } from "./sweetAlerts";
 import "./operacionesListado.css";
+import { referenciaOperacion } from "../domain/operacion";
 
 export default function Papelera() {
   const [operaciones, setOperaciones] = useState([]);
@@ -39,7 +40,7 @@ export default function Papelera() {
     const primeraConfirmacion = await confirmAction({
       icon: "warning",
       title: "Eliminar operación definitivamente",
-      text: `Se eliminará la operación ${operacion.id} y todos sus archivos de Firebase. Esta acción no se puede deshacer.`,
+      text: `Se eliminará la operación ${referenciaOperacion(operacion)} y todos sus archivos de Firebase. Esta acción no se puede deshacer.`,
       confirmText: "Continuar",
       danger: true,
     });
@@ -78,7 +79,7 @@ export default function Papelera() {
         <table className="operaciones-table">
           <thead>
             <tr>
-              <th>ID</th>
+              <th>Referencia</th>
               <th>Proveedor</th>
               <th>Mercadería</th>
               <th>Acción</th>
@@ -90,7 +91,7 @@ export default function Papelera() {
             )}
             {operaciones.map((op) => (
               <tr key={op.id}>
-                <td className="mono">{op.id}</td>
+                <td><strong className="mono">{referenciaOperacion(op)}</strong><small className="operation-internal-id">ID: {op.id}</small></td>
                 <td>{op.proveedorNombre || op.proveedor || "-"}</td>
                 <td>{op.activo || "-"}</td>
                 <td>

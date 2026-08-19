@@ -3,6 +3,7 @@ import { getOperacionesLocal } from "../offline/operacionesRepo";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 import { estadoPagoProgramado } from "../domain/pagos";
+import { referenciaOperacion } from "../domain/operacion";
 import "./finanzas.css";
 
 const norm = (v, fallback = "") => String(v ?? fallback).trim();
@@ -99,6 +100,7 @@ export default function Finanzas() {
       return {
         ...op,
         _id: norm(op.id, ""),
+        _referencia: referenciaOperacion(op),
         _proveedor: norm(op.proveedorNombre || op.proveedor, "-"),
         _moneda: normMoneda(op.moneda || "USD"),
         _total: total,
@@ -166,6 +168,7 @@ export default function Finanzas() {
           .map((pago) => ({
             ...pago,
             operacionId: row._id,
+            operacionReferencia: row._referencia,
             proveedor: row._proveedor,
             moneda: pago.moneda || row._moneda,
             estadoCalculado: estadoPagoProgramado(pago),
@@ -273,6 +276,7 @@ export default function Finanzas() {
       const matchQ =
         !query ||
         String(r._id).toLowerCase().includes(query) ||
+        String(r._referencia).toLowerCase().includes(query) ||
         String(r._proveedor).toLowerCase().includes(query);
 
       const matchEstado =
@@ -448,7 +452,7 @@ export default function Finanzas() {
                 {pago.estadoCalculado.replaceAll("_", " ")}
               </span>
               <strong>{pago.proveedor}</strong>
-              <small>{pago.operacionId} · {pago.motivo}</small>
+              <small>{pago.operacionReferencia} · {pago.motivo}</small>
               <b>{money(pago.monto, pago.moneda)}</b>
               <time>{pago.fechaProgramada ? new Date(`${pago.fechaProgramada}T00:00:00`).toLocaleDateString("es-AR") : "Sin fecha"}</time>
             </button>
@@ -640,7 +644,7 @@ export default function Finanzas() {
 
               return (
                 <tr key={op._id}>
-                  <td className="mono">{op._id}</td>
+                  <td className="mono">{op._referencia}</td>
                   <td>{op._proveedor || "-"}</td>
                   <td className="mono">{op._moneda}</td>
                   <td>{money(op._total, op._moneda)}</td>

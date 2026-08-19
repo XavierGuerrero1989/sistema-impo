@@ -4,6 +4,8 @@ import {
   alertasOperacion,
   calcularFinanzas,
   normalizarOperacion,
+  referenciaOperacion,
+  referenciaOperacionDuplicada,
   validarOperacion,
 } from "../src/domain/operacion.js";
 
@@ -15,6 +17,15 @@ test("normaliza colecciones y valores básicos", () => {
   assert.equal(result.incotermVersion, "2020");
   assert.deepEqual(result.documentos, []);
   assert.equal(result.estado, "PLANIFICADA");
+});
+
+test("usa una referencia editable sin alterar el ID interno", () => {
+  const operacion = normalizarOperacion({ id: "op_interna", referenciaOperacion: "IMP-045" });
+  assert.equal(operacion.id, "op_interna");
+  assert.equal(referenciaOperacion(operacion), "IMP-045");
+  assert.equal(referenciaOperacion({ id: "op_legacy" }), "op_legacy");
+  assert.equal(referenciaOperacionDuplicada([operacion], "imp-045"), true);
+  assert.equal(referenciaOperacionDuplicada([operacion], "IMP-045", "op_interna"), false);
 });
 
 test("reconoce producción como etapa logística válida", () => {

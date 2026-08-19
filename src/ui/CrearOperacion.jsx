@@ -1,10 +1,15 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { upsertOperacionLocal } from "../offline/operacionesRepo";
+import { getOperacionesLocal, upsertOperacionLocal } from "../offline/operacionesRepo";
 import { getProveedoresLocal } from "../proveedores/ProveedoresRepo";
 import { auditEvent } from "../auth/audit";
 import "./CrearOperacion.css";
-import { normalizarOperacion, validarOperacion } from "../domain/operacion";
+import {
+  generarIdInternoOperacion,
+  normalizarOperacion,
+  referenciaOperacionDuplicada,
+  validarOperacion,
+} from "../domain/operacion";
 import { CONDICIONES_PAGO, importeCuota } from "../domain/pagos";
 import { INCOTERMS, INCOTERMS_VERSION } from "../domain/incoterms";
 
@@ -13,16 +18,18 @@ export default function CrearOperacion() {
   const navigate = useNavigate();
 
   const [proveedores, setProveedores] = useState([]);
+  const [operaciones, setOperaciones] = useState([]);
 
-  const [form, setForm] = useState({
-    id: "",
+  const [form, setForm] = useState(() => ({
+    id: generarIdInternoOperacion(),
+    referenciaOperacion: "",
     proveedorId: "",
     activo: "",
     incoterm: "",
     moneda: "USD",
     totalOperacion: "",
     observaciones: "",
-  });
+  }));
   const [cuotas, setCuotas] = useState([
     {
       id: "cuota_1",
@@ -44,9 +51,13 @@ export default function CrearOperacion() {
 
     async function load() {
 
-      const data = await getProveedoresLocal();
+      const [data, operacionesData] = await Promise.all([
+        getProveedoresLocal(),
+        getOperacionesLocal(),
+      ]);
 
       setProveedores(data || []);
+      setOperaciones(operacionesData || []);
 
     }
 
@@ -139,9 +150,15 @@ export default function CrearOperacion() {
       return;
     }
 
+    if (referenciaOperacionDuplicada(operaciones, form.referenciaOperacion)) {
+      alert("La referencia de operación ya está siendo utilizada.");
+      return;
+    }
+
     const nuevaOperacion = normalizarOperacion({
 
       id: form.id,
+      referenciaOperacion: form.referenciaOperacion,
 
       proveedorId: proveedorSeleccionado.proveedorId,
       proveedorNombre: proveedorSeleccionado.nombreComercial,
@@ -197,7 +214,7 @@ export default function CrearOperacion() {
 
     await upsertOperacionLocal(nuevaOperacion);
 
-    navigate(`/operaciones/${form.id}`);
+    navigate(`/operaciones/${nuevaOperacion.id}`);
 
   };
 
@@ -214,14 +231,28 @@ export default function CrearOperacion() {
 
         <div className="form-group">
 
-          <label>ID de operación *</label>
+          <label>ID interno automático</label>
 
           <input
             name="id"
-            placeholder="op_2026_001"
+            readOnly
             value={form.id}
+          />
+          <small>Identificador técnico único. No se puede modificar.</small>
+
+        </div>
+
+        <div className="form-group">
+
+          <label>Referencia de operación (opcional)</label>
+
+          <input
+            name="referenciaOperacion"
+            placeholder="Ej. IMP-2026-045"
+            value={form.referenciaOperacion}
             onChange={onChange}
           />
+          <small>Nombre visible y editable que utilizará el equipo diariamente.</small>
 
         </div>
 

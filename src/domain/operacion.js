@@ -21,10 +21,31 @@ export const TIPOS_DOCUMENTO = [
   "OTRO",
 ];
 
+export function generarIdInternoOperacion() {
+  const year = new Date().getFullYear();
+  const unique = globalThis.crypto?.randomUUID?.()
+    || `${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+  return `op_${year}_${unique}`;
+}
+
+export function referenciaOperacion(input = {}) {
+  return String(input.referenciaOperacion || input.id || "").trim();
+}
+
+export function referenciaOperacionDuplicada(operaciones = [], referencia = "", excluirId = "") {
+  const normalized = String(referencia || "").trim().toLocaleLowerCase("es");
+  if (!normalized) return false;
+  return operaciones.some((operacion) =>
+    operacion.id !== excluirId
+    && referenciaOperacion(operacion).toLocaleLowerCase("es") === normalized
+  );
+}
+
 export function normalizarOperacion(input = {}) {
   return {
     ...input,
     id: String(input.id || "").trim(),
+    referenciaOperacion: String(input.referenciaOperacion || "").trim(),
     proveedorId: String(input.proveedorId || "").trim(),
     proveedorNombre: String(input.proveedorNombre || input.proveedor || "").trim(),
     activo: String(input.activo || "").trim(),

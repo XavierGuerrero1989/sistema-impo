@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { getOperacionesLocal } from "../offline/operacionesRepo";
 import "./operacionesListado.css";
+import { referenciaOperacion } from "../domain/operacion";
 
 function csvCell(value) {
   return `"${String(value ?? "").replaceAll('"', '""')}"`;
@@ -24,6 +25,7 @@ export default function Historial() {
       ...evento,
       id: `${operacion.id}_${index}`,
       operacionId: operacion.id,
+      operacionReferencia: referenciaOperacion(operacion),
       proveedor: operacion.proveedorNombre || operacion.proveedor || "-",
     }))
   ).sort((a, b) => new Date(b.fecha || 0) - new Date(a.fecha || 0)), [operaciones]);
@@ -40,6 +42,7 @@ export default function Historial() {
       if (!query) return true;
       return [
         evento.operacionId,
+        evento.operacionReferencia,
         evento.proveedor,
         evento.evento,
         evento.actorEmail,
@@ -53,7 +56,7 @@ export default function Historial() {
       ["fecha", "operacion", "proveedor", "evento", "usuario"],
       ...visibles.map((evento) => [
         evento.fecha,
-        evento.operacionId,
+        evento.operacionReferencia,
         evento.proveedor,
         evento.evento,
         evento.actorEmail || evento.actorNombre || "",
@@ -105,7 +108,7 @@ export default function Historial() {
             {visibles.map((evento) => (
               <tr key={evento.id}>
                 <td>{evento.fecha ? new Date(evento.fecha).toLocaleString("es-AR") : "-"}</td>
-                <td className="mono">{evento.operacionId}</td>
+                <td className="mono">{evento.operacionReferencia}</td>
                 <td>{evento.proveedor}</td>
                 <td>{evento.evento || "-"}</td>
                 <td>{evento.actorEmail || evento.actorNombre || "-"}</td>

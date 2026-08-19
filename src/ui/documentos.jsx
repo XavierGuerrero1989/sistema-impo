@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { getOperacionesLocal } from "../offline/operacionesRepo";
 import { useNavigate } from "react-router-dom";
 import "./documentos.css";
+import { referenciaOperacion } from "../domain/operacion";
 
 const TIPOS = ["FACTURA", "BL", "PACKING_LIST", "OTRO"];
 
@@ -43,6 +44,7 @@ export default function Documentos() {
         return {
           id: `${op.id}_${index}`,
           operacionId: op.id,
+          operacionReferencia: referenciaOperacion(op),
           proveedor: op.proveedorNombre || op.proveedor || "-",
           nombre: doc?.nombre || "Sin nombre",
           tipo: doc?.tipo || "OTRO",
@@ -85,6 +87,7 @@ export default function Documentos() {
         doc.referencia,
         doc.proveedor,
         doc.operacionId,
+        doc.operacionReferencia,
         doc.archivoNombre,
       ].some((value) => String(value || "").toLowerCase().includes(query));
     });
@@ -181,7 +184,7 @@ export default function Documentos() {
                       <div className="doc-sub">
                         <span className="muted">{doc.proveedor}</span>
                         <span className="dot">•</span>
-                        <span className="mono muted">{doc.operacionId}</span>
+                        <span className="mono muted">{doc.operacionReferencia}</span>
                         {doc.archivoNombre && (
                           <>
                             <span className="dot">•</span>
@@ -196,7 +199,7 @@ export default function Documentos() {
                   </td>
 
                   {/* Operación */}
-                  <td className="mono">{doc.operacionId}</td>
+                  <td className="mono">{doc.operacionReferencia}</td>
 
                   {/* Tipo (más visible, antes de Fecha) */}
                   <td>

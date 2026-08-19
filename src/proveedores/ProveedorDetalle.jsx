@@ -11,6 +11,7 @@ import "./proveedores.css";
 import { useAuth } from "../auth/AuthContext";
 import { countryLabel } from "../domain/paises";
 import { confirmAction } from "../ui/sweetAlerts";
+import { referenciaOperacion } from "../domain/operacion";
 
 export default function ProveedorDetalle() {
 
@@ -443,7 +444,7 @@ export default function ProveedorDetalle() {
               >
 
                 <td className="proveedor-id">
-                  {op.id}
+                  {referenciaOperacion(op)}
                 </td>
 
                 <td>
