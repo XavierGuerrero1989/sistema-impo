@@ -810,6 +810,7 @@ export default function OperacionDetalle({ modo = "resumen" }) {
 
     await upsertOperacionLocal(updated);
     setOperacion(updated);
+    alert("Datos de importación guardados correctamente.");
   };
 
   const guardarDetallesCarga = async () => {
@@ -839,6 +840,7 @@ export default function OperacionDetalle({ modo = "resumen" }) {
 
     await upsertOperacionLocal(updated);
     setOperacion(updated);
+    alert("Detalles de carga guardados correctamente.");
   };
 
   const registrarCotizacionForwarder = async () => {
@@ -1675,6 +1677,9 @@ export default function OperacionDetalle({ modo = "resumen" }) {
                     )}
                     <button onClick={avanzar}>
                       Avanzar a {estadoLabel(proximoEstado)}
+                    </button>
+                    <button className="next-action-save" onClick={guardarLogistica}>
+                      Guardar datos
                     </button>
                   </aside>
                 )}
