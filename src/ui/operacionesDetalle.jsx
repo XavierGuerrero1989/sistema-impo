@@ -1486,8 +1486,6 @@ export default function OperacionDetalle({ modo = "resumen" }) {
             faltantes.push("Ingresar fecha de pedido al proveedor");
           if (proximoEstado === "PRODUCCION" && !fechaSalida)
             faltantes.push("Ingresar salida estimada (ETD)");
-          if (proximoEstado === "PRODUCCION" && !tipoCarga)
-            faltantes.push("Seleccionar el tipo de carga");
           if (proximoEstado === "CARGADA" && !fechaFinFabricacion)
             faltantes.push("Ingresar fin estimado de fabricación");
           if (proximoEstado === "EN_TRANSITO" && !eta)
