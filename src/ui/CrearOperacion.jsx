@@ -270,16 +270,16 @@ export default function CrearOperacion() {
         </div>
 
         <div className="form-group">
-          <label>Incoterm® {INCOTERMS_VERSION} *</label>
+          <label>Incoterm® {INCOTERMS_VERSION} (opcional)</label>
           <select name="incoterm" value={form.incoterm} onChange={onChange}>
-            <option value="">Seleccionar Incoterm</option>
+            <option value="">Definir más adelante</option>
             {INCOTERMS.map((item) => (
               <option key={item.value} value={item.value}>
                 {item.label}
               </option>
             ))}
           </select>
-          <small>Regla comercial acordada para costos, riesgos y entrega.</small>
+          <small>Podés definirlo ahora o agregarlo luego desde Importaciones.</small>
         </div>
 
         <div className="form-row">

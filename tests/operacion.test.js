@@ -54,7 +54,15 @@ test("no permite que pagos excedentes produzcan saldo negativo", () => {
 });
 
 test("valida campos obligatorios e importes", () => {
-  assert.equal(validarOperacion({ totalOperacion: -1 }).length, 5);
+  assert.equal(validarOperacion({ totalOperacion: -1 }).length, 4);
+});
+
+test("permite crear sin Incoterm y rechaza un código inválido", () => {
+  const base = { id: "OP-1", proveedorId: "P-1", activo: "Carga", totalOperacion: 100 };
+  assert.deepEqual(validarOperacion({ ...base, incoterm: "" }), []);
+  assert.deepEqual(validarOperacion({ ...base, incoterm: "ZZZ" }), [
+    "El Incoterm seleccionado no es válido",
+  ]);
 });
 
 test("detecta ETA vencida, documentos y pagos pendientes", () => {
