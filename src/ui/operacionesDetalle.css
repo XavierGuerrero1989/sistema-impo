@@ -843,6 +843,11 @@
   font-weight: 800; cursor: pointer;
 }
 .next-action-card button:disabled { cursor: not-allowed; opacity: .55; }
+.next-action-card button.next-action-save {
+  margin-top: 8px; border: 1px solid rgba(255,255,255,.42);
+  background: rgba(255,255,255,.1); color: white;
+}
+.next-action-card button.next-action-save:hover { background: rgba(255,255,255,.18); }
 .ready-message { color: #bbf7d0 !important; font-weight: 700; }
 .workflow-more {
   margin-top: 20px; margin-bottom: 26px; padding-top: 15px;
