@@ -60,8 +60,12 @@ export function normalizarOperacion(input = {}) {
     cotizacionesForwarder: Array.isArray(input.cotizacionesForwarder) ? input.cotizacionesForwarder : [],
     forwarderId: String(input.forwarderId || "").trim(),
     forwarderNombre: String(input.forwarderNombre || "").trim(),
+    numeroOperacionForwarder: String(input.numeroOperacionForwarder || "").trim(),
     agenteAduanaId: String(input.agenteAduanaId || "").trim(),
     agenteAduanaNombre: String(input.agenteAduanaNombre || "").trim(),
+    numerosOperacionAgenteAduana: Array.isArray(input.numerosOperacionAgenteAduana)
+      ? input.numerosOperacionAgenteAduana.map((numero) => String(numero || "").trim()).filter(Boolean)
+      : [],
     condicionVenta: input.condicionVenta || null,
     documentos: Array.isArray(input.documentos) ? input.documentos : [],
     historial: Array.isArray(input.historial) ? input.historial : [],
