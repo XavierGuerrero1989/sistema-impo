@@ -164,6 +164,8 @@ export default function OperacionDetalle({ modo = "resumen" }) {
   });
   const [agenteAduanaId, setAgenteAduanaId] = useState("");
   const [agenteObservaciones, setAgenteObservaciones] = useState("");
+  const [numeroOperacionForwarder, setNumeroOperacionForwarder] = useState("");
+  const [numerosOperacionAgenteAduana, setNumerosOperacionAgenteAduana] = useState([""]);
 
   /* ===== Finanzas ===== */
   const [editandoTotal, setEditandoTotal] = useState(false);
@@ -244,6 +246,10 @@ export default function OperacionDetalle({ modo = "resumen" }) {
       setCantidadBultos(l.cantidadBultos || "");
       setAgenteAduanaId(op?.agenteAduanaId || "");
       setAgenteObservaciones(op?.agenteAduanaObservaciones || "");
+      setNumeroOperacionForwarder(op?.numeroOperacionForwarder || "");
+      setNumerosOperacionAgenteAduana(
+        op?.numerosOperacionAgenteAduana?.length ? op.numerosOperacionAgenteAduana : [""]
+      );
     }
 
     load().catch(console.error);
@@ -1002,6 +1008,49 @@ export default function OperacionDetalle({ modo = "resumen" }) {
     };
     await upsertOperacionLocal(updated);
     setOperacion(updated);
+  };
+
+  const actualizarNumeroOperacionAgente = (index, value) => {
+    setNumerosOperacionAgenteAduana((current) =>
+      current.map((numero, itemIndex) => itemIndex === index ? value : numero)
+    );
+  };
+
+  const agregarNumeroOperacionAgente = () => {
+    setNumerosOperacionAgenteAduana((current) => [...current, ""]);
+  };
+
+  const eliminarNumeroOperacionAgente = (index) => {
+    setNumerosOperacionAgenteAduana((current) => {
+      const next = current.filter((_, itemIndex) => itemIndex !== index);
+      return next.length ? next : [""];
+    });
+  };
+
+  const guardarNumerosIntervinientes = async () => {
+    if (!permissions.manageOperations) return alert("No tenés permiso para modificar operaciones.");
+    const numerosAgente = [...new Set(
+      numerosOperacionAgenteAduana.map((numero) => numero.trim()).filter(Boolean)
+    )];
+    const numeroForwarder = numeroOperacionForwarder.trim();
+    const updated = {
+      ...operacion,
+      numeroOperacionForwarder: numeroForwarder || null,
+      numerosOperacionAgenteAduana: numerosAgente,
+      historial: [
+        ...(operacion.historial || []),
+        auditEvent("Identificadores de intervinientes actualizados", {
+          area: "logistica",
+          numeroOperacionForwarder: numeroForwarder || null,
+          numerosOperacionAgenteAduana: numerosAgente,
+        }),
+      ],
+    };
+    await upsertOperacionLocal(updated);
+    setOperacion(updated);
+    setNumeroOperacionForwarder(numeroForwarder);
+    setNumerosOperacionAgenteAduana(numerosAgente.length ? numerosAgente : [""]);
+    alert("Números de operación guardados correctamente.");
   };
 
   const actualizarTotalOperacion = async () => {
@@ -1816,6 +1865,51 @@ export default function OperacionDetalle({ modo = "resumen" }) {
               <span>Forwarder oficial</span>
               <strong>{operacion.forwarderNombre || "Pendiente de adjudicación"}</strong>
             </div>
+          </div>
+
+          <div className="partner-operation-identifiers">
+            <div className="partner-identifier-block">
+              <span className="workflow-eyebrow">Referencia del forwarder</span>
+              <label>
+                <span>Número de operación del forwarder</span>
+                <input
+                  value={numeroOperacionForwarder}
+                  placeholder="Ej. FWD-45821"
+                  disabled={!permissions.manageOperations}
+                  onChange={(event) => setNumeroOperacionForwarder(event.target.value)}
+                />
+              </label>
+            </div>
+
+            <div className="partner-identifier-block customs-identifiers">
+              <span className="workflow-eyebrow">Referencias del agente de aduana</span>
+              <div className="partner-number-list">
+                {numerosOperacionAgenteAduana.map((numero, index) => (
+                  <div className="partner-number-row" key={index}>
+                    <input
+                      value={numero}
+                      placeholder={`Número de identificación ${index + 1}`}
+                      disabled={!permissions.manageOperations}
+                      onChange={(event) => actualizarNumeroOperacionAgente(index, event.target.value)}
+                    />
+                    {permissions.manageOperations && numerosOperacionAgenteAduana.length > 1 && (
+                      <button className="remove-partner-number" onClick={() => eliminarNumeroOperacionAgente(index)}>Quitar</button>
+                    )}
+                  </div>
+                ))}
+              </div>
+              {permissions.manageOperations && (
+                <button className="add-partner-number" onClick={agregarNumeroOperacionAgente}>
+                  + Agregar nuevo número de identificación
+                </button>
+              )}
+            </div>
+
+            {permissions.manageOperations && (
+              <button className="save-partner-identifiers" onClick={guardarNumerosIntervinientes}>
+                Guardar identificadores
+              </button>
+            )}
           </div>
 
           <div className="partners-layout">

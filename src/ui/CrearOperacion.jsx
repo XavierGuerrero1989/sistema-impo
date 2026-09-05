@@ -24,6 +24,7 @@ export default function CrearOperacion() {
     id: generarIdInternoOperacion(),
     referenciaOperacion: "",
     proveedorId: "",
+    numeroOperacionForwarder: "",
     activo: "",
     incoterm: "",
     moneda: "USD",
@@ -46,6 +47,7 @@ export default function CrearOperacion() {
       fechaEstimada: "",
     },
   ]);
+  const [numerosOperacionAgenteAduana, setNumerosOperacionAgenteAduana] = useState([""]);
 
   useEffect(() => {
 
@@ -105,6 +107,23 @@ export default function CrearOperacion() {
     setCuotas((current) => current.filter((cuota) => cuota.id !== id));
   };
 
+  const actualizarNumeroAgente = (index, value) => {
+    setNumerosOperacionAgenteAduana((current) =>
+      current.map((numero, itemIndex) => itemIndex === index ? value : numero)
+    );
+  };
+
+  const agregarNumeroAgente = () => {
+    setNumerosOperacionAgenteAduana((current) => [...current, ""]);
+  };
+
+  const eliminarNumeroAgente = (index) => {
+    setNumerosOperacionAgenteAduana((current) => {
+      const next = current.filter((_, itemIndex) => itemIndex !== index);
+      return next.length ? next : [""];
+    });
+  };
+
   const totalDistribuido = cuotas.reduce(
     (sum, cuota) => sum + Number(cuota.porcentaje || 0),
     0
@@ -162,6 +181,11 @@ export default function CrearOperacion() {
 
       proveedorId: proveedorSeleccionado.proveedorId,
       proveedorNombre: proveedorSeleccionado.nombreComercial,
+
+      numeroOperacionForwarder: form.numeroOperacionForwarder,
+      numerosOperacionAgenteAduana: [...new Set(
+        numerosOperacionAgenteAduana.map((numero) => numero.trim()).filter(Boolean)
+      )],
 
       activo: form.activo,
       incoterm: form.incoterm,
@@ -255,6 +279,45 @@ export default function CrearOperacion() {
           <small>Nombre visible y editable que utilizará el equipo diariamente.</small>
 
         </div>
+
+        <section className="operation-external-identifiers">
+          <div className="operation-external-identifiers-head">
+            <span>Identificación externa</span>
+            <h2>Números de los intervinientes</h2>
+            <p>Son opcionales. Podrás agregarlos o modificarlos posteriormente desde Importaciones.</p>
+          </div>
+
+          <div className="operation-external-identifiers-grid">
+            <label>
+              <span>Número de operación del forwarder</span>
+              <input
+                name="numeroOperacionForwarder"
+                placeholder="Ej. FWD-45821"
+                value={form.numeroOperacionForwarder}
+                onChange={onChange}
+              />
+            </label>
+
+            <div className="customs-operation-numbers">
+              <span>Número(s) de operación del agente de aduana</span>
+              {numerosOperacionAgenteAduana.map((numero, index) => (
+                <div className="external-number-row" key={index}>
+                  <input
+                    placeholder={`Ej. ADU-${index + 1}`}
+                    value={numero}
+                    onChange={(event) => actualizarNumeroAgente(index, event.target.value)}
+                  />
+                  {numerosOperacionAgenteAduana.length > 1 && (
+                    <button type="button" onClick={() => eliminarNumeroAgente(index)}>Quitar</button>
+                  )}
+                </div>
+              ))}
+              <button className="add-external-number" type="button" onClick={agregarNumeroAgente}>
+                + Agregar nuevo número de identificación
+              </button>
+            </div>
+          </div>
+        </section>
 
         {/* PROVEEDOR */}
 

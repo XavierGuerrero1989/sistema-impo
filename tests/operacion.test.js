@@ -39,10 +39,14 @@ test("normaliza cotizaciones e intervinientes logísticos", () => {
     cotizacionesForwarder: [{ id: "COT-1" }],
     forwarderId: " FWD-1 ",
     agenteAduanaId: " AG-1 ",
+    numeroOperacionForwarder: " FWD-778 ",
+    numerosOperacionAgenteAduana: [" ADU-1 ", "", "ADU-2"],
   });
   assert.equal(result.cotizacionesForwarder.length, 1);
   assert.equal(result.forwarderId, "FWD-1");
   assert.equal(result.agenteAduanaId, "AG-1");
+  assert.equal(result.numeroOperacionForwarder, "FWD-778");
+  assert.deepEqual(result.numerosOperacionAgenteAduana, ["ADU-1", "ADU-2"]);
 });
 
 test("calcula saldo usando solo movimientos activos", () => {
