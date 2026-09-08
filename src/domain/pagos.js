@@ -12,6 +12,37 @@ export const CONDICIONES_PAGO = [
 export const condicionLabel = (value) =>
   CONDICIONES_PAGO.find((item) => item.value === value)?.label || "Otra condición";
 
+export const PLAN_PAGOS_PREDETERMINADO = [
+  { id: "cuota_1", nombre: "Adelanto", porcentaje: 30, condicion: "AL_CREAR", fechaEstimada: null },
+  { id: "cuota_2", nombre: "Saldo", porcentaje: 70, condicion: "ARRIBO_CHILE", fechaEstimada: null },
+];
+
+export function normalizarPlanPagos(cuotas, fallback = PLAN_PAGOS_PREDETERMINADO) {
+  const source = Array.isArray(cuotas) && cuotas.length ? cuotas : fallback;
+  return source.map((cuota, index) => ({
+    id: String(cuota?.id || `cuota_${index + 1}`),
+    nombre: String(cuota?.nombre || (index === 0 ? "Adelanto" : `Pago ${index + 1}`)).trim(),
+    porcentaje: Number(cuota?.porcentaje || 0),
+    condicion: CONDICIONES_PAGO.some((item) => item.value === cuota?.condicion)
+      ? cuota.condicion
+      : index === 0 ? "AL_CREAR" : "SOLICITUD_PROVEEDOR",
+    fechaEstimada: cuota?.fechaEstimada || null,
+  }));
+}
+
+export function validarPlanPagos(cuotas) {
+  const plan = normalizarPlanPagos(cuotas, []);
+  const errors = [];
+  if (!plan.length) errors.push("El plan debe contener al menos un pago");
+  if (plan.some((cuota) => !cuota.nombre)) errors.push("Todos los pagos deben tener un nombre");
+  if (plan.some((cuota) => !Number.isFinite(cuota.porcentaje) || cuota.porcentaje <= 0)) {
+    errors.push("Todos los pagos deben tener un porcentaje mayor a 0%");
+  }
+  const total = plan.reduce((sum, cuota) => sum + cuota.porcentaje, 0);
+  if (Math.abs(total - 100) > 0.001) errors.push("El plan de pagos debe sumar exactamente 100%");
+  return errors;
+}
+
 export function crearPlanPagos({
   porcentajeAdelanto,
   porcentajeSaldo,
@@ -39,7 +70,7 @@ export function crearPlanPagos({
 
 export function obtenerPlanPagos(operacion = {}) {
   const cuotas = operacion.condicionVenta?.cuotas;
-  if (Array.isArray(cuotas) && cuotas.length) return cuotas;
+  if (Array.isArray(cuotas) && cuotas.length) return normalizarPlanPagos(cuotas);
   return crearPlanPagos({
     porcentajeAdelanto: 0,
     porcentajeSaldo: 100,

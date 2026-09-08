@@ -2,6 +2,8 @@ import { useState } from "react";
 import { crearProveedor } from "./ProveedoresRepo";
 import { useNavigate } from "react-router-dom";
 import "./NuevoProveedor.css";
+import PaymentPlanEditor from "../ui/PaymentPlanEditor";
+import { PLAN_PAGOS_PREDETERMINADO, normalizarPlanPagos, validarPlanPagos } from "../domain/pagos";
 
 
 export default function NuevoProveedor() {
@@ -17,11 +19,17 @@ export default function NuevoProveedor() {
   const [codigoPostal, setCodigoPostal] = useState("");
   const [swift, setSwift] = useState("");
   const [numeroCuenta, setNumeroCuenta] = useState("");
+  const [planPagosDefault, setPlanPagosDefault] = useState(() => normalizarPlanPagos(PLAN_PAGOS_PREDETERMINADO));
   const [error, setError] = useState("");
   const [guardando, setGuardando] = useState(false);
 
   async function handleCrear() {
     setError("");
+    const erroresPlan = validarPlanPagos(planPagosDefault);
+    if (erroresPlan.length) {
+      setError(erroresPlan.join("\n"));
+      return;
+    }
     setGuardando(true);
     const proveedor = {
       proveedorId,
@@ -40,6 +48,7 @@ export default function NuevoProveedor() {
 
       comercial: {
         monedaHabitual: moneda,
+        planPagosDefault,
       },
 
       createdAt: new Date(),
@@ -156,6 +165,17 @@ export default function NuevoProveedor() {
           </div>
 
         </div>
+
+        <div className="form-section-label">
+          <span>Condición comercial predeterminada</span>
+          <p>Se propondrá automáticamente al crear una operación con este proveedor.</p>
+        </div>
+
+        <PaymentPlanEditor
+          cuotas={planPagosDefault}
+          onChange={setPlanPagosDefault}
+          moneda={moneda}
+        />
 
         <div className="form-section-label">
           <span>Datos bancarios</span>

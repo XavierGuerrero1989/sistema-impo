@@ -7,7 +7,9 @@ import {
   estadoPagoProgramado,
   importeCuota,
   montoSugeridoCuota,
+  normalizarPlanPagos,
   obtenerPlanPagos,
+  validarPlanPagos,
 } from "../src/domain/pagos.js";
 
 test("crea un plan de pagos de dos tramos", () => {
@@ -19,6 +21,18 @@ test("crea un plan de pagos de dos tramos", () => {
   assert.equal(plan.length, 2);
   assert.equal(importeCuota(plan[0], 10000), 3000);
   assert.equal(plan[1].condicion, "ARRIBO_CHILE");
+});
+
+test("normaliza y valida planes predeterminados de cantidad variable", () => {
+  const plan = normalizarPlanPagos([
+    { nombre: "Adelanto", porcentaje: "50", condicion: "AL_CREAR" },
+    { nombre: "Segundo pago", porcentaje: "30", condicion: "DOCUMENTOS_EMBARQUE" },
+    { nombre: "Pago final", porcentaje: "20", condicion: "ARRIBO_CHILE" },
+  ]);
+  assert.equal(plan.length, 3);
+  assert.equal(plan[1].porcentaje, 30);
+  assert.deepEqual(validarPlanPagos(plan), []);
+  assert.equal(validarPlanPagos([{ nombre: "Único", porcentaje: 90 }]).length, 1);
 });
 
 test("detecta hitos logísticos para condiciones financieras", () => {

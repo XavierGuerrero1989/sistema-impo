@@ -19,6 +19,8 @@ import {
   importeCuota,
   montoSugeridoCuota,
   obtenerPlanPagos,
+  normalizarPlanPagos,
+  validarPlanPagos,
 } from "../domain/pagos";
 import { getEntidadesLocal } from "../entidades/EntidadesRepo";
 import {
@@ -29,6 +31,7 @@ import {
 } from "../domain/incoterms";
 import { confirmAction } from "./sweetAlerts";
 import { referenciaOperacion, referenciaOperacionDuplicada } from "../domain/operacion";
+import PaymentPlanEditor from "./PaymentPlanEditor";
 
 const ESTADOS = [
   "PLANIFICADA",
@@ -190,6 +193,8 @@ export default function OperacionDetalle({ modo = "resumen" }) {
   const [editandoIncoterm, setEditandoIncoterm] = useState(false);
   const [referenciaInput, setReferenciaInput] = useState("");
   const [editandoReferencia, setEditandoReferencia] = useState(false);
+  const [editandoPlanPagos, setEditandoPlanPagos] = useState(false);
+  const [planPagosDraft, setPlanPagosDraft] = useState([]);
 
   /* ===== Documentos ===== */
   const [docNombre, setDocNombre] = useState("");
@@ -220,6 +225,8 @@ export default function OperacionDetalle({ modo = "resumen" }) {
       setEditandoIncoterm(false);
       setReferenciaInput(op?.referenciaOperacion || "");
       setEditandoReferencia(false);
+      setPlanPagosDraft(normalizarPlanPagos(op?.condicionVenta?.cuotas));
+      setEditandoPlanPagos(false);
 
       const cuotaInicial = obtenerPlanPagos(op || {})[0];
       if (cuotaInicial) {
@@ -341,6 +348,45 @@ export default function OperacionDetalle({ modo = "resumen" }) {
     if (!cuota) return;
     setMontoInput(String(Number(montoSugeridoCuota(operacion, cuotaId).toFixed(2))));
     if (cuota.fechaEstimada) setFechaInput(cuota.fechaEstimada);
+  };
+
+  const guardarPlanPagos = async () => {
+    if (!permissions.manageFinances) return alert("No tenés permiso para modificar finanzas.");
+    if (operacion.estado === "FINALIZADA") return;
+    const errores = validarPlanPagos(planPagosDraft);
+    if (errores.length) return alert(errores.join("\n"));
+
+    const ids = new Set(planPagosDraft.map((cuota) => cuota.id));
+    const pagoHuerfano = pagosProgramados.find(
+      (pago) => pago.estado !== "CANCELADO" && pago.cuotaId && !ids.has(pago.cuotaId)
+    );
+    if (pagoHuerfano) {
+      return alert("No podés eliminar un tramo que ya tiene un pago programado, aprobado o confirmado.");
+    }
+
+    const cuotasNormalizadas = normalizarPlanPagos(planPagosDraft);
+    const updated = {
+      ...operacion,
+      condicionVenta: { ...(operacion.condicionVenta || {}), cuotas: cuotasNormalizadas },
+      historial: [
+        ...(operacion.historial || []),
+        auditEvent("Plan de pagos actualizado", {
+          area: "finanzas",
+          cantidadPagos: cuotasNormalizadas.length,
+          distribucion: cuotasNormalizadas.map((cuota) => `${cuota.nombre}: ${cuota.porcentaje}%`).join(" · "),
+        }),
+      ],
+    };
+    await upsertOperacionLocal(updated);
+    setOperacion(updated);
+    setPlanPagosDraft(cuotasNormalizadas);
+    setEditandoPlanPagos(false);
+    const primeraCuota = cuotasNormalizadas[0];
+    if (primeraCuota) {
+      setCuotaInput(primeraCuota.id);
+      setMontoInput(String(Number(importeCuota(primeraCuota, total).toFixed(2))));
+    }
+    alert("El plan de pagos se guardó correctamente.");
   };
 
   /* ===== Finanzas acciones ===== */
@@ -1379,9 +1425,28 @@ export default function OperacionDetalle({ modo = "resumen" }) {
               <span className="workflow-eyebrow">Condición comercial</span>
               <h4>Plan de pagos</h4>
             </div>
-            <small>{planPagos.reduce((sum, cuota) => sum + Number(cuota.porcentaje || 0), 0)}% distribuido</small>
+            <div className="payment-plan-head-actions">
+              <small>{planPagos.reduce((sum, cuota) => sum + Number(cuota.porcentaje || 0), 0)}% distribuido</small>
+              {permissions.manageFinances && operacion.estado !== "FINALIZADA" && !editandoPlanPagos && (
+                <button type="button" onClick={() => {
+                  setPlanPagosDraft(normalizarPlanPagos(planPagos));
+                  setEditandoPlanPagos(true);
+                }}>Editar condición</button>
+              )}
+            </div>
           </div>
-          <div className="payment-plan-grid">
+          {editandoPlanPagos ? (
+            <div className="operation-plan-editor">
+              <PaymentPlanEditor cuotas={planPagosDraft} onChange={setPlanPagosDraft} total={total} moneda={moneda} />
+              <div className="operation-plan-editor-actions">
+                <button className="btn-primary" type="button" onClick={guardarPlanPagos}>Guardar condición</button>
+                <button className="btn-secondary" type="button" onClick={() => {
+                  setPlanPagosDraft(normalizarPlanPagos(planPagos));
+                  setEditandoPlanPagos(false);
+                }}>Cancelar</button>
+              </div>
+            </div>
+          ) : <div className="payment-plan-grid">
             {planPagos.map((cuota) => {
               const habilitada = condicionCumplida(cuota.condicion, operacion.estado);
               return (
@@ -1399,7 +1464,7 @@ export default function OperacionDetalle({ modo = "resumen" }) {
                 </article>
               );
             })}
-          </div>
+          </div>}
         </section>
 
         <section className="payment-scheduler">

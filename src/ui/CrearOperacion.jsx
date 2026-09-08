@@ -10,7 +10,7 @@ import {
   referenciaOperacionDuplicada,
   validarOperacion,
 } from "../domain/operacion";
-import { CONDICIONES_PAGO, importeCuota } from "../domain/pagos";
+import { CONDICIONES_PAGO, importeCuota, normalizarPlanPagos } from "../domain/pagos";
 import { INCOTERMS, INCOTERMS_VERSION } from "../domain/incoterms";
 
 export default function CrearOperacion() {
@@ -74,6 +74,19 @@ export default function CrearOperacion() {
       [e.target.name]: e.target.value
     });
 
+  };
+
+  const seleccionarProveedor = (e) => {
+    const proveedorId = e.target.value;
+    setForm((current) => ({ ...current, proveedorId }));
+    const proveedor = proveedores.find((item) => item.proveedorId === proveedorId);
+    if (!proveedor) return;
+    setCuotas(normalizarPlanPagos(proveedor.comercial?.planPagosDefault).map((cuota, index) => ({
+      ...cuota,
+      id: `cuota_${Date.now()}_${index + 1}`,
+      porcentaje: String(cuota.porcentaje),
+      fechaEstimada: cuota.fechaEstimada || "",
+    })));
   };
 
   const nuevaCuota = (index) => ({
@@ -328,7 +341,7 @@ export default function CrearOperacion() {
           <select
             name="proveedorId"
             value={form.proveedorId}
-            onChange={onChange}
+            onChange={seleccionarProveedor}
           >
 
             <option value="">Seleccionar proveedor</option>

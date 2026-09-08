@@ -138,3 +138,4 @@
 .filtros-bar input {
   flex: 1;
 }
+.provider-payment-plan{margin-top:24px;padding:20px;overflow:visible}.provider-payment-plan-head span{color:#6655e8;font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em}.provider-payment-plan-head h3{margin:5px 0;color:#233047}.provider-payment-plan-head p{margin:0 0 16px;color:#718096;font-size:.8rem}.provider-payment-plan-list{display:grid;gap:9px}.provider-payment-plan-list article{display:flex;justify-content:space-between;gap:15px;padding:12px 14px;border:1px solid #e5eaf2;border-radius:11px;background:#fbfdff}.provider-payment-plan-list span{color:#65738b;font-size:.82rem}

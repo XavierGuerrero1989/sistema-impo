@@ -12,6 +12,8 @@ import { useAuth } from "../auth/AuthContext";
 import { countryLabel } from "../domain/paises";
 import { confirmAction } from "../ui/sweetAlerts";
 import { referenciaOperacion } from "../domain/operacion";
+import PaymentPlanEditor from "../ui/PaymentPlanEditor";
+import { normalizarPlanPagos, validarPlanPagos, condicionLabel } from "../domain/pagos";
 
 export default function ProveedorDetalle() {
 
@@ -23,6 +25,7 @@ export default function ProveedorDetalle() {
   const [editando, setEditando] = useState(false);
   const [operacionesProveedor, setOperacionesProveedor] = useState([]);
   const [loadError, setLoadError] = useState("");
+  const [planPagosDefault, setPlanPagosDefault] = useState([]);
 
   const [form, setForm] = useState({
     proveedorId: "",
@@ -60,6 +63,7 @@ export default function ProveedorDetalle() {
       }
 
       setProveedor(data);
+      setPlanPagosDefault(normalizarPlanPagos(data?.comercial?.planPagosDefault));
 
       setForm({
         proveedorId: data.proveedorId || "",
@@ -111,6 +115,11 @@ export default function ProveedorDetalle() {
 
   async function handleGuardar() {
   if (!permissions.manageProviders) return;
+  const erroresPlan = validarPlanPagos(planPagosDefault);
+  if (erroresPlan.length) {
+    alert(erroresPlan.join("\n"));
+    return;
+  }
 
   const data = {
 
@@ -142,6 +151,7 @@ export default function ProveedorDetalle() {
       monedaHabitual: form.monedaHabitual,
       condicionPago: form.condicionPago,
       plazoPagoDias: form.plazoPagoDias
+      ,planPagosDefault
     },
 
     updatedAt: new Date()
@@ -156,6 +166,7 @@ export default function ProveedorDetalle() {
   const updated = await getProveedorById(proveedorId);
 
   setProveedor(updated);
+  setLoadError("");
 }
 
   async function handleEliminar() {
@@ -407,6 +418,28 @@ export default function ProveedorDetalle() {
 
         </table>
 
+      </div>
+
+      <div className="proveedores-table-card provider-payment-plan">
+        <div className="provider-payment-plan-head">
+          <div>
+            <span>Condición comercial</span>
+            <h3>Plan de pagos predeterminado</h3>
+            <p>Se copiará como propuesta al iniciar una nueva operación con este proveedor.</p>
+          </div>
+        </div>
+        {editando ? (
+          <PaymentPlanEditor cuotas={planPagosDefault} onChange={setPlanPagosDefault} moneda={form.monedaHabitual} />
+        ) : (
+          <div className="provider-payment-plan-list">
+            {normalizarPlanPagos(proveedor?.comercial?.planPagosDefault).map((cuota) => (
+              <article key={cuota.id}>
+                <strong>{cuota.nombre}</strong>
+                <span>{cuota.porcentaje}% · {condicionLabel(cuota.condicion)}</span>
+              </article>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="proveedores-table-card" style={{marginTop:"24px"}}>
