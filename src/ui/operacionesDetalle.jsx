@@ -99,6 +99,11 @@ const LOGISTICS_DOCUMENT_TYPES = new Set([
   "BL",
   "PACKING_LIST",
   "DECLARACION_IMPORTACION",
+  "INVOICE",
+  "FACTURA_LOCAL",
+  "ORDEN_COMPRA",
+  "PROFORMA_INVOICE",
+  "COTIZACION",
 ]);
 
 const inferDocumentArea = (documento = {}) => {
@@ -2148,6 +2153,11 @@ export default function OperacionDetalle({ modo = "resumen" }) {
                 <option value="BL">B/L</option>
                 <option value="PACKING_LIST">Packing List</option>
                 <option value="DECLARACION_IMPORTACION">Declaración de importación</option>
+                <option value="INVOICE">Invoice</option>
+                <option value="FACTURA_LOCAL">Factura local</option>
+                <option value="ORDEN_COMPRA">Orden de compra</option>
+                <option value="PROFORMA_INVOICE">Proforma invoice (PI)</option>
+                <option value="COTIZACION">Cotización</option>
               </>
             )}
             <option value="OTRO">Otro</option>
@@ -2155,8 +2165,12 @@ export default function OperacionDetalle({ modo = "resumen" }) {
 
           <input
             placeholder={
-              docTipo === "FACTURA" || docTipo === "PROFORMA"
+              ["FACTURA", "PROFORMA", "INVOICE", "FACTURA_LOCAL", "PROFORMA_INVOICE"].includes(docTipo)
                 ? "Número de factura"
+                : docTipo === "ORDEN_COMPRA"
+                ? "Número de orden de compra"
+                : docTipo === "COTIZACION"
+                ? "Número de cotización"
                 : docTipo === "BL"
                 ? "Número BL"
                 : docTipo === "SWIFT"

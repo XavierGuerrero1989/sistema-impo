@@ -4,7 +4,17 @@ import { useNavigate } from "react-router-dom";
 import "./documentos.css";
 import { referenciaOperacion } from "../domain/operacion";
 
-const TIPOS = ["FACTURA", "BL", "PACKING_LIST", "OTRO"];
+const TIPOS = [
+  "FACTURA",
+  "BL",
+  "PACKING_LIST",
+  "INVOICE",
+  "FACTURA_LOCAL",
+  "ORDEN_COMPRA",
+  "PROFORMA_INVOICE",
+  "COTIZACION",
+  "OTRO",
+];
 
 const formatBytes = (bytes = 0) => {
   const b = Number(bytes || 0);
@@ -134,6 +144,11 @@ export default function Documentos() {
           <option value="FACTURA">Factura</option>
           <option value="BL">B/L</option>
           <option value="PACKING_LIST">Packing List</option>
+          <option value="INVOICE">Invoice</option>
+          <option value="FACTURA_LOCAL">Factura local</option>
+          <option value="ORDEN_COMPRA">Orden de compra</option>
+          <option value="PROFORMA_INVOICE">Proforma invoice (PI)</option>
+          <option value="COTIZACION">Cotización</option>
           <option value="OTRO">Otro</option>
         </select>
         <select value={filtroEstado} onChange={(e) => setFiltroEstado(e.target.value)}>
