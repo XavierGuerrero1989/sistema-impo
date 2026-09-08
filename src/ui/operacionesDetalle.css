@@ -899,6 +899,7 @@
 .payment-plan-head,.payment-scheduler-head,.scheduled-payments-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
 .payment-plan-head h4,.payment-scheduler-head h4,.scheduled-payments-head h4{margin:4px 0 0;color:#233047}
 .payment-plan-head>small{padding:6px 9px;border-radius:8px;background:#ede9fe;color:#6d28d9;font-size:.68rem;font-weight:750}
+.payment-plan-head-actions{display:flex;align-items:center;gap:9px}.payment-plan-head-actions small{padding:6px 9px;border-radius:8px;background:#ede9fe;color:#6d28d9;font-size:.68rem;font-weight:750}.payment-plan-head-actions button{padding:7px 10px;border:0;border-radius:8px;background:#6252df;color:#fff;font-weight:750;cursor:pointer}.operation-plan-editor{margin-top:15px}.operation-plan-editor-actions{display:flex;justify-content:flex-end;gap:9px;margin-top:12px}
 .payment-plan-grid{display:grid;gap:9px;margin-top:15px}
 .payment-installment{display:grid;grid-template-columns:52px minmax(0,1fr) auto;align-items:center;gap:13px;padding:13px;border:1px solid #e7ebf2;border-radius:13px;background:#fff}
 .payment-installment.available{border-color:#bbf7d0;background:#f7fff9}

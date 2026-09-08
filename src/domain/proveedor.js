@@ -1,3 +1,5 @@
+import { normalizarPlanPagos, validarPlanPagos } from "./pagos.js";
+
 export const ESTADOS_PROVEEDOR = ["ACTIVO", "SUSPENDIDO", "BLOQUEADO"];
 
 export function normalizarProveedor(input = {}) {
@@ -28,6 +30,7 @@ export function normalizarProveedor(input = {}) {
     comercial: {
       ...(input.comercial || {}),
       monedaHabitual: String(input.comercial?.monedaHabitual || "USD").toUpperCase(),
+      planPagosDefault: normalizarPlanPagos(input.comercial?.planPagosDefault),
     },
   };
 }
@@ -43,5 +46,6 @@ export function validarProveedor(input) {
   if (proveedor.contacto?.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(proveedor.contacto.email)) {
     errors.push("El email de contacto no es válido");
   }
+  errors.push(...validarPlanPagos(proveedor.comercial.planPagosDefault));
   return errors;
 }

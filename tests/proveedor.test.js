@@ -16,6 +16,8 @@ test("normaliza el ID y estado de un proveedor", () => {
   assert.equal(proveedor.banco.numeroCuenta, "123456");
   assert.equal(proveedor.direccion.direccion, "Calle 1");
   assert.equal(proveedor.direccion.codigoPostal, "200000");
+  assert.equal(proveedor.comercial.planPagosDefault.length, 2);
+  assert.equal(proveedor.comercial.planPagosDefault.reduce((sum, cuota) => sum + cuota.porcentaje, 0), 100);
 });
 
 test("valida ID, nombre y email", () => {
