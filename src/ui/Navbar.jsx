@@ -3,16 +3,24 @@ import { useAuth } from "../auth/AuthContext";
 import { NavLink, Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 
-const navItems = [
+const mainNavItems = [
   { to: "/", label: "Inicio", icon: "⌂" },
   { to: "/operaciones", label: "Operaciones", icon: "▦" },
-  { to: "/proveedores", label: "Proveedores", icon: "◆", permission: "viewDirectories" },
-  { to: "/forwarders", label: "Forwarders", icon: "◈", permission: "viewDirectories" },
-  { to: "/agentes-aduana", label: "Agentes de aduana", icon: "◇", permission: "viewDirectories" },
   { to: "/logistica", label: "Importaciones", icon: "→", permission: "viewLogistics" },
-  { to: "/documentos", label: "Documentos", icon: "▤" },
   { to: "/finanzas", label: "Finanzas", icon: "$", permission: "viewFinances" },
   { to: "/historial", label: "Historial", icon: "↺" },
+];
+
+const administrationNavItems = [
+  { to: "/forwarders", label: "Forwarders", icon: "◈", permission: "viewDirectories" },
+  { to: "/agentes-aduana", label: "Agentes", icon: "◇", permission: "viewDirectories" },
+  { to: "/usuarios", label: "Usuarios", icon: "◎", permission: "manageUsers" },
+  { to: "/papelera", label: "Papelera", icon: "⌫", permission: "manageUsers", danger: true },
+];
+
+const secondaryNavItems = [
+  { to: "/proveedores", label: "Proveedores", icon: "◆", permission: "viewDirectories" },
+  { to: "/documentos", label: "Documentos", icon: "▤" },
 ];
 
 export default function Navbar() {
@@ -45,6 +53,8 @@ export default function Navbar() {
   const syncLabel = syncError ? "Error de sincronización" : !online ? "Sin conexión" : syncing ? "Sincronizando" : "Todo sincronizado";
   const syncClass = syncError || !online ? "offline" : syncing ? "syncing" : "online";
   const initials = (user?.email || "U").slice(0, 2).toUpperCase();
+  const canViewItem = (item) => !item.permission || permissions[item.permission];
+  const visibleAdministrationItems = administrationNavItems.filter(canViewItem);
 
   return (
     <>
@@ -67,7 +77,7 @@ export default function Navbar() {
 
         <div className="nav-section-label">Navegación</div>
         <nav className="navbar-links">
-          {navItems.filter((item) => !item.permission || permissions[item.permission]).map((item) => (
+          {mainNavItems.filter(canViewItem).map((item) => (
             <NavLink key={item.to} to={item.to} end={item.to === "/"} onClick={() => setOpen(false)}
               className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}>
               <span className="nav-icon">{item.icon}</span><span>{item.label}</span>
@@ -75,19 +85,28 @@ export default function Navbar() {
           ))}
         </nav>
 
-        {permissions.manageUsers && (
+        {visibleAdministrationItems.length > 0 && (
           <>
             <div className="nav-section-label">Administración</div>
             <nav className="navbar-links">
-              <NavLink to="/usuarios" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}>
-                <span className="nav-icon">◎</span><span>Usuarios</span>
-              </NavLink>
-              <NavLink to="/papelera" className={({ isActive }) => isActive ? "nav-link active danger-link" : "nav-link danger-link"}>
-                <span className="nav-icon">⌫</span><span>Papelera</span>
-              </NavLink>
+              {visibleAdministrationItems.map((item) => (
+                <NavLink key={item.to} to={item.to} onClick={() => setOpen(false)}
+                  className={({ isActive }) => `${isActive ? "nav-link active" : "nav-link"}${item.danger ? " danger-link" : ""}`}>
+                  <span className="nav-icon">{item.icon}</span><span>{item.label}</span>
+                </NavLink>
+              ))}
             </nav>
           </>
         )}
+
+        <nav className="navbar-links">
+          {secondaryNavItems.filter(canViewItem).map((item) => (
+            <NavLink key={item.to} to={item.to} onClick={() => setOpen(false)}
+              className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}>
+              <span className="nav-icon">{item.icon}</span><span>{item.label}</span>
+            </NavLink>
+          ))}
+        </nav>
 
         <div className="navbar-user-card">
           <span className="user-avatar">{initials}</span>
