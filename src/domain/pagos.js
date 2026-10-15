@@ -92,6 +92,7 @@ export function condicionCumplida(condicion, estadoOperacion) {
   const orden = [
     "PLANIFICADA",
     "PRODUCCION",
+    "ESPERA_RETIRO",
     "CARGADA",
     "EN_TRANSITO",
     "ARRIBADA",

@@ -3,7 +3,7 @@ import { deleteOperacionLocal, getOperacionesLocal } from "../offline/operacione
 import "./operacionesListado.css";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
-import { calcularFinanzas, ESTADOS_OPERACION, referenciaOperacion } from "../domain/operacion";
+import { calcularFinanzas, ESTADOS_OPERACION, estadoOperacionLabel, referenciaOperacion } from "../domain/operacion";
 import { confirmAction } from "./sweetAlerts";
 
 const ESTADOS = ESTADOS_OPERACION;
@@ -103,7 +103,7 @@ export default function OperacionesListado() {
           <option value="ALL">Todos los estados</option>
           {ESTADOS.map((e) => (
             <option key={e} value={e}>
-              {e.replace("_", " ")}
+              {estadoOperacionLabel(e)}
             </option>
           ))}
         </select>
@@ -152,7 +152,7 @@ export default function OperacionesListado() {
 
                   <td>
                     <span className={`estado-badge ${op.estado.toLowerCase()}`}>
-                      {op.estado.replace("_", " ")}
+                      {estadoOperacionLabel(op.estado)}
                     </span>
                   </td>
 

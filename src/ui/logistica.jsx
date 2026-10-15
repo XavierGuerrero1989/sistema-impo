@@ -4,25 +4,15 @@ import { useNavigate } from "react-router-dom";
 import "./logistica.css";
 import { useAuth } from "../auth/AuthContext";
 import { countryLabel } from "../domain/paises";
-import { referenciaOperacion } from "../domain/operacion";
+import { ESTADOS_FLUJO_OPERACION, estadoOperacionLabel, referenciaOperacion } from "../domain/operacion";
 
 /* =========================
    ETAPAS NORMALIZADAS
 ========================== */
 
-const ETAPAS = [
-  "PLANIFICADA",
-  "PRODUCCION",
-  "CARGADA",
-  "EN_TRANSITO",
-  "ARRIBADA",
-  "EN_DESPACHO",
-  "ENTREGADA",
-  "BLOQUEADA",
-];
+const ETAPAS = [...ESTADOS_FLUJO_OPERACION, "BLOQUEADA"];
 
-const ETAPA_LABEL = (e) =>
-  e === "PRODUCCION" ? "PRODUCCIÓN" : e.replaceAll("_", " ");
+const ETAPA_LABEL = estadoOperacionLabel;
 
 export default function Logistica() {
 

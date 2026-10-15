@@ -3,6 +3,7 @@ import { INCOTERMS_VERSION, isValidIncoterm } from "./incoterms.js";
 export const ESTADOS_OPERACION = [
   "PLANIFICADA",
   "PRODUCCION",
+  "ESPERA_RETIRO",
   "CARGADA",
   "EN_TRANSITO",
   "ARRIBADA",
@@ -11,6 +12,39 @@ export const ESTADOS_OPERACION = [
   "BLOQUEADA",
   "FINALIZADA",
 ];
+
+export const ESTADOS_FLUJO_OPERACION = [
+  "PLANIFICADA",
+  "PRODUCCION",
+  "ESPERA_RETIRO",
+  "CARGADA",
+  "EN_TRANSITO",
+  "ARRIBADA",
+  "EN_DESPACHO",
+  "ENTREGADA",
+];
+
+export function estadoOperacionLabel(estado) {
+  if (estado === "PRODUCCION") return "PRODUCCIÓN";
+  if (estado === "ESPERA_RETIRO") return "PRODUCCIÓN TERMINADA / EN ESPERA DE RETIRO";
+  return String(estado || "-").replaceAll("_", " ");
+}
+
+export function siguienteEstadoOperacion(estado) {
+  const index = ESTADOS_FLUJO_OPERACION.indexOf(estado);
+  return index >= 0 && index < ESTADOS_FLUJO_OPERACION.length - 1
+    ? ESTADOS_FLUJO_OPERACION[index + 1]
+    : null;
+}
+
+export function anteriorEstadoOperacion(estado) {
+  const index = ESTADOS_FLUJO_OPERACION.indexOf(estado);
+  return index > 0 ? ESTADOS_FLUJO_OPERACION[index - 1] : null;
+}
+
+export function esTransicionEstadoValida(desde, hacia) {
+  return siguienteEstadoOperacion(desde) === hacia || anteriorEstadoOperacion(desde) === hacia;
+}
 
 export const TIPOS_DOCUMENTO = [
   "FACTURA",

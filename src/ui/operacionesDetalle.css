@@ -697,7 +697,7 @@
 .workflow-progress strong { color: #4f46e5; font-size: 1.3rem; }
 .workflow-progress span { color: #64748b; font-size: .7rem; }
 .workflow-timeline {
-  display: grid; grid-template-columns: repeat(7, 1fr); margin-top: 28px;
+  display: grid; grid-template-columns: repeat(8, 1fr); margin-top: 28px;
 }
 .workflow-step {
   position: relative; display: flex; align-items: center; flex-direction: column;
@@ -853,6 +853,7 @@
   background: rgba(255,255,255,.1); color: white;
 }
 .next-action-card button.next-action-save:hover { background: rgba(255,255,255,.18); }
+.next-action-card button.next-action-back{border:1px solid rgba(254,202,202,.5);background:rgba(127,29,29,.24);color:#fee2e2}.next-action-card button.next-action-back:hover{background:rgba(127,29,29,.38)}
 .ready-message { color: #bbf7d0 !important; font-weight: 700; }
 .workflow-more {
   margin-top: 20px; margin-bottom: 26px; padding-top: 15px;
