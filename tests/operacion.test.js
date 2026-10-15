@@ -2,11 +2,15 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   alertasOperacion,
+  anteriorEstadoOperacion,
   calcularFinanzas,
+  esTransicionEstadoValida,
+  estadoOperacionLabel,
   generarReferenciaOperacion,
   normalizarOperacion,
   referenciaOperacion,
   referenciaOperacionDuplicada,
+  siguienteEstadoOperacion,
   validarOperacion,
 } from "../src/domain/operacion.js";
 
@@ -43,6 +47,22 @@ test("usa una referencia editable sin alterar el ID interno", () => {
 test("reconoce producción como etapa logística válida", () => {
   const result = normalizarOperacion({ id: "OP-2", estado: "PRODUCCION" });
   assert.equal(result.estado, "PRODUCCION");
+});
+
+test("inserta espera de retiro entre producción y cargada", () => {
+  const result = normalizarOperacion({ id: "OP-ESPERA", estado: "ESPERA_RETIRO" });
+  assert.equal(result.estado, "ESPERA_RETIRO");
+  assert.equal(siguienteEstadoOperacion("PRODUCCION"), "ESPERA_RETIRO");
+  assert.equal(siguienteEstadoOperacion("ESPERA_RETIRO"), "CARGADA");
+  assert.equal(anteriorEstadoOperacion("CARGADA"), "ESPERA_RETIRO");
+  assert.equal(estadoOperacionLabel("ESPERA_RETIRO"), "PRODUCCIÓN TERMINADA / EN ESPERA DE RETIRO");
+});
+
+test("solo permite avanzar o retroceder un estado contiguo", () => {
+  assert.equal(esTransicionEstadoValida("PRODUCCION", "ESPERA_RETIRO"), true);
+  assert.equal(esTransicionEstadoValida("CARGADA", "ESPERA_RETIRO"), true);
+  assert.equal(esTransicionEstadoValida("CARGADA", "PLANIFICADA"), false);
+  assert.equal(esTransicionEstadoValida("PRODUCCION", "CARGADA"), false);
 });
 
 test("normaliza cotizaciones e intervinientes logísticos", () => {

@@ -30,19 +30,16 @@ import {
   isValidIncoterm,
 } from "../domain/incoterms";
 import { confirmAction } from "./sweetAlerts";
-import { referenciaOperacion, referenciaOperacionDuplicada } from "../domain/operacion";
+import {
+  anteriorEstadoOperacion,
+  esTransicionEstadoValida,
+  ESTADOS_FLUJO_OPERACION,
+  estadoOperacionLabel,
+  referenciaOperacion,
+  referenciaOperacionDuplicada,
+  siguienteEstadoOperacion,
+} from "../domain/operacion";
 import PaymentPlanEditor from "./PaymentPlanEditor";
-
-const ESTADOS = [
-  "PLANIFICADA",
-  "PRODUCCION",
-  "CARGADA",
-  "EN_TRANSITO",
-  "ARRIBADA",
-  "EN_DESPACHO",
-  "ENTREGADA",
-  "BLOQUEADA",
-];
 
 // “Ruta” / medio de transporte (alineado con Logística)
 const MEDIOS = ["MARÍTIMO", "TERRESTRE", "AÉREO"];
@@ -76,18 +73,9 @@ const documentStatusClass = (estado = "PENDIENTE") => {
   if (["VALIDADO", "APROBADO"].includes(estado)) return "is-approved";
   return "is-uploaded";
 };
-const FLUJO_ESTADOS = [
-  "PLANIFICADA",
-  "PRODUCCION",
-  "CARGADA",
-  "EN_TRANSITO",
-  "ARRIBADA",
-  "EN_DESPACHO",
-  "ENTREGADA",
-];
+const FLUJO_ESTADOS = ESTADOS_FLUJO_OPERACION;
 
-const estadoLabel = (estado) =>
-  estado === "PRODUCCION" ? "PRODUCCIÓN" : estado?.replaceAll("_", " ") || "-";
+const estadoLabel = estadoOperacionLabel;
 const medioIcon = (value) =>
   value === "AÉREO" ? "✈️" : value === "TERRESTRE" ? "🚚" : "⚓";
 
@@ -153,6 +141,7 @@ export default function OperacionDetalle({ modo = "resumen" }) {
   const [fechaPedidoProveedor, setFechaPedidoProveedor] = useState("");
   const [fechaSalida, setFechaSalida] = useState("");
   const [fechaFinFabricacion, setFechaFinFabricacion] = useState("");
+  const [fechaCargaReal, setFechaCargaReal] = useState("");
   const [eta, setEta] = useState("");
   const [deposito, setDeposito] = useState("");
   const [etaLiberacion, setEtaLiberacion] = useState("");
@@ -246,6 +235,7 @@ export default function OperacionDetalle({ modo = "resumen" }) {
       setFechaFinFabricacion(
         l.fechaFinFabricacion ? String(l.fechaFinFabricacion).slice(0, 10) : ""
       );
+      setFechaCargaReal(l.fechaCargaReal ? String(l.fechaCargaReal).slice(0, 10) : "");
       setEta(l.eta ? String(l.eta).slice(0, 10) : "");
       setDeposito(l.deposito || "");
       setEtaLiberacion(
@@ -836,6 +826,14 @@ export default function OperacionDetalle({ modo = "resumen" }) {
       return;
     }
 
+    if (!esTransicionEstadoValida(operacion.estado, estadoObjetivo)) {
+      alert("Solo podés avanzar o retroceder un paso válido dentro del flujo.");
+      return;
+    }
+
+    const estadoAnterior = operacion.estado;
+    const esRetroceso = anteriorEstadoOperacion(estadoAnterior) === estadoObjetivo;
+
     const logistica = {
       ...(operacion.logistica || {}),
       origen: origen || null,
@@ -844,6 +842,7 @@ export default function OperacionDetalle({ modo = "resumen" }) {
       fechaPedidoProveedor: fechaPedidoProveedor || null,
       fechaSalida: fechaSalida || null,
       fechaFinFabricacion: fechaFinFabricacion || null,
+      fechaCargaReal: fechaCargaReal || null,
       eta: eta || null,
       deposito: deposito || null,
       etaLiberacion: etaLiberacion || null,
@@ -858,10 +857,16 @@ export default function OperacionDetalle({ modo = "resumen" }) {
       logistica,
       historial: [
         ...(operacion.historial || []),
-        auditEvent("Estado cambiado", {
+        auditEvent(
+          `${esRetroceso ? "Estado retrocedido" : "Estado avanzado"}: ${estadoLabel(estadoAnterior)} → ${estadoLabel(estadoObjetivo)}`,
+          {
           area: "logistica",
+          estadoAnterior,
+          estadoNuevo: estadoObjetivo,
           estado: estadoObjetivo,
-        }),
+          direccion: esRetroceso ? "RETROCESO" : "AVANCE",
+          }
+        ),
       ],
     };
 
@@ -884,6 +889,7 @@ export default function OperacionDetalle({ modo = "resumen" }) {
         fechaPedidoProveedor: fechaPedidoProveedor || null,
         fechaSalida: fechaSalida || null,
         fechaFinFabricacion: fechaFinFabricacion || null,
+        fechaCargaReal: fechaCargaReal || null,
         eta: eta || null,
         deposito: deposito || null,
         etaLiberacion: etaLiberacion || null,
@@ -1647,10 +1653,10 @@ export default function OperacionDetalle({ modo = "resumen" }) {
           const estadoActual = operacion.estado;
           const currentIndex = FLUJO_ESTADOS.indexOf(estadoActual);
           const safeIndex = Math.max(0, currentIndex);
-          const proximoEstado =
-            estadoActual === "FINALIZADA" || safeIndex >= FLUJO_ESTADOS.length - 1
-              ? null
-              : FLUJO_ESTADOS[safeIndex + 1];
+          const proximoEstado = estadoActual === "FINALIZADA"
+            ? null
+            : siguienteEstadoOperacion(estadoActual);
+          const estadoAnterior = anteriorEstadoOperacion(estadoActual);
           const avance =
             estadoActual === "FINALIZADA"
               ? 100
@@ -1661,8 +1667,10 @@ export default function OperacionDetalle({ modo = "resumen" }) {
             faltantes.push("Ingresar fecha de pedido al proveedor");
           if (proximoEstado === "PRODUCCION" && !fechaSalida)
             faltantes.push("Ingresar salida estimada (ETD)");
-          if (proximoEstado === "CARGADA" && !fechaFinFabricacion)
+          if (proximoEstado === "ESPERA_RETIRO" && !fechaFinFabricacion)
             faltantes.push("Ingresar fin estimado de fabricación");
+          if (proximoEstado === "CARGADA" && !fechaCargaReal)
+            faltantes.push("Ingresar fecha real de carga");
           if (proximoEstado === "EN_TRANSITO" && !eta)
             faltantes.push("Ingresar fecha estimada de arribo");
           if (proximoEstado === "ENTREGADA" && !fechaLlegadaBodega)
@@ -1674,6 +1682,17 @@ export default function OperacionDetalle({ modo = "resumen" }) {
               return;
             }
             cambiarEstado(proximoEstado);
+          };
+
+          const retroceder = async () => {
+            if (!estadoAnterior) return;
+            const confirmado = await confirmAction({
+              title: "Retroceder estado",
+              text: `La operación volverá de ${estadoLabel(estadoActual)} a ${estadoLabel(estadoAnterior)}. El cambio quedará registrado en el historial.`,
+              confirmText: "Retroceder",
+              danger: true,
+            });
+            if (confirmado) cambiarEstado(estadoAnterior);
           };
 
           return (
@@ -1788,10 +1807,17 @@ export default function OperacionDetalle({ modo = "resumen" }) {
                       </>
                     )}
 
-                    {estadoActual === "PRODUCCION" && (
+                    {(estadoActual === "PRODUCCION" || estadoActual === "ESPERA_RETIRO") && (
                       <label>
                         <span>Fin estimado de fabricación</span>
                         <input type="date" value={fechaFinFabricacion} disabled={estadoActual === "FINALIZADA" || !permissions.manageOperations} onChange={(e) => setFechaFinFabricacion(e.target.value)} />
+                      </label>
+                    )}
+
+                    {(estadoActual === "ESPERA_RETIRO" || estadoActual === "CARGADA" || estadoActual === "EN_TRANSITO") && (
+                      <label>
+                        <span>Fecha real de carga</span>
+                        <input type="date" value={fechaCargaReal} disabled={estadoActual === "FINALIZADA" || !permissions.manageOperations} onChange={(e) => setFechaCargaReal(e.target.value)} />
                       </label>
                     )}
 
@@ -1854,6 +1880,11 @@ export default function OperacionDetalle({ modo = "resumen" }) {
                     <button className="next-action-save" onClick={guardarLogistica}>
                       Guardar datos
                     </button>
+                    {estadoAnterior && (
+                      <button className="next-action-back" onClick={retroceder}>
+                        ← Retroceder a {estadoLabel(estadoAnterior)}
+                      </button>
+                    )}
                   </aside>
                 )}
               </div>
@@ -1901,20 +1932,16 @@ export default function OperacionDetalle({ modo = "resumen" }) {
                 <details className="workflow-more">
                   <summary>Más acciones y correcciones</summary>
                   <div className="workflow-more-content">
-                    <label>
-                      <span>Cambiar estado manualmente</span>
-                      <select value={nuevoEstado} onChange={(e) => setNuevoEstado(e.target.value)}>
-                        {ESTADOS.map((estado) => <option key={estado} value={estado}>{estadoLabel(estado)}</option>)}
-                      </select>
-                    </label>
-                    <button className="btn-secondary" onClick={() => cambiarEstado(nuevoEstado)}>
-                      Guardar cambio
-                    </button>
+                    {anteriorEstadoOperacion(estadoActual) && (
+                      <button className="btn-secondary" onClick={retroceder}>
+                        ← Retroceder a {estadoLabel(anteriorEstadoOperacion(estadoActual))}
+                      </button>
+                    )}
                     <button className="btn-danger btn-finalize" onClick={finalizarOperacion}>
                       Finalizar operación
                     </button>
                   </div>
-                  <small>Solo se puede finalizar cuando esté entregada, sin saldo ni documentos pendientes.</small>
+                  <small>El retroceso se realiza de a un estado por vez y queda auditado. Solo se puede finalizar cuando esté entregada, sin saldo ni documentos pendientes.</small>
                 </details>
               )}
             </>

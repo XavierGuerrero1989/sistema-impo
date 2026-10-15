@@ -5,7 +5,7 @@ import {
 } from "./offline/operacionesRepo";
 import KPIs from "./ui/KPIS";
 import "./operacionesApp.css";
-import { alertasOperacion, referenciaOperacion } from "./domain/operacion";
+import { alertasOperacion, ESTADOS_FLUJO_OPERACION, estadoOperacionLabel, referenciaOperacion } from "./domain/operacion";
 import { useAuth } from "./auth/AuthContext";
 import { countryLabel } from "./domain/paises";
 import { estadoPagoProgramado } from "./domain/pagos";
@@ -132,13 +132,7 @@ function OperacionesApp() {
 
   const filtrosEstado = [
     "TODAS",
-    "PLANIFICADA",
-    "PRODUCCION",
-    "CARGADA",
-    "EN_TRANSITO",
-    "ARRIBADA",
-    "EN_DESPACHO",
-    "ENTREGADA",
+    ...ESTADOS_FLUJO_OPERACION,
     "BLOQUEADA",
     "FINALIZADA",
   ];
@@ -231,7 +225,7 @@ function OperacionesApp() {
         <div className="op-filters">
           {filtrosEstado.map((f) => (
             <button key={f} className={`op-filter ${filtro === f ? "active" : ""}`} onClick={() => setFiltro(f)}>
-              {f.replaceAll("_", " ")}
+              {f === "TODAS" ? "TODAS" : estadoOperacionLabel(f)}
             </button>
           ))}
         </div>
@@ -252,7 +246,7 @@ function OperacionesApp() {
             <div className="card-header">
               <span className="card-id">{referenciaOperacion(op)}</span>
               <span className={`estado-badge ${op.estado.toLowerCase()}`}>
-                {op.estado.replaceAll("_", " ")}
+                {estadoOperacionLabel(op.estado)}
               </span>
             </div>
             <div className="card-body">
