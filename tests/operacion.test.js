@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {
   alertasOperacion,
   calcularFinanzas,
+  generarReferenciaOperacion,
   normalizarOperacion,
   referenciaOperacion,
   referenciaOperacionDuplicada,
@@ -17,6 +18,17 @@ test("normaliza colecciones y valores básicos", () => {
   assert.equal(result.incotermVersion, "2020");
   assert.deepEqual(result.documentos, []);
   assert.equal(result.estado, "PLANIFICADA");
+});
+
+test("genera una referencia mensual correlativa de cinco dígitos", () => {
+  const operaciones = [
+    { referenciaOperacion: "20260900001" },
+    { referenciaOperacion: "20260900007" },
+    { referenciaOperacion: "20260800099" },
+    { referenciaOperacion: "REFERENCIA-LIBRE" },
+  ];
+  assert.equal(generarReferenciaOperacion(operaciones, new Date(2026, 8, 15)), "20260900008");
+  assert.equal(generarReferenciaOperacion(operaciones, new Date(2026, 9, 1)), "20261000001");
 });
 
 test("usa una referencia editable sin alterar el ID interno", () => {

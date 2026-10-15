@@ -28,6 +28,18 @@ export function generarIdInternoOperacion() {
   return `op_${year}_${unique}`;
 }
 
+export function generarReferenciaOperacion(operaciones = [], fecha = new Date()) {
+  const year = fecha.getFullYear();
+  const month = String(fecha.getMonth() + 1).padStart(2, "0");
+  const prefix = `${year}${month}`;
+  const pattern = new RegExp(`^${prefix}(\\d{5})$`);
+  const maxCorrelativo = operaciones.reduce((max, operacion) => {
+    const match = referenciaOperacion(operacion).match(pattern);
+    return match ? Math.max(max, Number(match[1])) : max;
+  }, 0);
+  return `${prefix}${String(maxCorrelativo + 1).padStart(5, "0")}`;
+}
+
 export function referenciaOperacion(input = {}) {
   return String(input.referenciaOperacion || input.id || "").trim();
 }
