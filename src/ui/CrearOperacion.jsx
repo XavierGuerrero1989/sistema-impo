@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { getOperacionesLocal, upsertOperacionLocal } from "../offline/operacionesRepo";
+import { getOperacionesEliminadasLocal, getOperacionesLocal, upsertOperacionLocal } from "../offline/operacionesRepo";
 import { getProveedoresLocal } from "../proveedores/ProveedoresRepo";
 import { auditEvent } from "../auth/audit";
 import "./CrearOperacion.css";
 import {
   generarIdInternoOperacion,
+  generarReferenciaOperacion,
   normalizarOperacion,
   referenciaOperacionDuplicada,
   validarOperacion,
@@ -53,13 +54,19 @@ export default function CrearOperacion() {
 
     async function load() {
 
-      const [data, operacionesData] = await Promise.all([
+      const [data, operacionesData, operacionesEliminadas] = await Promise.all([
         getProveedoresLocal(),
         getOperacionesLocal(),
+        getOperacionesEliminadasLocal(),
       ]);
 
       setProveedores(data || []);
-      setOperaciones(operacionesData || []);
+      const todasLasOperaciones = [...(operacionesData || []), ...(operacionesEliminadas || [])];
+      setOperaciones(todasLasOperaciones);
+      setForm((current) => ({
+        ...current,
+        referenciaOperacion: current.referenciaOperacion || generarReferenciaOperacion(todasLasOperaciones),
+      }));
 
     }
 
@@ -150,6 +157,9 @@ export default function CrearOperacion() {
 
   const crearOperacion = async () => {
 
+    const referenciaSugerida = form.referenciaOperacion.trim()
+      || generarReferenciaOperacion(operaciones);
+
     const proveedorSeleccionado = proveedores.find(
       (p) => p.proveedorId === form.proveedorId
     );
@@ -182,7 +192,7 @@ export default function CrearOperacion() {
       return;
     }
 
-    if (referenciaOperacionDuplicada(operaciones, form.referenciaOperacion)) {
+    if (referenciaOperacionDuplicada(operaciones, referenciaSugerida)) {
       alert("La referencia de operación ya está siendo utilizada.");
       return;
     }
@@ -190,7 +200,7 @@ export default function CrearOperacion() {
     const nuevaOperacion = normalizarOperacion({
 
       id: form.id,
-      referenciaOperacion: form.referenciaOperacion,
+      referenciaOperacion: referenciaSugerida,
 
       proveedorId: proveedorSeleccionado.proveedorId,
       proveedorNombre: proveedorSeleccionado.nombreComercial,
@@ -281,15 +291,15 @@ export default function CrearOperacion() {
 
         <div className="form-group">
 
-          <label>Referencia de operación (opcional)</label>
+          <label>Número de operación</label>
 
           <input
             name="referenciaOperacion"
-            placeholder="Ej. IMP-2026-045"
+            placeholder="Ej. 20261000001"
             value={form.referenciaOperacion}
             onChange={onChange}
           />
-          <small>Nombre visible y editable que utilizará el equipo diariamente.</small>
+          <small>Se sugiere automáticamente como año + mes + correlativo mensual. Podés editarlo antes de crear la operación.</small>
 
         </div>
 
