@@ -9,9 +9,20 @@ service cloud.firestore {
     function primaryAdmin() {
       return signedIn()
         && request.auth.token.email in [
+          "xavier@brainworks.ar",
           "xavierignacioguerrero@gmail.com",
           "ariel@ptm.cl"
         ];
+    }
+
+    function systemOwner() {
+      return signedIn() && request.auth.token.email == "xavier@brainworks.ar";
+    }
+
+    function accessEnabled() {
+      return systemOwner()
+        || !exists(/databases/$(database)/documents/configuracion/acceso)
+        || get(/databases/$(database)/documents/configuracion/acceso).data.suspendido != true;
     }
 
     function hasRole(roles) {
@@ -25,9 +36,9 @@ service cloud.firestore {
     }
 
     match /operaciones/{operacionId} {
-      allow read: if signedIn();
-      allow create: if primaryAdmin() || hasRole(["admin", "operaciones"]);
-      allow update: if primaryAdmin() || hasRole(["admin"]) || (
+      allow read: if signedIn() && accessEnabled();
+      allow create: if accessEnabled() && (primaryAdmin() || hasRole(["admin", "operaciones"]));
+      allow update: if accessEnabled() && (primaryAdmin() || hasRole(["admin"]) || (
         hasRole(["operaciones"])
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
           "estado", "logistica", "documentos", "historial",
@@ -42,46 +53,51 @@ service cloud.firestore {
           "adelantos", "pagos", "documentos", "historial",
           "fechaVencimientoPago", "updatedAt"
         ])
-      );
-      allow delete: if primaryAdmin() || hasRole(["admin"]);
+      ));
+      allow delete: if accessEnabled() && (primaryAdmin() || hasRole(["admin"]));
     }
 
     match /documentos/{docId} {
-      allow read: if signedIn();
-      allow write: if primaryAdmin() || hasRole(["admin", "operaciones", "finanzas"]);
+      allow read: if signedIn() && accessEnabled();
+      allow write: if accessEnabled() && (primaryAdmin() || hasRole(["admin", "operaciones", "finanzas"]));
     }
 
     match /proveedores/{proveedorId} {
-      allow read: if signedIn();
-      allow write: if primaryAdmin() || hasRole(["admin", "operaciones"]);
+      allow read: if signedIn() && accessEnabled();
+      allow write: if accessEnabled() && (primaryAdmin() || hasRole(["admin", "operaciones"]));
     }
 
     match /forwarders/{forwarderId} {
-      allow read: if signedIn();
-      allow write: if primaryAdmin() || hasRole(["admin", "operaciones"]);
+      allow read: if signedIn() && accessEnabled();
+      allow write: if accessEnabled() && (primaryAdmin() || hasRole(["admin", "operaciones"]));
     }
 
     match /agentesAduana/{agenteId} {
-      allow read: if signedIn();
-      allow write: if primaryAdmin() || hasRole(["admin", "operaciones"]);
+      allow read: if signedIn() && accessEnabled();
+      allow write: if accessEnabled() && (primaryAdmin() || hasRole(["admin", "operaciones"]));
     }
 
     match /usuarios/{userId} {
-      allow read: if canManageUsers() || (signedIn() && request.auth.uid == userId);
-      allow create: if canManageUsers() || (
+      allow read: if accessEnabled() && (canManageUsers() || (signedIn() && request.auth.uid == userId));
+      allow create: if accessEnabled() && (canManageUsers() || (
         signedIn()
         && request.auth.uid == userId
         && request.resource.data.role == "lectura"
         && request.resource.data.email == request.auth.token.email
-      );
-      allow update: if canManageUsers() || (
+      ));
+      allow update: if accessEnabled() && (canManageUsers() || (
         signedIn()
         && request.auth.uid == userId
         && request.resource.data.role == resource.data.role
         && request.resource.data.email == request.auth.token.email
         && request.resource.data.activo == resource.data.activo
-      );
-      allow delete: if canManageUsers() && request.auth.uid != userId;
+      ));
+      allow delete: if accessEnabled() && canManageUsers() && request.auth.uid != userId;
+    }
+
+    match /configuracion/{configId} {
+      allow read: if signedIn();
+      allow write: if systemOwner();
     }
 
   }

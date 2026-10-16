@@ -6,7 +6,7 @@ import Loader from "../ui/Loader";
 import "./Login.css";
 
 export default function Login() {
-  const { auth, user } = useAuth();
+  const { accessBlocked, auth, user } = useAuth();
   const navigate = useNavigate();
 
   const [email, setEmail] = useState("");
@@ -116,6 +116,11 @@ export default function Login() {
           )}
 
           {error && <div className="login-error">{error}</div>}
+          {accessBlocked && (
+            <div className="login-error">
+              El acceso al sistema está temporalmente suspendido. Contactá al administrador.
+            </div>
+          )}
           {message && <div className="login-success">✓ {message}</div>}
 
           <button type="submit" disabled={loading}>

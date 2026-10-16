@@ -13,6 +13,25 @@
   font-weight: 750; cursor: pointer;
 }
 .usuarios-add span { font-size: 1.1rem; }
+.system-access-panel {
+  display: grid; grid-template-columns: 50px 1fr auto; align-items: center; gap: 17px;
+  margin-top: 24px; padding: 20px 22px; border: 1px solid #bbf7d0; border-radius: 18px;
+  background: linear-gradient(135deg,#f0fdf4,#fff); box-shadow: 0 12px 32px rgba(15,23,42,.05);
+}
+.system-access-panel.suspended { border-color: #fecaca; background: linear-gradient(135deg,#fff1f2,#fff); }
+.system-access-icon {
+  display: grid; width: 48px; height: 48px; place-items: center; border-radius: 15px;
+  background: #dcfce7; color: #15803d; font-size: 1.25rem; font-weight: 900;
+}
+.system-access-panel.suspended .system-access-icon { background: #fee2e2; color: #dc2626; }
+.system-access-copy h2 { margin: 3px 0 4px; color: #172033; font-size: 1.05rem; }
+.system-access-copy p { margin: 0; color: #64748b; font-size: .8rem; }
+.system-access-action {
+  padding: 11px 16px; border: 0; border-radius: 11px; background: #ef4444; color: white;
+  font-weight: 800; cursor: pointer; white-space: nowrap;
+}
+.system-access-panel.suspended .system-access-action { background: #16a34a; }
+.system-access-action:disabled { opacity: .55; cursor: wait; }
 .access-overview { display: grid; grid-template-columns: repeat(4,1fr); gap: 14px; margin: 25px 0; }
 .access-card {
   display: flex; align-items: center; gap: 14px; padding: 18px;
@@ -129,6 +148,8 @@
 .user-modal-actions button[type="submit"] { border-color: #6d5ce7; background: #6d5ce7; color: white; }
 .user-modal-actions button:disabled { opacity: .55; cursor: wait; }
 @media (max-width: 780px) {
+  .system-access-panel { grid-template-columns: 44px 1fr; }
+  .system-access-action { grid-column: 1 / -1; width: 100%; }
   .access-overview { grid-template-columns: repeat(2, 1fr); }
   .usuario-row { grid-template-columns: 44px 1fr; padding: 15px 18px; }
   .usuario-last-access { display: none; }

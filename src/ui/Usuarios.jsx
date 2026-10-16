@@ -11,12 +11,14 @@ import {
   collection,
   doc,
   getDocs,
+  onSnapshot,
   serverTimestamp,
   setDoc,
   updateDoc,
 } from "firebase/firestore";
 import { app, db } from "../firebase/firebase";
-import { isPrimaryAdmin, ROLES } from "../auth/roles";
+import { isPrimaryAdmin, isSystemOwner, ROLES } from "../auth/roles";
+import { useAuth } from "../auth/AuthContext";
 import "./Usuarios.css";
 import { confirmAction } from "./sweetAlerts";
 
@@ -51,11 +53,15 @@ const accessFor = (role) =>
   ACCESS_LEVELS.find((level) => level.role === role) || ACCESS_LEVELS[0];
 
 export default function Usuarios() {
+  const { user } = useAuth();
+  const systemOwner = isSystemOwner(user?.email);
   const [usuarios, setUsuarios] = useState([]);
   const [error, setError] = useState("");
   const [mensaje, setMensaje] = useState("");
   const [guardando, setGuardando] = useState("");
   const [creando, setCreando] = useState(false);
+  const [accesoSuspendido, setAccesoSuspendido] = useState(false);
+  const [guardandoAcceso, setGuardandoAcceso] = useState(false);
   const [mostrarFormulario, setMostrarFormulario] = useState(false);
   const [form, setForm] = useState({
     nombre: "",
@@ -76,6 +82,46 @@ export default function Usuarios() {
   useEffect(() => {
     load();
   }, []);
+
+  useEffect(() => {
+    if (!systemOwner) return undefined;
+    return onSnapshot(doc(db, "configuracion", "acceso"), (snapshot) => {
+      setAccesoSuspendido(snapshot.exists() && snapshot.data()?.suspendido === true);
+    }, () => {
+      setError("No se pudo consultar el estado general de acceso.");
+    });
+  }, [systemOwner]);
+
+  const cambiarAccesoGeneral = async () => {
+    const nextSuspended = !accesoSuspendido;
+    const confirmado = await confirmAction({
+      title: nextSuspended ? "Suspender acceso general" : "Reactivar acceso general",
+      text: nextSuspended
+        ? "Todos los usuarios, excepto tu cuenta propietaria, perderán el acceso inmediatamente."
+        : "Todos los usuarios activos podrán volver a ingresar al sistema.",
+      confirmText: nextSuspended ? "Suspender accesos" : "Reactivar sistema",
+      danger: nextSuspended,
+    });
+    if (!confirmado) return;
+
+    setGuardandoAcceso(true);
+    setError("");
+    setMensaje("");
+    try {
+      await setDoc(doc(db, "configuracion", "acceso"), {
+        suspendido: nextSuspended,
+        actualizadoAt: serverTimestamp(),
+        actualizadoPor: user.email,
+      }, { merge: true });
+      setMensaje(nextSuspended
+        ? "El acceso general quedó suspendido. Tu cuenta conserva el ingreso."
+        : "El acceso general fue reactivado correctamente.");
+    } catch {
+      setError("No se pudo modificar el acceso general del sistema.");
+    } finally {
+      setGuardandoAcceso(false);
+    }
+  };
 
   useEffect(() => {
     if (!mostrarFormulario) return undefined;
@@ -212,6 +258,31 @@ export default function Usuarios() {
           <span>＋</span> Nuevo usuario
         </button>
       </header>
+
+      {systemOwner && (
+        <section className={`system-access-panel ${accesoSuspendido ? "suspended" : "enabled"}`}>
+          <div className="system-access-icon">{accesoSuspendido ? "!" : "✓"}</div>
+          <div className="system-access-copy">
+            <span className="usuarios-eyebrow">Control exclusivo del propietario</span>
+            <h2>{accesoSuspendido ? "Acceso general suspendido" : "Sistema habilitado"}</h2>
+            <p>
+              {accesoSuspendido
+                ? "Los demás usuarios no pueden ingresar. Tu cuenta conserva el acceso para rehabilitar el sistema."
+                : "Todos los usuarios activos pueden ingresar según los permisos de su rol."}
+            </p>
+          </div>
+          <button
+            type="button"
+            className="system-access-action"
+            disabled={guardandoAcceso}
+            onClick={cambiarAccesoGeneral}
+          >
+            {guardandoAcceso
+              ? "Guardando…"
+              : accesoSuspendido ? "Reactivar accesos" : "Suspender accesos"}
+          </button>
+        </section>
+      )}
 
       <div className="access-overview">
         {ACCESS_LEVELS.map((level) => (

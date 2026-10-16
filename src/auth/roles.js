@@ -1,7 +1,14 @@
 export const ADMIN_EMAILS = [
+  "xavier@brainworks.ar",
   "xavierignacioguerrero@gmail.com",
   "ariel@ptm.cl",
 ];
+
+export const SYSTEM_OWNER_EMAIL = "xavier@brainworks.ar";
+
+export function isSystemOwner(email) {
+  return String(email || "").trim().toLowerCase() === SYSTEM_OWNER_EMAIL;
+}
 
 export function isPrimaryAdmin(email) {
   return ADMIN_EMAILS.includes(String(email || "").toLowerCase());
